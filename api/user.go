@@ -6,6 +6,7 @@ import (
 	"time"
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
+	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
@@ -70,17 +71,36 @@ func (server *Server) createUser(ctx *gin.Context) {
 	}
 
 	rsp := newUserResponse(user)
-	ctx.JSON(http.StatusOK, rsp)
+	ctx.JSON(http.StatusCreated, rsp)
+}
+
+func (server *Server) getUser(ctx *gin.Context) {
+	payload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
+	user, err := server.store.GetUser(ctx, payload.Uuid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, newUserResponse(user))
 }
 
 type loginUserRequest struct {
-	Email string `json:"email" binding:"required,email"`
+	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
 }
 
 type loginUserResponse struct {
-	AccessToken string       `json:"access_token"`
-	User        userResponse `json:"user"`
+	AccessToken          string       `json:"access_token"`
+	RefreshToken         string       `json:"refresh_token"`
+	AccessTokenExpiresAt time.Time    `json:"access_token_expires_at"`
+	User                 userResponse `json:"user"`
 }
 
 func (server *Server) loginUser(ctx *gin.Context) {
@@ -108,6 +128,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 
 	accessToken, err := server.tokenMaker.CreateToken(
 		user.Username,
+		user.Uuid,
 		server.config.AccessTokenDuration,
 	)
 	if err != nil {
@@ -115,9 +136,60 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	rsp := loginUserResponse {
-		AccessToken: accessToken,
-		User: newUserResponse(user),
+	refreshToken, err := server.tokenMaker.CreateToken(
+		user.Username,
+		user.Uuid,
+		server.config.RefreshTokenDuration,
+	)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
 	}
+
+	rsp := loginUserResponse{
+		AccessToken:          accessToken,
+		RefreshToken:         refreshToken,
+		AccessTokenExpiresAt: time.Now().Add(server.config.AccessTokenDuration),
+		User:                 newUserResponse(user),
+	}
+	ctx.JSON(http.StatusOK, rsp)
+}
+
+type renewAccessTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+type renewAccessTokenResponse struct {
+	AccessToken string `json:"access_token"`
+}
+
+func (server *Server) renewAccessToken(ctx *gin.Context) {
+	var req renewAccessTokenRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	payload, err := server.tokenMaker.VerifyToken(req.RefreshToken)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	accessToken, err := server.tokenMaker.CreateToken(
+		payload.Username,
+		payload.Uuid,
+		server.config.AccessTokenDuration,
+	)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	rsp := renewAccessTokenResponse{
+		AccessToken: accessToken,
+	}
+
 	ctx.JSON(http.StatusOK, rsp)
 }

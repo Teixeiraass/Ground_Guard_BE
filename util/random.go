@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const alphabet = "abcdefghijklmnopqrstuvwxyz"
@@ -53,4 +55,11 @@ func RandomStatus() string {
 	statuses := []string{"ativo", "inativo"}
 
 	return statuses[rand.Intn(len(statuses))]
+}
+
+func RandomUuid() uuid.NullUUID {
+	return uuid.NullUUID{
+		UUID:  uuid.New(),
+		Valid: true,
+	}
 }

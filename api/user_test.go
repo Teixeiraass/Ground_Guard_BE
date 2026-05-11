@@ -79,7 +79,7 @@ func TestCreateUserAPI(t *testing.T) {
 					Return(user, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
+				require.Equal(t, http.StatusCreated, recorder.Code)
 				requireBodyMatchUser(t, recorder.Body, user)
 			},
 		},
