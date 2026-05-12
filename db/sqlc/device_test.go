@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -10,10 +11,16 @@ import (
 )
 
 func createRandomDevice(t *testing.T) Device {
+	user := createRandomUser(t)
+
 	arg := CreateDeviceParams {
 		DeviceUid: util.RandomString(8),
 		Name: util.RandomString(6),
 		FirmwareVersion: util.RandomFirwareVersion(),
+		UserID: sql.NullInt64 {
+			Int64: user.ID,
+			Valid: true,
+		},
 	}
 
 	device, err := testQueries.CreateDevice(context.Background(), arg)
@@ -79,11 +86,13 @@ func TestUpdateDevice(t *testing.T) {
 }
 
 func TestListDevices(t *testing.T) {
+	var lastDevice Device
 	for i := 0; i < 5; i++ {
-		createRandomDevice(t)
+		lastDevice = createRandomDevice(t)
 	}
 
 	arg := ListDevicesParams {
+		UserID: lastDevice.UserID,
 		Limit: 5,
 		Offset: 0,
 	}
@@ -94,5 +103,6 @@ func TestListDevices(t *testing.T) {
 
 	for _, device := range devices {
 		require.NotEmpty(t, device)
+		require.Equal(t, lastDevice.UserID, device.UserID)
 	}
 }
