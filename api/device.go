@@ -1,10 +1,13 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
 	"time"
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
+	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -58,7 +61,7 @@ func newDeviceResponse(device db.Device) deviceResponse {
 	}
 
 	return deviceResponse{
-		Uuid:            util.ToUUID(device.Uuid),
+		Uuid:            device.Uuid,
 		DeviceUid:       device.DeviceUid,
 		Name:            device.Name,
 		FirmwareVersion: device.FirmwareVersion,
@@ -103,4 +106,73 @@ func (server *Server) createDevice(ctx *gin.Context) {
 
 	rsp := newDeviceResponse(device)
 	ctx.JSON(http.StatusCreated, rsp)
+}
+
+type getDeviceRequest struct {
+	UUID string `uri:"uuid" binding:"required"`
+}
+
+func (server *Server) getDevice(ctx *gin.Context) {
+	var req getDeviceRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	deviceUUID, err := uuid.Parse(req.UUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	device, err := server.store.GetDevice(ctx, deviceUUID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if device.UserID.Int64 != authPayload.UserID {
+		err := errors.New("device doesn't belong to authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, device)
+}
+
+type listDeviceRequest struct {
+	PageID int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
+}
+
+func (server *Server) listDevice(ctx *gin.Context) {
+	var req listDeviceRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	arg := db.ListDevicesParams {
+		UserID: sql.NullInt64{
+			Int64: authPayload.UserID,
+			Valid: true,
+		},
+		Limit: req.PageSize,
+		Offset: (req.PageID - 1) * req.PageSize,
+	}
+
+	devices, err := server.store.ListDevices(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, devices)
 }

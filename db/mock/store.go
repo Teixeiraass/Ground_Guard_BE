@@ -67,7 +67,7 @@ func (mr *MockStoreMockRecorder) CreateUser(arg0, arg1 interface{}) *gomock.Call
 }
 
 // GetDevice mocks base method.
-func (m *MockStore) GetDevice(arg0 context.Context, arg1 uuid.NullUUID) (db.Device, error) {
+func (m *MockStore) GetDevice(arg0 context.Context, arg1 uuid.UUID) (db.Device, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDevice", arg0, arg1)
 	ret0, _ := ret[0].(db.Device)
@@ -82,7 +82,7 @@ func (mr *MockStoreMockRecorder) GetDevice(arg0, arg1 interface{}) *gomock.Call 
 }
 
 // GetDeviceForUpdate mocks base method.
-func (m *MockStore) GetDeviceForUpdate(arg0 context.Context, arg1 uuid.NullUUID) (db.Device, error) {
+func (m *MockStore) GetDeviceForUpdate(arg0 context.Context, arg1 uuid.UUID) (db.Device, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDeviceForUpdate", arg0, arg1)
 	ret0, _ := ret[0].(db.Device)
@@ -97,7 +97,7 @@ func (mr *MockStoreMockRecorder) GetDeviceForUpdate(arg0, arg1 interface{}) *gom
 }
 
 // GetUser mocks base method.
-func (m *MockStore) GetUser(arg0 context.Context, arg1 uuid.NullUUID) (db.User, error) {
+func (m *MockStore) GetUser(arg0 context.Context, arg1 uuid.UUID) (db.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser", arg0, arg1)
 	ret0, _ := ret[0].(db.User)

@@ -25,9 +25,10 @@ FOR NO KEY UPDATE;
 
 -- name: ListDevices :many
 SELECT * FROM devices
+WHERE user_id = $1
 ORDER BY id
-LIMIT $1
-OFFSET $2;
+LIMIT $2
+OFFSET $3;
 
 -- name: UpdateDevices :one
 UPDATE devices

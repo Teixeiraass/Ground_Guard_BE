@@ -14,7 +14,7 @@ import (
 
 type Device struct {
 	ID              int64          `json:"id"`
-	Uuid            uuid.NullUUID  `json:"uuid"`
+	Uuid            uuid.UUID      `json:"uuid"`
 	DeviceUid       string         `json:"device_uid"`
 	Name            string         `json:"name"`
 	FirmwareVersion string         `json:"firmware_version"`
@@ -29,12 +29,12 @@ type Device struct {
 }
 
 type User struct {
-	ID                int64         `json:"id"`
-	Uuid              uuid.NullUUID `json:"uuid"`
-	Username          string        `json:"username"`
-	HashedPassword    string        `json:"hashed_password"`
-	FullName          string        `json:"full_name"`
-	Email             string        `json:"email"`
-	PasswordChangedAt time.Time     `json:"password_changed_at"`
-	CreatedAt         time.Time     `json:"created_at"`
+	ID                int64     `json:"id"`
+	Uuid              uuid.UUID `json:"uuid"`
+	Username          string    `json:"username"`
+	HashedPassword    string    `json:"hashed_password"`
+	FullName          string    `json:"full_name"`
+	Email             string    `json:"email"`
+	PasswordChangedAt time.Time `json:"password_changed_at"`
+	CreatedAt         time.Time `json:"created_at"`
 }

@@ -47,7 +47,10 @@ func (server *Server) setupRouter() {
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 
 	authRoutes.GET("/users/me", server.getUser)
+
 	authRoutes.POST("/devices", server.createDevice)
+	authRoutes.GET("/devices/:uuid", server.getDevice)
+	authRoutes.GET("/devices", server.listDevice)
 
 	server.router = router
 }

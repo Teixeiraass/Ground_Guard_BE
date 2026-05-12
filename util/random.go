@@ -57,9 +57,6 @@ func RandomStatus() string {
 	return statuses[rand.Intn(len(statuses))]
 }
 
-func RandomUuid() uuid.NullUUID {
-	return uuid.NullUUID{
-		UUID:  uuid.New(),
-		Valid: true,
-	}
+func RandomUuid() uuid.UUID {
+	return uuid.New()
 }

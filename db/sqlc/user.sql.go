@@ -55,7 +55,7 @@ SELECT id, uuid, username, hashed_password, full_name, email, password_changed_a
 WHERE uuid = $1 LIMIT 1
 `
 
-func (q *Queries) GetUser(ctx context.Context, argUuid uuid.NullUUID) (User, error) {
+func (q *Queries) GetUser(ctx context.Context, argUuid uuid.UUID) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, argUuid)
 	var i User
 	err := row.Scan(

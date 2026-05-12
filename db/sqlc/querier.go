@@ -13,9 +13,9 @@ import (
 type Querier interface {
 	CreateDevice(ctx context.Context, arg CreateDeviceParams) (Device, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
-	GetDevice(ctx context.Context, argUuid uuid.NullUUID) (Device, error)
-	GetDeviceForUpdate(ctx context.Context, argUuid uuid.NullUUID) (Device, error)
-	GetUser(ctx context.Context, argUuid uuid.NullUUID) (User, error)
+	GetDevice(ctx context.Context, argUuid uuid.UUID) (Device, error)
+	GetDeviceForUpdate(ctx context.Context, argUuid uuid.UUID) (Device, error)
+	GetUser(ctx context.Context, argUuid uuid.UUID) (User, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	ListDevices(ctx context.Context, arg ListDevicesParams) ([]Device, error)
 	UpdateDevices(ctx context.Context, arg UpdateDevicesParams) (Device, error)

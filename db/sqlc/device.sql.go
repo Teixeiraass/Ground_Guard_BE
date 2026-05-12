@@ -81,7 +81,7 @@ SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update
 WHERE uuid = $1 LIMIT 1
 `
 
-func (q *Queries) GetDevice(ctx context.Context, argUuid uuid.NullUUID) (Device, error) {
+func (q *Queries) GetDevice(ctx context.Context, argUuid uuid.UUID) (Device, error) {
 	row := q.db.QueryRowContext(ctx, getDevice, argUuid)
 	var i Device
 	err := row.Scan(
@@ -108,7 +108,7 @@ WHERE uuid = $1 LIMIT 1
 FOR NO KEY UPDATE
 `
 
-func (q *Queries) GetDeviceForUpdate(ctx context.Context, argUuid uuid.NullUUID) (Device, error) {
+func (q *Queries) GetDeviceForUpdate(ctx context.Context, argUuid uuid.UUID) (Device, error) {
 	row := q.db.QueryRowContext(ctx, getDeviceForUpdate, argUuid)
 	var i Device
 	err := row.Scan(
@@ -131,18 +131,20 @@ func (q *Queries) GetDeviceForUpdate(ctx context.Context, argUuid uuid.NullUUID)
 
 const listDevices = `-- name: ListDevices :many
 SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at FROM devices
+WHERE user_id = $1
 ORDER BY id
-LIMIT $1
-OFFSET $2
+LIMIT $2
+OFFSET $3
 `
 
 type ListDevicesParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	UserID sql.NullInt64 `json:"user_id"`
+	Limit  int32         `json:"limit"`
+	Offset int32         `json:"offset"`
 }
 
 func (q *Queries) ListDevices(ctx context.Context, arg ListDevicesParams) ([]Device, error) {
-	rows, err := q.db.QueryContext(ctx, listDevices, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listDevices, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -186,8 +188,8 @@ RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_upd
 `
 
 type UpdateDevicesParams struct {
-	Uuid   uuid.NullUUID `json:"uuid"`
-	Status string        `json:"status"`
+	Uuid   uuid.UUID `json:"uuid"`
+	Status string    `json:"status"`
 }
 
 func (q *Queries) UpdateDevices(ctx context.Context, arg UpdateDevicesParams) (Device, error) {

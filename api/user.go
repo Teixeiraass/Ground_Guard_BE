@@ -77,7 +77,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 func (server *Server) getUser(ctx *gin.Context) {
 	payload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
-	user, err := server.store.GetUser(ctx, payload.Uuid)
+	user, err := server.store.GetUser(ctx, payload.UserUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -128,6 +128,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 
 	accessToken, err := server.tokenMaker.CreateToken(
 		user.Username,
+		user.ID,
 		user.Uuid,
 		server.config.AccessTokenDuration,
 	)
@@ -138,6 +139,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 
 	refreshToken, err := server.tokenMaker.CreateToken(
 		user.Username,
+		user.ID,
 		user.Uuid,
 		server.config.RefreshTokenDuration,
 	)
@@ -179,7 +181,8 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 
 	accessToken, err := server.tokenMaker.CreateToken(
 		payload.Username,
-		payload.Uuid,
+		payload.UserID,
+		payload.UserUUID,
 		server.config.AccessTokenDuration,
 	)
 	if err != nil {

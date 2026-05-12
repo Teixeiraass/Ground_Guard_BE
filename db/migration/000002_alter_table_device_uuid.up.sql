@@ -1,0 +1,2 @@
+ALTER TABLE devices
+ALTER COLUMN uuid SET NOT NULL;
