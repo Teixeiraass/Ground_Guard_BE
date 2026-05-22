@@ -1,4 +1,4 @@
-package api
+package handler
 
 import (
 	"os"
@@ -12,8 +12,8 @@ import (
 )
 
 func newTestServer(t *testing.T, store db.Store) *Server {
-	config := util.Config {
-		TokenSymmetricKey: util.RandomString(32),
+	config := util.Config{
+		TokenSymmetricKey:   util.RandomString(32),
 		AccessTokenDuration: time.Minute,
 	}
 

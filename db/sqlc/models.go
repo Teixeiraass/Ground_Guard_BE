@@ -28,6 +28,21 @@ type Device struct {
 	CreatedAt       time.Time      `json:"created_at"`
 }
 
+type IrrigationAction struct {
+	ID              int64          `json:"id"`
+	Uuid            uuid.UUID      `json:"uuid"`
+	DeviceID        int64          `json:"device_id"`
+	UserID          int64          `json:"user_id"`
+	StartedAt       time.Time      `json:"started_at"`
+	FinishedAt      sql.NullTime   `json:"finished_at"`
+	DurationSeconds sql.NullInt32  `json:"duration_seconds"`
+	Status          string         `json:"status"`
+	TriggerType     string         `json:"trigger_type"`
+	WaterVolumeMl   sql.NullInt32  `json:"water_volume_ml"`
+	ErrorMessage    sql.NullString `json:"error_message"`
+	CreatedAt       time.Time      `json:"created_at"`
+}
+
 type User struct {
 	ID                int64     `json:"id"`
 	Uuid              uuid.UUID `json:"uuid"`

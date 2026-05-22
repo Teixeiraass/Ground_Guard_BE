@@ -1,4 +1,4 @@
-package api
+package handler
 
 import (
 	"database/sql"
@@ -6,39 +6,16 @@ import (
 	"time"
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
+	"github.com/Teixeiraass/ground_guard_be/internal/dto"
+	"github.com/Teixeiraass/ground_guard_be/internal/middleware"
 	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 )
 
-type createUserRequest struct {
-	Username string `json:"username" binding:"required,alphanum"`
-	Password string `json:"password" binding:"required,min=6"`
-	FullName string `json:"full_name" binding:"required"`
-	Email    string `json:"email" binding:"required,email"`
-}
-
-type userResponse struct {
-	Username          string    `json:"username"`
-	FullName          string    `json:"full_name"`
-	Email             string    `json:"email"`
-	PasswordChangedAt time.Time `json:"password_changed_at"`
-	CreatedAt         time.Time `json:"created_at"`
-}
-
-func newUserResponse(user db.User) userResponse {
-	return userResponse{
-		Username:          user.Username,
-		FullName:          user.FullName,
-		Email:             user.Email,
-		PasswordChangedAt: user.PasswordChangedAt,
-		CreatedAt:         user.CreatedAt,
-	}
-}
-
-func (server *Server) createUser(ctx *gin.Context) {
-	var req createUserRequest
+func (server *Server) CreateUser(ctx *gin.Context) {
+	var req dto.CreateUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -70,12 +47,11 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
-	rsp := newUserResponse(user)
-	ctx.JSON(http.StatusCreated, rsp)
+	ctx.JSON(http.StatusCreated, dto.NewUserResponse(user))
 }
 
-func (server *Server) getUser(ctx *gin.Context) {
-	payload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+func (server *Server) GetUser(ctx *gin.Context) {
+	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 
 	user, err := server.store.GetUser(ctx, payload.UserUUID)
 	if err != nil {
@@ -88,23 +64,11 @@ func (server *Server) getUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newUserResponse(user))
+	ctx.JSON(http.StatusOK, dto.NewUserResponse(user))
 }
 
-type loginUserRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
-}
-
-type loginUserResponse struct {
-	AccessToken          string       `json:"access_token"`
-	RefreshToken         string       `json:"refresh_token"`
-	AccessTokenExpiresAt time.Time    `json:"access_token_expires_at"`
-	User                 userResponse `json:"user"`
-}
-
-func (server *Server) loginUser(ctx *gin.Context) {
-	var req loginUserRequest
+func (server *Server) LoginUser(ctx *gin.Context) {
+	var req dto.LoginUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 	}
@@ -148,25 +112,17 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	rsp := loginUserResponse{
+	rsp := dto.LoginUserResponse{
 		AccessToken:          accessToken,
 		RefreshToken:         refreshToken,
 		AccessTokenExpiresAt: time.Now().Add(server.config.AccessTokenDuration),
-		User:                 newUserResponse(user),
+		User:                 dto.NewUserResponse(user),
 	}
 	ctx.JSON(http.StatusOK, rsp)
 }
 
-type renewAccessTokenRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
-}
-
-type renewAccessTokenResponse struct {
-	AccessToken string `json:"access_token"`
-}
-
-func (server *Server) renewAccessToken(ctx *gin.Context) {
-	var req renewAccessTokenRequest
+func (server *Server) RenewAccessToken(ctx *gin.Context) {
+	var req dto.RenewAccessTokenRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -190,9 +146,5 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	rsp := renewAccessTokenResponse{
-		AccessToken: accessToken,
-	}
-
-	ctx.JSON(http.StatusOK, rsp)
+	ctx.JSON(http.StatusOK, dto.RenewAccessTokenResponse{AccessToken: accessToken})
 }

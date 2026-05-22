@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"log"
 
-	"github.com/Teixeiraass/ground_guard_be/api"
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
+	"github.com/Teixeiraass/ground_guard_be/internal/handler"
 	"github.com/Teixeiraass/ground_guard_be/util"
 
 	_ "github.com/lib/pq"
@@ -22,7 +22,7 @@ func main() {
 	}
 
 	store := db.NewStore(conn)
-	server, err := api.NewServer(config, store)
+	server, err := handler.NewServer(config, store)
 	if err != nil {
 		log.Fatal("cannot create server: ", err)
 	}
