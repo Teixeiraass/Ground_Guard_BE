@@ -3,6 +3,8 @@ package handler
 import (
 	"github.com/Teixeiraass/ground_guard_be/internal/middleware"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func (server *Server) setupRouter() *gin.Engine {
@@ -11,6 +13,7 @@ func (server *Server) setupRouter() *gin.Engine {
 	router.POST("/users", server.CreateUser)
 	router.POST("/users/login", server.LoginUser)
 	router.POST("/tokens/refresh", server.RenewAccessToken)
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	authRoutes := router.Group("/").Use(middleware.Auth(server.tokenMaker))
 

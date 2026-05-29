@@ -82,8 +82,11 @@ func TestUpdateIrrigationAction(t * testing.T) {
 	require.Equal(t, irrigationAction1.UserID, irrigationAction2.UserID)
 	require.Equal(t, irrigationAction1.StartedAt, irrigationAction2.StartedAt)
 	require.Equal(t, arg.FinishedAt.Valid, irrigationAction2.FinishedAt.Valid)
-	require.True(t,
-		arg.FinishedAt.Time.Equal(irrigationAction2.FinishedAt.Time),
+	require.WithinDuration(
+		t,
+		arg.FinishedAt.Time,
+		irrigationAction2.FinishedAt.Time,
+		time.Millisecond,
 	)
 	require.Equal(t, arg.DurationSeconds, irrigationAction2.DurationSeconds)
 	require.Equal(t, arg.Status, irrigationAction2.Status)

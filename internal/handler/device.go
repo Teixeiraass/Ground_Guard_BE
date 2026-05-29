@@ -15,6 +15,20 @@ import (
 	"github.com/lib/pq"
 )
 
+// CreateDevice
+// @Summary      Cadastrar novo dispositivo
+// @Description  Registra um novo dispositivo no sistema e gera seu QR Code de pareamento.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request  body      dto.CreateDeviceRequest  true  "Dados do dispositivo"
+// @Success      201      {object}  dto.DeviceResponse
+// @Failure      400      {object}  map[string]interface{} "Bad Request"
+// @Failure      401      {object}  map[string]interface{} "Unauthorized"
+// @Failure      403      {object}  map[string]interface{} "Forbidden (Unique Violation)"
+// @Failure      500      {object}  map[string]interface{} "Internal Server Error"
+// @Router       /devices [post]
 func (server *Server) CreateDevice(ctx *gin.Context) {
 	var req dto.CreateDeviceRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -62,6 +76,20 @@ func (server *Server) CreateDevice(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, dto.NewDeviceResponse(device))
 }
 
+// GetDevice
+// @Summary      Obter detalhes de um dispositivo
+// @Description  Retorna as informações de um dispositivo específico cadastrado pelo UUID, garantindo que pertença ao usuário autenticado.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        uuid     path      string  true  "UUID do Dispositivo"
+// @Success      200      {object}  dto.DeviceResponse
+// @Failure      400      {object}  map[string]interface{} "Bad Request (UUID inválido)"
+// @Failure      401      {object}  map[string]interface{} "Unauthorized (Não pertence ao usuário)"
+// @Failure      404      {object}  map[string]interface{} "Not Found"
+// @Failure      500      {object}  map[string]interface{} "Internal Server Error"
+// @Router       /devices/{uuid} [get]
 func (server *Server) GetDevice(ctx *gin.Context) {
 	var req dto.GetDeviceRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -93,9 +121,23 @@ func (server *Server) GetDevice(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, device)
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(device))
 }
 
+// ListDevice
+// @Summary      Listar dispositivos do usuário
+// @Description  Retorna uma lista paginada de todos os dispositivos associados ao usuário autenticado.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page_id    query     int  true  "Número da página (mínimo 1)"
+// @Param        page_size  query     int  true  "Quantidade de itens por página (5 a 10)"
+// @Success      200        {array}   dto.DeviceResponse
+// @Failure      400        {object}  map[string]interface{} "Bad Request (Parâmetros de paginação inválidos)"
+// @Failure      401        {object}  map[string]interface{} "Unauthorized"
+// @Failure      500        {object}  map[string]interface{} "Internal Server Error"
+// @Router       /devices [get]
 func (server *Server) ListDevice(ctx *gin.Context) {
 	var req dto.ListDeviceRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -119,5 +161,11 @@ func (server *Server) ListDevice(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, devices)
+	rsp := []dto.DeviceResponse{} 
+	
+	for _, device := range devices {
+		rsp = append(rsp, dto.NewDeviceResponse(device))
+	}
+
+	ctx.JSON(http.StatusOK, rsp)
 }

@@ -9,8 +9,19 @@ import (
 	"github.com/Teixeiraass/ground_guard_be/util"
 
 	_ "github.com/lib/pq"
+
+	_ "github.com/Teixeiraass/ground_guard_be/docs"
 )
 
+// @title			Ground Guard API
+// @version		1.0
+// @description	API do projeto ground guard automação de jardim 
+// @host			localhost:8080
+// @BasePath		/
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and your PASETO token.
 func main() {
 	config, err := util.LoadConfig(".")
 	if err != nil {

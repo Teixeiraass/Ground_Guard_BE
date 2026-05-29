@@ -14,6 +14,19 @@ import (
 	"github.com/lib/pq"
 )
 
+
+// CreateUser
+// @Summary      Criar um novo usuário
+// @Description  Registra um novo usuário no aplicativo ground guard
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.CreateUserRequest  true  "Dados de criação do usuário"
+// @Success      201      {object}  dto.UserResponse
+// @Failure      400      {object}  map[string]interface{} "Bad Request"
+// @Failure      403      {object}  map[string]interface{} "Forbidden (e.g., e-mail ou username já existe)"
+// @Failure      500      {object}  map[string]interface{} "Internal Server Error"
+// @Router       /users [post]
 func (server *Server) CreateUser(ctx *gin.Context) {
 	var req dto.CreateUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -50,6 +63,18 @@ func (server *Server) CreateUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, dto.NewUserResponse(user))
 }
 
+
+// GetUser
+// @Summary      Obter perfil do usuário logado
+// @Description  Retorna as informações do usuário autenticado a partir do token
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200      {object}  dto.UserResponse
+// @Failure      404      {object}  map[string]interface{} "User Not Found"
+// @Failure      500      {object}  map[string]interface{} "Internal Server Error"
+// @Router       /users/me [get]
 func (server *Server) GetUser(ctx *gin.Context) {
 	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 
@@ -67,6 +92,19 @@ func (server *Server) GetUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, dto.NewUserResponse(user))
 }
 
+// LoginUser
+// @Summary      Login de usuário
+// @Description  Autentica um usuário e retorna os tokens de acesso e refresh
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.LoginUserRequest  true  "Credenciais de login (email e senha)"
+// @Success      200      {object}  dto.LoginUserResponse
+// @Failure      400      {object}  map[string]interface{} "Bad Request"
+// @Failure      401      {object}  map[string]interface{} "Unauthorized (Senha incorreta)"
+// @Failure      404      {object}  map[string]interface{} "User Not Found (Email não registrado)"
+// @Failure      500      {object}  map[string]interface{} "Internal Server Error"
+// @Router       /users/login [post]
 func (server *Server) LoginUser(ctx *gin.Context) {
 	var req dto.LoginUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -121,6 +159,18 @@ func (server *Server) LoginUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, rsp)
 }
 
+// RenewAccessToken
+// @Summary      Renovar token de acesso
+// @Description  Gera um novo token de acesso usando um refresh token válido
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.RenewAccessTokenRequest  true  "Refresh Token"
+// @Success      200      {object}  dto.RenewAccessTokenResponse
+// @Failure      400      {object}  map[string]interface{} "Bad Request"
+// @Failure      401      {object}  map[string]interface{} "Unauthorized (Token inválido ou expirado)"
+// @Failure      500      {object}  map[string]interface{} "Internal Server Error"
+// @Router       /tokens/refresh [post]
 func (server *Server) RenewAccessToken(ctx *gin.Context) {
 	var req dto.RenewAccessTokenRequest
 
