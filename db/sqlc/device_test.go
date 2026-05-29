@@ -12,6 +12,8 @@ import (
 
 func createRandomDevice(t *testing.T) Device {
 	user := createRandomUser(t)
+	qrToken, err := util.GenerateQRToken(8)
+	require.NoError(t, err)
 
 	arg := CreateDeviceParams {
 		DeviceUid: util.RandomString(8),
@@ -21,6 +23,7 @@ func createRandomDevice(t *testing.T) Device {
 			Int64: user.ID,
 			Valid: true,
 		},
+		QrToken: qrToken,
 	}
 
 	device, err := testQueries.CreateDevice(context.Background(), arg)
@@ -56,6 +59,8 @@ func TestGetDevice(t *testing.T) {
 	require.Equal(t, device1.LastSeen, device2.LastSeen)
 	require.Equal(t, device1.Status, device2.Status)
 	require.Equal(t, device1.UserID, device2.UserID)
+	require.Equal(t, device1.QrToken, device2.QrToken)
+	require.Equal(t, device1.QrCodeFile, device2.QrCodeFile)
 	require.WithinDuration(t, device1.CreatedAt, device2.CreatedAt, time.Second)
 }
 
@@ -82,6 +87,8 @@ func TestUpdateDevice(t *testing.T) {
 	require.Equal(t, device1.LastSeen, device2.LastSeen)
 	require.Equal(t, arg.Status, device2.Status)
 	require.Equal(t, device1.UserID, device2.UserID)
+	require.Equal(t, device1.QrToken, device2.QrToken)
+	require.Equal(t, device1.QrCodeFile, device2.QrCodeFile)
 	require.WithinDuration(t, device1.CreatedAt, device2.CreatedAt, time.Second)
 }
 

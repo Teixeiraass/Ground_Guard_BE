@@ -9,9 +9,11 @@ INSERT INTO devices (
   wifi_ssid,
   last_seen,
   status,
-  user_id
+  user_id,
+  qr_token,
+  qr_code_file
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 ) RETURNING *;
 
 -- name: GetDevice :one

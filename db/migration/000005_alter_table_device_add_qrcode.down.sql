@@ -1,0 +1,3 @@
+ALTER TABLE "devices"
+ALTER COLUMN qr_token DROP NOT NULL,
+ALTER COLUMN qr_code_file DROP NOT NULL;

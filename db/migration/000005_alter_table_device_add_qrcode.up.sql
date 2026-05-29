@@ -1,0 +1,3 @@
+ALTER TABLE "devices"
+ADD COLUMN qr_token VARCHAR(64) UNIQUE NOT NULL,
+ADD COLUMN qr_code_file VARCHAR(255);

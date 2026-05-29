@@ -26,6 +26,8 @@ type Device struct {
 	Status          string         `json:"status"`
 	UserID          sql.NullInt64  `json:"user_id"`
 	CreatedAt       time.Time      `json:"created_at"`
+	QrToken         string         `json:"qr_token"`
+	QrCodeFile      sql.NullString `json:"qr_code_file"`
 }
 
 type IrrigationAction struct {

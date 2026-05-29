@@ -25,10 +25,12 @@ INSERT INTO devices (
   wifi_ssid,
   last_seen,
   status,
-  user_id
+  user_id,
+  qr_token,
+  qr_code_file
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-) RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+) RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file
 `
 
 type CreateDeviceParams struct {
@@ -42,6 +44,8 @@ type CreateDeviceParams struct {
 	LastSeen        sql.NullTime   `json:"last_seen"`
 	Status          string         `json:"status"`
 	UserID          sql.NullInt64  `json:"user_id"`
+	QrToken         string         `json:"qr_token"`
+	QrCodeFile      sql.NullString `json:"qr_code_file"`
 }
 
 func (q *Queries) CreateDevice(ctx context.Context, arg CreateDeviceParams) (Device, error) {
@@ -56,6 +60,8 @@ func (q *Queries) CreateDevice(ctx context.Context, arg CreateDeviceParams) (Dev
 		arg.LastSeen,
 		arg.Status,
 		arg.UserID,
+		arg.QrToken,
+		arg.QrCodeFile,
 	)
 	var i Device
 	err := row.Scan(
@@ -72,12 +78,14 @@ func (q *Queries) CreateDevice(ctx context.Context, arg CreateDeviceParams) (Dev
 		&i.Status,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
 	)
 	return i, err
 }
 
 const getDevice = `-- name: GetDevice :one
-SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at FROM devices
+SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file FROM devices
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -98,12 +106,14 @@ func (q *Queries) GetDevice(ctx context.Context, argUuid uuid.UUID) (Device, err
 		&i.Status,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
 	)
 	return i, err
 }
 
 const getDeviceForUpdate = `-- name: GetDeviceForUpdate :one
-SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at FROM devices
+SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file FROM devices
 WHERE uuid = $1 LIMIT 1
 FOR NO KEY UPDATE
 `
@@ -125,12 +135,14 @@ func (q *Queries) GetDeviceForUpdate(ctx context.Context, argUuid uuid.UUID) (De
 		&i.Status,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
 	)
 	return i, err
 }
 
 const listDevices = `-- name: ListDevices :many
-SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at FROM devices
+SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file FROM devices
 WHERE user_id = $1
 ORDER BY id
 LIMIT $2
@@ -166,6 +178,8 @@ func (q *Queries) ListDevices(ctx context.Context, arg ListDevicesParams) ([]Dev
 			&i.Status,
 			&i.UserID,
 			&i.CreatedAt,
+			&i.QrToken,
+			&i.QrCodeFile,
 		); err != nil {
 			return nil, err
 		}
@@ -184,7 +198,7 @@ const updateDevices = `-- name: UpdateDevices :one
 UPDATE devices
 set status = $2
 WHERE uuid = $1
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file
 `
 
 type UpdateDevicesParams struct {
@@ -209,6 +223,8 @@ func (q *Queries) UpdateDevices(ctx context.Context, arg UpdateDevicesParams) (D
 		&i.Status,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
 	)
 	return i, err
 }

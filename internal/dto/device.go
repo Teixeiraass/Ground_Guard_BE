@@ -14,7 +14,7 @@ type CreateDeviceRequest struct {
 	FirmwareBuild   string `json:"firmware_build" binding:"omitempty"`
 	IpAddress       string `json:"ip_address" binding:"omitempty,ip"`
 	WifiSsid        string `json:"wifi_ssid" binding:"omitempty"`
-	Status          string `json:"status" binding:"required,oneof=ativo inativo"`
+	Status          string `json:"status" binding:"required,oneof=ATIVO INATIVO"`
 }
 
 type DeviceResponse struct {
@@ -28,7 +28,7 @@ type DeviceResponse struct {
 	WifiSsid        *string      `json:"wifi_ssid,omitempty"`
 	LastSeen        *time.Time   `json:"last_seen"`
 	Status          string       `json:"status"`
-	User            UserResponse `json:"user"`
+	User            *int64 		 `json:"user,omitempty"`
 }
 
 func NewDeviceResponse(device db.Device) DeviceResponse {
@@ -53,6 +53,11 @@ func NewDeviceResponse(device db.Device) DeviceResponse {
 		lastSeen = &device.LastSeen.Time
 	}
 
+	var userId *int64
+	if device.UserID.Valid {
+		userId = &device.UserID.Int64
+	}
+
 	return DeviceResponse{
 		Uuid:            device.Uuid,
 		DeviceUid:       device.DeviceUid,
@@ -64,6 +69,7 @@ func NewDeviceResponse(device db.Device) DeviceResponse {
 		WifiSsid:        wifiSsid,
 		LastSeen:        lastSeen,
 		Status:          device.Status,
+		User: 			 userId,
 	}
 }
 

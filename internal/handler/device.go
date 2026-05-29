@@ -22,14 +22,28 @@ func (server *Server) CreateDevice(ctx *gin.Context) {
 		return
 	}
 
+	qrToken, err := util.GenerateQRToken(12)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	qrFileName, err := util.GenerateQRCodeImage(qrToken)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	arg := db.CreateDeviceParams{
 		DeviceUid:       req.DeviceUid,
 		Name:            req.Name,
-		FirmwareVersion: req.FirmwareBuild,
+		FirmwareVersion: req.FirmwareVersion,
 		FirmwareBuild:   util.ToNullString(req.FirmwareBuild),
 		IpAddress:       util.ToInet(req.IpAddress),
 		WifiSsid:        util.ToNullString(req.WifiSsid),
 		Status:          req.Status,
+		QrToken:         qrToken,
+		QrCodeFile:      util.ToNullString(qrFileName),
 	}
 
 	device, err := server.store.CreateDevice(ctx, arg)
