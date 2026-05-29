@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 
 	mockdb "github.com/Teixeiraass/ground_guard_be/db/mock"
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
@@ -125,12 +126,26 @@ func randomDevice(userID int64) db.Device {
 	}
 }
 
-func requireBodyMatchDevice(t *testing.T, body *bytes.Buffer, device db.Device) {
-	data, err := io.ReadAll(body)
-	require.NoError(t, err)
+func requireBodyMatchDevice(
+    t *testing.T,
+    body *bytes.Buffer,
+    device db.Device,
+) {
+    data, err := io.ReadAll(body)
+    require.NoError(t, err)
 
-	var gotDevice db.Device
-	err = json.Unmarshal(data, &gotDevice)
-	require.NoError(t, err)
-	require.Equal(t, device, gotDevice)
+    var got dto.DeviceResponse
+    err = json.Unmarshal(data, &got)
+    require.NoError(t, err)
+
+    require.Equal(t, device.Uuid, got.Uuid)
+    require.Equal(t, device.DeviceUid, got.DeviceUid)
+    require.Equal(t, device.Name, got.Name)
+    require.Equal(t, device.FirmwareVersion, got.FirmwareVersion)
+    require.Equal(t, device.Status, got.Status)
+
+    if device.UserID.Valid {
+        require.NotNil(t, got.User)
+        require.Equal(t, device.UserID.Int64, *got.User)
+    }
 }
