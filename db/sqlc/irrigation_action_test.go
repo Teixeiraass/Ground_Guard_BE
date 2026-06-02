@@ -117,5 +117,4 @@ func TestListIrrigationAction(t *testing.T) {
 		require.NotEmpty(t, irrigationAction)
 		require.Equal(t, irrigationAction.UserID, irrigationAction.UserID)
 	}
-
 }

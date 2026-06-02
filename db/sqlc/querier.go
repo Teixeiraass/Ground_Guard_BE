@@ -20,10 +20,13 @@ type Querier interface {
 	GetIrrigationAction(ctx context.Context, argUuid uuid.UUID) (IrrigationAction, error)
 	GetUser(ctx context.Context, argUuid uuid.UUID) (User, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
+	LinkDeviceToUserByQrToken(ctx context.Context, arg LinkDeviceToUserByQrTokenParams) (Device, error)
 	ListDevices(ctx context.Context, arg ListDevicesParams) ([]Device, error)
 	ListIrrigationAction(ctx context.Context, arg ListIrrigationActionParams) ([]IrrigationAction, error)
+	UnlinkDeviceFromUser(ctx context.Context, arg UnlinkDeviceFromUserParams) (Device, error)
 	UpdateDevices(ctx context.Context, arg UpdateDevicesParams) (Device, error)
 	UpdateIrrigationAction(ctx context.Context, arg UpdateIrrigationActionParams) (IrrigationAction, error)
+	UpdateNameDevice(ctx context.Context, arg UpdateNameDeviceParams) (Device, error)
 }
 
 var _ Querier = (*Queries)(nil)

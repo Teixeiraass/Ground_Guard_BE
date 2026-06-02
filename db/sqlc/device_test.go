@@ -92,6 +92,38 @@ func TestUpdateDevice(t *testing.T) {
 	require.WithinDuration(t, device1.CreatedAt, device2.CreatedAt, time.Second)
 }
 
+func TestUpdateLinkDeviceToUserByQrToken(t *testing.T) {
+	device1 := createRandomDevice(t)
+	user := createRandomUser(t)
+
+	arg := LinkDeviceToUserByQrTokenParams {
+		QrToken: device1.QrToken,
+		UserID: sql.NullInt64{
+			Int64: user.ID,
+			Valid: true,
+		},
+	}
+
+	device2, err := testQueries.LinkDeviceToUserByQrToken(context.Background(), arg)
+	require.NoError(t, err)
+	require.NotEmpty(t, device2)
+	
+	require.Equal(t, device1.ID, device2.ID)
+	require.Equal(t, device1.Uuid, device2.Uuid)
+	require.Equal(t, device1.Name, device2.Name)
+	require.Equal(t, device1.FirmwareVersion, device2.FirmwareVersion)
+	require.Equal(t, device1.FirmwareBuild, device2.FirmwareBuild)
+	require.Equal(t, device1.LastUpdate, device2.LastUpdate)
+	require.Equal(t, device1.IpAddress, device2.IpAddress)
+	require.Equal(t, device1.WifiSsid, device2.WifiSsid)
+	require.Equal(t, device1.LastSeen, device2.LastSeen)
+	require.Equal(t, device1.Status, device2.Status)
+	require.Equal(t, arg.UserID, device2.UserID)
+	require.Equal(t, device1.QrToken, device2.QrToken)
+	require.Equal(t, device1.QrCodeFile, device2.QrCodeFile)
+	require.WithinDuration(t, device1.CreatedAt, device2.CreatedAt, time.Second)
+}
+
 func TestListDevices(t *testing.T) {
 	var lastDevice Device
 	for i := 0; i < 5; i++ {

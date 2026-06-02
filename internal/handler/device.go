@@ -169,3 +169,134 @@ func (server *Server) ListDevice(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, rsp)
 }
+
+
+// LinkDeviceToUserByQrToken
+// @Summary      Vincular dispositivo ao usuário
+// @Description  Associa um dispositivo à conta do usuário autenticado lendo o QR Token passado na URL.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        qr_token   path      string  true  "Token do QR Code do dispositivo"
+// @Success      200        {object}  dto.DeviceResponse
+// @Failure      401        {object}  map[string]interface{} "Unauthorized (Usuário não autenticado)"
+// @Failure      404        {object}  map[string]interface{} "Not Found (QR Token inválido)"
+// @Failure      500        {object}  map[string]interface{} "Internal Server Error"
+// @Router       /devices/link/{qr_token} [put]
+func (server *Server) LinkDeviceToUserByQrToken(ctx *gin.Context) {
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+
+	qrToken := ctx.Param("qr_token")
+
+	arg := db.LinkDeviceToUserByQrTokenParams{
+		QrToken: qrToken,
+		UserID: sql.NullInt64{
+			Int64: authPayload.UserID,
+			Valid: true,
+		},
+	}
+
+	device, err := server.store.LinkDeviceToUserByQrToken(ctx, arg)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(device))
+}
+
+// UnlinkDeviceFromUser
+// @Summary      Desvincular dispositivo do usuário
+// @Description  Remove a associação de um dispositivo com a conta do usuário autenticado.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        uuid   path      string  true  "UUID do Dispositivo"
+// @Success      200    {object}  dto.DeviceResponse
+// @Failure      400    {object}  map[string]interface{} "Bad Request (UUID inválido)"
+// @Failure      401    {object}  map[string]interface{} "Unauthorized (Usuário não autenticado)"
+// @Failure      404    {object}  map[string]interface{} "Not Found (Dispositivo não encontrado ou não pertence a você)"
+// @Failure      500    {object}  map[string]interface{} "Internal Server Error"
+// @Router       /devices/unlink/{uuid} [put]
+func (server *Server) UnlinkDeviceFromUser(ctx *gin.Context) {
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+
+    uuidStr := ctx.Param("uuid")
+    
+    deviceUUID, err := uuid.Parse(uuidStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, errorResponse(err))
+        return
+    }
+
+	arg := db.UnlinkDeviceFromUserParams{
+		Uuid: deviceUUID,
+		UserID: sql.NullInt64{
+			Int64: authPayload.UserID,
+			Valid: true,
+		},
+	}
+
+	device, err := server.store.UnlinkDeviceFromUser(ctx, arg)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(device))
+}
+
+
+// UpdateNameDevice
+// @Summary      Atualizar nome do dispositivo
+// @Description  Modifica o nome de um dispositivo cadastrado pelo UUID, garantindo que pertença ao usuário autenticado.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        uuid   path      string  true  "UUID do Dispositivo"
+// @Param        request  body      dto.UpdateNameDeviceRequest  true  "Novo nome do dispositivo"
+// @Success      200      {object}  dto.DeviceResponse
+// @Failure      400      {object}  map[string]interface{} "Bad Request (UUID inválido)"
+// @Failure      401      {object}  map[string]interface{} "Unauthorized (Usuário não autenticado)"
+// @Failure      404      {object}  map[string]interface{} "Not Found (Dispositivo não encontrado ou não pertence a você)"
+// @Failure      500      {object}  map[string]interface{} "Internal Server Error"
+// @Router       /devices/name/{uuid} [put]
+func (server *Server) UpdateNameDevice(ctx *gin.Context) {
+	var req dto.UpdateNameDeviceRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+    uuidStr := ctx.Param("uuid")
+    
+    deviceUUID, err := uuid.Parse(uuidStr)
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, errorResponse(err))
+        return
+    }
+
+	arg := db.UpdateNameDeviceParams{
+		Uuid: deviceUUID,
+		Name: req.Name,
+	}
+
+	device, err := server.store.UpdateNameDevice(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(device))
+}

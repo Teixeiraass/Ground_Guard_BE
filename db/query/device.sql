@@ -37,3 +37,21 @@ UPDATE devices
 set status = $2
 WHERE uuid = $1
 RETURNING *;
+
+-- name: LinkDeviceToUserByQrToken :one
+UPDATE devices
+SET user_id = $2
+WHERE qr_token = $1 AND user_id IS NULL
+RETURNING *;
+
+-- name: UnlinkDeviceFromUser :one
+UPDATE devices
+SET user_id = NULL
+WHERE uuid = $1 AND user_id = $2
+RETURNING *;
+
+-- name: UpdateNameDevice :one
+UPDATE devices
+set name = $2
+WHERE uuid = $1
+RETURNING *;

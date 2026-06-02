@@ -170,6 +170,21 @@ func (mr *MockStoreMockRecorder) GetUserByEmail(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmail", reflect.TypeOf((*MockStore)(nil).GetUserByEmail), arg0, arg1)
 }
 
+// LinkDeviceToUserByQrToken mocks base method.
+func (m *MockStore) LinkDeviceToUserByQrToken(arg0 context.Context, arg1 db.LinkDeviceToUserByQrTokenParams) (db.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LinkDeviceToUserByQrToken", arg0, arg1)
+	ret0, _ := ret[0].(db.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LinkDeviceToUserByQrToken indicates an expected call of LinkDeviceToUserByQrToken.
+func (mr *MockStoreMockRecorder) LinkDeviceToUserByQrToken(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkDeviceToUserByQrToken", reflect.TypeOf((*MockStore)(nil).LinkDeviceToUserByQrToken), arg0, arg1)
+}
+
 // ListDevices mocks base method.
 func (m *MockStore) ListDevices(arg0 context.Context, arg1 db.ListDevicesParams) ([]db.Device, error) {
 	m.ctrl.T.Helper()
@@ -200,6 +215,21 @@ func (mr *MockStoreMockRecorder) ListIrrigationAction(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIrrigationAction", reflect.TypeOf((*MockStore)(nil).ListIrrigationAction), arg0, arg1)
 }
 
+// UnlinkDeviceFromUser mocks base method.
+func (m *MockStore) UnlinkDeviceFromUser(arg0 context.Context, arg1 db.UnlinkDeviceFromUserParams) (db.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnlinkDeviceFromUser", arg0, arg1)
+	ret0, _ := ret[0].(db.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UnlinkDeviceFromUser indicates an expected call of UnlinkDeviceFromUser.
+func (mr *MockStoreMockRecorder) UnlinkDeviceFromUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkDeviceFromUser", reflect.TypeOf((*MockStore)(nil).UnlinkDeviceFromUser), arg0, arg1)
+}
+
 // UpdateDevices mocks base method.
 func (m *MockStore) UpdateDevices(arg0 context.Context, arg1 db.UpdateDevicesParams) (db.Device, error) {
 	m.ctrl.T.Helper()
@@ -228,4 +258,19 @@ func (m *MockStore) UpdateIrrigationAction(arg0 context.Context, arg1 db.UpdateI
 func (mr *MockStoreMockRecorder) UpdateIrrigationAction(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIrrigationAction", reflect.TypeOf((*MockStore)(nil).UpdateIrrigationAction), arg0, arg1)
+}
+
+// UpdateNameDevice mocks base method.
+func (m *MockStore) UpdateNameDevice(arg0 context.Context, arg1 db.UpdateNameDeviceParams) (db.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateNameDevice", arg0, arg1)
+	ret0, _ := ret[0].(db.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateNameDevice indicates an expected call of UpdateNameDevice.
+func (mr *MockStoreMockRecorder) UpdateNameDevice(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNameDevice", reflect.TypeOf((*MockStore)(nil).UpdateNameDevice), arg0, arg1)
 }

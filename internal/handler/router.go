@@ -22,6 +22,9 @@ func (server *Server) setupRouter() *gin.Engine {
 	authRoutes.POST("/devices", server.CreateDevice)
 	authRoutes.GET("/devices/:uuid", server.GetDevice)
 	authRoutes.GET("/devices", server.ListDevice)
+	authRoutes.PUT("/devices/link/:qr_token", server.LinkDeviceToUserByQrToken)
+	authRoutes.PUT("/devices/unlink/:uuid", server.UnlinkDeviceFromUser)
+	authRoutes.PUT("/devices/name/:uuid", server.UpdateNameDevice)
 
 	return router
 }

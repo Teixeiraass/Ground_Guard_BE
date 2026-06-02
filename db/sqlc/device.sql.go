@@ -141,6 +141,41 @@ func (q *Queries) GetDeviceForUpdate(ctx context.Context, argUuid uuid.UUID) (De
 	return i, err
 }
 
+const linkDeviceToUserByQrToken = `-- name: LinkDeviceToUserByQrToken :one
+UPDATE devices
+SET user_id = $2
+WHERE qr_token = $1 AND user_id IS NULL
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file
+`
+
+type LinkDeviceToUserByQrTokenParams struct {
+	QrToken string        `json:"qr_token"`
+	UserID  sql.NullInt64 `json:"user_id"`
+}
+
+func (q *Queries) LinkDeviceToUserByQrToken(ctx context.Context, arg LinkDeviceToUserByQrTokenParams) (Device, error) {
+	row := q.db.QueryRowContext(ctx, linkDeviceToUserByQrToken, arg.QrToken, arg.UserID)
+	var i Device
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.DeviceUid,
+		&i.Name,
+		&i.FirmwareVersion,
+		&i.FirmwareBuild,
+		&i.LastUpdate,
+		&i.IpAddress,
+		&i.WifiSsid,
+		&i.LastSeen,
+		&i.Status,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
+	)
+	return i, err
+}
+
 const listDevices = `-- name: ListDevices :many
 SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file FROM devices
 WHERE user_id = $1
@@ -194,6 +229,41 @@ func (q *Queries) ListDevices(ctx context.Context, arg ListDevicesParams) ([]Dev
 	return items, nil
 }
 
+const unlinkDeviceFromUser = `-- name: UnlinkDeviceFromUser :one
+UPDATE devices
+SET user_id = NULL
+WHERE uuid = $1 AND user_id = $2
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file
+`
+
+type UnlinkDeviceFromUserParams struct {
+	Uuid   uuid.UUID     `json:"uuid"`
+	UserID sql.NullInt64 `json:"user_id"`
+}
+
+func (q *Queries) UnlinkDeviceFromUser(ctx context.Context, arg UnlinkDeviceFromUserParams) (Device, error) {
+	row := q.db.QueryRowContext(ctx, unlinkDeviceFromUser, arg.Uuid, arg.UserID)
+	var i Device
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.DeviceUid,
+		&i.Name,
+		&i.FirmwareVersion,
+		&i.FirmwareBuild,
+		&i.LastUpdate,
+		&i.IpAddress,
+		&i.WifiSsid,
+		&i.LastSeen,
+		&i.Status,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
+	)
+	return i, err
+}
+
 const updateDevices = `-- name: UpdateDevices :one
 UPDATE devices
 set status = $2
@@ -208,6 +278,41 @@ type UpdateDevicesParams struct {
 
 func (q *Queries) UpdateDevices(ctx context.Context, arg UpdateDevicesParams) (Device, error) {
 	row := q.db.QueryRowContext(ctx, updateDevices, arg.Uuid, arg.Status)
+	var i Device
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.DeviceUid,
+		&i.Name,
+		&i.FirmwareVersion,
+		&i.FirmwareBuild,
+		&i.LastUpdate,
+		&i.IpAddress,
+		&i.WifiSsid,
+		&i.LastSeen,
+		&i.Status,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
+	)
+	return i, err
+}
+
+const updateNameDevice = `-- name: UpdateNameDevice :one
+UPDATE devices
+set name = $2
+WHERE uuid = $1
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file
+`
+
+type UpdateNameDeviceParams struct {
+	Uuid uuid.UUID `json:"uuid"`
+	Name string    `json:"name"`
+}
+
+func (q *Queries) UpdateNameDevice(ctx context.Context, arg UpdateNameDeviceParams) (Device, error) {
+	row := q.db.QueryRowContext(ctx, updateNameDevice, arg.Uuid, arg.Name)
 	var i Device
 	err := row.Scan(
 		&i.ID,
