@@ -107,6 +107,13 @@ definitions:
     required:
     - name
     type: object
+  dto.UpdateUserNameRequest:
+    properties:
+      full_name:
+        type: string
+    required:
+    - full_name
+    type: object
   dto.UserResponse:
     properties:
       created_at:
@@ -533,6 +540,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Obter perfil do usuário logado
+      tags:
+      - users
+  /users/name/{uuid}:
+    put:
+      consumes:
+      - application/json
+      description: Atualiza o nome completo (full name) de um usuário específico utilizando
+        o seu UUID.
+      parameters:
+      - description: UUID do Usuário
+        format: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Dados para atualização do nome
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserNameRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Usuário atualizado com sucesso
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Requisição inválida (Payload JSON ou UUID incorreto)
+          schema:
+            type: object
+        "500":
+          description: Erro interno no servidor
+          schema:
+            type: object
+      summary: Atualiza o nome do usuário
       tags:
       - users
 securityDefinitions:

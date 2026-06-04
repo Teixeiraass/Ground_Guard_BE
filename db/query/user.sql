@@ -15,3 +15,9 @@ WHERE uuid = $1 LIMIT 1;
 -- name: GetUserByEmail :one
 SELECT * FROM users
 WHERE email = $1 LIMIT 1;
+
+-- name: UpdateUserName :one
+UPDATE users
+SET full_name = $2
+WHERE uuid = $1
+RETURNING *;

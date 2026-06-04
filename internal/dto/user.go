@@ -50,3 +50,7 @@ type RenewAccessTokenRequest struct {
 type RenewAccessTokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
+
+type UpdateUserNameRequest struct {
+	FullName string `json:"full_name" binding:"required"`
+}

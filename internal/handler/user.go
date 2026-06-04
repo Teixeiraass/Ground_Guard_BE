@@ -11,9 +11,9 @@ import (
 	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
-
 
 // CreateUser
 // @Summary      Criar um novo usuário
@@ -197,4 +197,45 @@ func (server *Server) RenewAccessToken(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, dto.RenewAccessTokenResponse{AccessToken: accessToken})
+}
+
+// UpdateUserName
+// @Summary      Atualiza o nome do usuário
+// @Description  Atualiza o nome completo (full name) de um usuário específico utilizando o seu UUID.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        uuid    path      string                     true  "UUID do Usuário" Format(uuid)
+// @Param        request body      dto.UpdateUserNameRequest  true  "Dados para atualização do nome"
+// @Success      200     {object}  dto.UserResponse           "Usuário atualizado com sucesso"
+// @Failure      400     {object}  object                     "Requisição inválida (Payload JSON ou UUID incorreto)"
+// @Failure      500     {object}  object                     "Erro interno no servidor"
+// @Router       /users/name/{uuid} [put]
+func (server *Server) UpdateUserName(ctx *gin.Context) {
+	var req dto.UpdateUserNameRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	uuidStr := ctx.Param("uuid")
+
+	userUUID, err := uuid.Parse(uuidStr)
+	if err != nil {
+        ctx.JSON(http.StatusBadRequest, errorResponse(err))
+        return
+    }
+
+	arg := db.UpdateUserNameParams{
+		Uuid: userUUID,
+		FullName: req.FullName,
+	}
+
+	user, err := server.store.UpdateUserName(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.NewUserResponse(user))
 }

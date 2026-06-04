@@ -18,6 +18,7 @@ func (server *Server) setupRouter() *gin.Engine {
 	authRoutes := router.Group("/").Use(middleware.Auth(server.tokenMaker))
 
 	authRoutes.GET("/users/me", server.GetUser)
+	authRoutes.PUT("/users/name/:uuid", server.UpdateUserName)
 
 	authRoutes.POST("/devices", server.CreateDevice)
 	authRoutes.GET("/devices/:uuid", server.GetDevice)

@@ -11,7 +11,6 @@ import (
 )
 
 func createRandomDevice(t *testing.T) Device {
-	user := createRandomUser(t)
 	qrToken, err := util.GenerateQRToken(8)
 	require.NoError(t, err)
 
@@ -19,10 +18,6 @@ func createRandomDevice(t *testing.T) Device {
 		DeviceUid: util.RandomString(8),
 		Name: util.RandomString(6),
 		FirmwareVersion: util.RandomFirwareVersion(),
-		UserID: sql.NullInt64 {
-			Int64: user.ID,
-			Valid: true,
-		},
 		QrToken: qrToken,
 	}
 
@@ -125,23 +120,40 @@ func TestUpdateLinkDeviceToUserByQrToken(t *testing.T) {
 }
 
 func TestListDevices(t *testing.T) {
-	var lastDevice Device
+	user := createRandomUser(t)
+
 	for i := 0; i < 5; i++ {
-		lastDevice = createRandomDevice(t)
+		device := createRandomDevice(t)
+
+		_, err := testQueries.LinkDeviceToUserByQrToken(
+			context.Background(),
+			LinkDeviceToUserByQrTokenParams{
+				QrToken: device.QrToken,
+				UserID: sql.NullInt64{
+					Int64: user.ID,
+					Valid: true,
+				},
+			},
+		)
+
+		require.NoError(t, err)
 	}
 
-	arg := ListDevicesParams {
-		UserID: lastDevice.UserID,
-		Limit: 5,
+	arg := ListDevicesParams{
+		UserID: sql.NullInt64{
+			Int64: user.ID,
+			Valid: true,
+		},
+		Limit:  5,
 		Offset: 0,
 	}
 
 	devices, err := testQueries.ListDevices(context.Background(), arg)
+
 	require.NoError(t, err)
-	require.NotEmpty(t, devices)
+	require.Len(t, devices, 5)
 
 	for _, device := range devices {
-		require.NotEmpty(t, device)
-		require.Equal(t, lastDevice.UserID, device.UserID)
+		require.Equal(t, user.ID, device.UserID.Int64)
 	}
 }
