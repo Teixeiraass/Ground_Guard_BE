@@ -1,7 +1,11 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"math/rand"
 	"strings"
 	"time"
@@ -59,4 +63,27 @@ func RandomStatus() string {
 
 func RandomUuid() uuid.UUID {
 	return uuid.New()
+}
+
+func RandomImage() ([]byte, error) {
+	img := image.NewRGBA(image.Rect(0, 0, 256, 256))
+
+	for y := 0; y < 256; y++ {
+		for x := 0; x < 256; x++ {
+			img.Set(x, y, color.RGBA{
+				R: uint8(rand.Intn(256)),
+				G: uint8(rand.Intn(256)),
+				B: uint8(rand.Intn(256)),
+				A: 255,
+			})
+		}
+	}
+
+	var buffer bytes.Buffer
+
+	if err := png.Encode(&buffer, img); err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
 }

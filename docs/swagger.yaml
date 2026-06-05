@@ -579,6 +579,45 @@ paths:
       summary: Atualiza o nome do usuário
       tags:
       - users
+  /users/profile-image:
+    put:
+      consumes:
+      - multipart/form-data
+      description: Faz o upload e salva uma nova imagem de perfil para o usuário autenticado
+        via Token
+      parameters:
+      - description: 'Arquivo da imagem de perfil (ex: PNG, JPG)'
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Usuário atualizado com sucesso
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Bad Request (Arquivo não enviado ou inválido)
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualiza a imagem de perfil
+      tags:
+      - users
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and your PASETO token.

@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -16,17 +17,19 @@ INSERT INTO users (
   username,
   hashed_password,
   full_name,
-  email
+  email,
+  profile_image
 ) VALUES (
-  $1, $2, $3, $4
-) RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at
+  $1, $2, $3, $4, $5
+) RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image
 `
 
 type CreateUserParams struct {
-	Username       string `json:"username"`
-	HashedPassword string `json:"hashed_password"`
-	FullName       string `json:"full_name"`
-	Email          string `json:"email"`
+	Username       string         `json:"username"`
+	HashedPassword string         `json:"hashed_password"`
+	FullName       string         `json:"full_name"`
+	Email          string         `json:"email"`
+	ProfileImage   sql.NullString `json:"profile_image"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -35,6 +38,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.HashedPassword,
 		arg.FullName,
 		arg.Email,
+		arg.ProfileImage,
 	)
 	var i User
 	err := row.Scan(
@@ -46,12 +50,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Email,
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
+		&i.ProfileImage,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at FROM users
+SELECT id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image FROM users
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -67,12 +72,13 @@ func (q *Queries) GetUser(ctx context.Context, argUuid uuid.UUID) (User, error) 
 		&i.Email,
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
+		&i.ProfileImage,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at FROM users
+SELECT id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image FROM users
 WHERE email = $1 LIMIT 1
 `
 
@@ -88,6 +94,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Email,
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
+		&i.ProfileImage,
 	)
 	return i, err
 }
@@ -96,7 +103,7 @@ const updateUserName = `-- name: UpdateUserName :one
 UPDATE users
 SET full_name = $2
 WHERE uuid = $1
-RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image
 `
 
 type UpdateUserNameParams struct {
@@ -116,6 +123,36 @@ func (q *Queries) UpdateUserName(ctx context.Context, arg UpdateUserNameParams) 
 		&i.Email,
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
+		&i.ProfileImage,
+	)
+	return i, err
+}
+
+const updateUserProfileImage = `-- name: UpdateUserProfileImage :one
+UPDATE users
+SET profile_image = $2
+WHERE uuid = $1
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image
+`
+
+type UpdateUserProfileImageParams struct {
+	Uuid         uuid.UUID      `json:"uuid"`
+	ProfileImage sql.NullString `json:"profile_image"`
+}
+
+func (q *Queries) UpdateUserProfileImage(ctx context.Context, arg UpdateUserProfileImageParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserProfileImage, arg.Uuid, arg.ProfileImage)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.ProfileImage,
 	)
 	return i, err
 }

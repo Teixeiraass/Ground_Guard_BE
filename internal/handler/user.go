@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"io"
 	"net/http"
 	"time"
 
@@ -239,3 +240,61 @@ func (server *Server) UpdateUserName(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, dto.NewUserResponse(user))
 }
+
+// UpdateProfileImage
+// @Summary      Atualiza a imagem de perfil
+// @Description  Faz o upload e salva uma nova imagem de perfil para o usuário autenticado via Token
+// @Tags         users
+// @Accept       multipart/form-data
+// @Produce      json
+// @Security     BearerAuth
+// @Param        image    formData  file      true  "Arquivo da imagem de perfil (ex: PNG, JPG)"
+// @Success      200      {object}  dto.UserResponse "Usuário atualizado com sucesso"
+// @Failure      400      {object}  map[string]interface{} "Bad Request (Arquivo não enviado ou inválido)"
+// @Failure      401      {object}  map[string]interface{} "Unauthorized"
+// @Failure      500      {object}  map[string]interface{} "Internal Server Error"
+// @Router       /users/profile-image [put]
+func (server *Server) UpdateProfileImage(ctx *gin.Context) {
+    payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+
+    file, err := ctx.FormFile("image")
+    if err != nil {
+        ctx.JSON(http.StatusBadRequest, errorResponse(err))
+        return
+    }
+
+    f, err := file.Open()
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+        return
+    }
+    defer f.Close()
+
+    imageData, err := io.ReadAll(f)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+        return
+    }
+
+    imagePath, err := util.SaveUserImage(imageData, payload.Username)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+        return
+    }
+
+    arg := db.UpdateUserProfileImageParams{
+        Uuid: payload.UserUUID,
+        ProfileImage: sql.NullString{
+            String: imagePath,
+            Valid:  true,
+        },
+    }
+
+    user, err := server.store.UpdateUserProfileImage(ctx, arg)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+        return
+    }
+
+    ctx.JSON(http.StatusOK, dto.NewUserResponse(user))
+} 

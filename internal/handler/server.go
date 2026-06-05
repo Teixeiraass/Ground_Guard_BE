@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
+	"github.com/Teixeiraass/ground_guard_be/internal/routes"
 	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,7 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 		tokenMaker: tokenMaker,
 	}
 
-	server.router = server.setupRouter()
+	server.router = routes.Setup(server.tokenMaker, server)
 
 	return server, nil
 }

@@ -28,6 +28,7 @@ type Querier interface {
 	UpdateIrrigationAction(ctx context.Context, arg UpdateIrrigationActionParams) (IrrigationAction, error)
 	UpdateNameDevice(ctx context.Context, arg UpdateNameDeviceParams) (Device, error)
 	UpdateUserName(ctx context.Context, arg UpdateUserNameParams) (User, error)
+	UpdateUserProfileImage(ctx context.Context, arg UpdateUserProfileImageParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)
