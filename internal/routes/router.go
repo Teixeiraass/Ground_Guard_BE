@@ -10,6 +10,8 @@ import (
 func Setup(tokenMaker token.Maker, handlers Handlers) *gin.Engine {
 	router := gin.Default()
 
+	router.Static("/uploads/profile", "./uploads/profile")
+
 	registerUserRoutes(router, handlers)
 	registerSwaggerRoutes(router)
 

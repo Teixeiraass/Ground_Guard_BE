@@ -17,18 +17,26 @@ type UserResponse struct {
 	Username          string    `json:"username"`
 	FullName          string    `json:"full_name"`
 	Email             string    `json:"email"`
+	UserImage         *string    `json:"user_image"`
 	PasswordChangedAt time.Time `json:"password_changed_at"`
 	CreatedAt         time.Time `json:"created_at"`
 }
 
 func NewUserResponse(user db.User) UserResponse {
-	return UserResponse{
-		Username:          user.Username,
-		FullName:          user.FullName,
-		Email:             user.Email,
-		PasswordChangedAt: user.PasswordChangedAt,
-		CreatedAt:         user.CreatedAt,
-	}
+	var imagePath *string
+    if user.ProfileImage.Valid && user.ProfileImage.String != "" {
+        path := user.ProfileImage.String
+        imagePath = &path 
+    }
+
+    return UserResponse{
+        Username:          user.Username,
+        FullName:          user.FullName,
+        Email:             user.Email,
+        UserImage:         imagePath, 
+        PasswordChangedAt: user.PasswordChangedAt,
+        CreatedAt:         user.CreatedAt,
+    }
 }
 
 type LoginUserRequest struct {
