@@ -87,3 +87,9 @@ func RandomImage() ([]byte, error) {
 
 	return buffer.Bytes(), nil
 }
+
+func RandomIrrigationMode() string {
+	irrigationMode := []string{"MANUAL", "INTELIGENTE"}
+
+	return irrigationMode[rand.Intn(len(irrigationMode))]
+}
