@@ -66,6 +66,21 @@ func (mr *MockStoreMockRecorder) CreateIrrigationAction(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIrrigationAction", reflect.TypeOf((*MockStore)(nil).CreateIrrigationAction), arg0, arg1)
 }
 
+// CreateIrrigationPreferences mocks base method.
+func (m *MockStore) CreateIrrigationPreferences(arg0 context.Context, arg1 db.CreateIrrigationPreferencesParams) (db.IrrigationPreference, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIrrigationPreferences", arg0, arg1)
+	ret0, _ := ret[0].(db.IrrigationPreference)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateIrrigationPreferences indicates an expected call of CreateIrrigationPreferences.
+func (mr *MockStoreMockRecorder) CreateIrrigationPreferences(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIrrigationPreferences", reflect.TypeOf((*MockStore)(nil).CreateIrrigationPreferences), arg0, arg1)
+}
+
 // CreateUser mocks base method.
 func (m *MockStore) CreateUser(arg0 context.Context, arg1 db.CreateUserParams) (db.User, error) {
 	m.ctrl.T.Helper()
@@ -138,6 +153,36 @@ func (m *MockStore) GetIrrigationAction(arg0 context.Context, arg1 uuid.UUID) (d
 func (mr *MockStoreMockRecorder) GetIrrigationAction(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIrrigationAction", reflect.TypeOf((*MockStore)(nil).GetIrrigationAction), arg0, arg1)
+}
+
+// GetIrrigationPreference mocks base method.
+func (m *MockStore) GetIrrigationPreference(arg0 context.Context, arg1 uuid.UUID) (db.IrrigationPreference, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIrrigationPreference", arg0, arg1)
+	ret0, _ := ret[0].(db.IrrigationPreference)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIrrigationPreference indicates an expected call of GetIrrigationPreference.
+func (mr *MockStoreMockRecorder) GetIrrigationPreference(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIrrigationPreference", reflect.TypeOf((*MockStore)(nil).GetIrrigationPreference), arg0, arg1)
+}
+
+// GetIrrigationPreferenceByDevice mocks base method.
+func (m *MockStore) GetIrrigationPreferenceByDevice(arg0 context.Context, arg1 int64) (db.IrrigationPreference, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIrrigationPreferenceByDevice", arg0, arg1)
+	ret0, _ := ret[0].(db.IrrigationPreference)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIrrigationPreferenceByDevice indicates an expected call of GetIrrigationPreferenceByDevice.
+func (mr *MockStoreMockRecorder) GetIrrigationPreferenceByDevice(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIrrigationPreferenceByDevice", reflect.TypeOf((*MockStore)(nil).GetIrrigationPreferenceByDevice), arg0, arg1)
 }
 
 // GetUser mocks base method.
@@ -213,6 +258,21 @@ func (m *MockStore) ListIrrigationAction(arg0 context.Context, arg1 db.ListIrrig
 func (mr *MockStoreMockRecorder) ListIrrigationAction(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIrrigationAction", reflect.TypeOf((*MockStore)(nil).ListIrrigationAction), arg0, arg1)
+}
+
+// ListIrrigationPreferences mocks base method.
+func (m *MockStore) ListIrrigationPreferences(arg0 context.Context, arg1 db.ListIrrigationPreferencesParams) ([]db.IrrigationPreference, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListIrrigationPreferences", arg0, arg1)
+	ret0, _ := ret[0].([]db.IrrigationPreference)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListIrrigationPreferences indicates an expected call of ListIrrigationPreferences.
+func (mr *MockStoreMockRecorder) ListIrrigationPreferences(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIrrigationPreferences", reflect.TypeOf((*MockStore)(nil).ListIrrigationPreferences), arg0, arg1)
 }
 
 // UnlinkDeviceFromUser mocks base method.
