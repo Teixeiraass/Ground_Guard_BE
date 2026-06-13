@@ -45,6 +45,31 @@ type IrrigationAction struct {
 	CreatedAt       time.Time      `json:"created_at"`
 }
 
+type IrrigationPreference struct {
+	ID                        int64        `json:"id"`
+	Uuid                      uuid.UUID    `json:"uuid"`
+	DeviceID                  int64        `json:"device_id"`
+	Enabled                   bool         `json:"enabled"`
+	IrrigationMode            string       `json:"irrigation_mode"`
+	MoistureThreshold         int32        `json:"moisture_threshold"`
+	DryTimeMinutes            int32        `json:"dry_time_minutes"`
+	IrrigationDurationSeconds int32        `json:"irrigation_duration_seconds"`
+	MaxIrrigationsPerDay      int32        `json:"max_irrigations_per_day"`
+	StartHour                 sql.NullTime `json:"start_hour"`
+	EndHour                   sql.NullTime `json:"end_hour"`
+	CreatedAt                 time.Time    `json:"created_at"`
+	UpdatedAt                 time.Time    `json:"updated_at"`
+}
+
+type IrrigationPreferencesHistory struct {
+	ID           int64                 `json:"id"`
+	PreferenceID int64                 `json:"preference_id"`
+	UserID       int64                 `json:"user_id"`
+	OldData      pqtype.NullRawMessage `json:"old_data"`
+	NewData      pqtype.NullRawMessage `json:"new_data"`
+	ChangedAt    time.Time             `json:"changed_at"`
+}
+
 type User struct {
 	ID                int64          `json:"id"`
 	Uuid              uuid.UUID      `json:"uuid"`
