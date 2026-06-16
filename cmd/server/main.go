@@ -13,15 +13,22 @@ import (
 	_ "github.com/Teixeiraass/ground_guard_be/docs"
 )
 
-// @title			Ground Guard API
-// @version		1.0
-// @description	API do projeto ground guard automação de jardim 
-// @host			localhost:8080
-// @BasePath		/
+// @title           Ground Guard API
+// @version         1.0.0
+// @description     API REST do Ground Guard, uma plataforma IoT para monitoramento e automação de jardins e plantas.
+// @description     Permite gerenciamento de dispositivos, preferências de irrigação, monitoramento ambiental e acionamento remoto de irrigação.
+// @description     Desenvolvido como TCC e preparado para evolução comercial.
+// @termsOfService  https://groundguard.com/terms
+// @contact.name    Guilherme Teixeira
+// @contact.email   contato@groundguard.com
+// @license.name    MIT
+// @host            localhost:8080
+// @BasePath        /api/v1
+// @schemes         http https
 // @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description Type "Bearer" followed by a space and your PASETO token.
+// @in              header
+// @name            Authorization
+// @description     Informe: Bearer {token}
 func main() {
 	config, err := util.LoadConfig(".")
 	if err != nil {

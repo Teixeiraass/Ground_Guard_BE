@@ -14,6 +14,7 @@ type Querier interface {
 	CreateDevice(ctx context.Context, arg CreateDeviceParams) (Device, error)
 	CreateIrrigationAction(ctx context.Context, arg CreateIrrigationActionParams) (IrrigationAction, error)
 	CreateIrrigationPreferences(ctx context.Context, arg CreateIrrigationPreferencesParams) (IrrigationPreference, error)
+	CreateIrrigationPreferencesHistory(ctx context.Context, arg CreateIrrigationPreferencesHistoryParams) (IrrigationPreferencesHistory, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteIrrigationAction(ctx context.Context, id int64) error
 	GetDevice(ctx context.Context, argUuid uuid.UUID) (Device, error)

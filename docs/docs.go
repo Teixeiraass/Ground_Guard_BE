@@ -9,7 +9,14 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "termsOfService": "https://groundguard.com/terms",
+        "contact": {
+            "name": "Guilherme Teixeira",
+            "email": "contato@groundguard.com"
+        },
+        "license": {
+            "name": "MIT"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -345,6 +352,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/devices/{device_id}/irrigation-preferences": {
+            "get": {
+                "description": "Retrieves all irrigation preferences associated with a specific device using the device's UUID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Irrigation Preferences"
+                ],
+                "summary": "Get irrigation preferences by Device UUID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Device UUID",
+                        "name": "device_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.IrrigationPreferenceResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid Device UUID format",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Device or preferences not found",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error - Database or server issues",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
         "/devices/{uuid}": {
             "get": {
                 "security": [
@@ -405,6 +466,109 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/irrigation-preferences": {
+            "post": {
+                "description": "Creates a new irrigation preference configuration for a specific device based on its UUID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Irrigation Preferences"
+                ],
+                "summary": "Create an irrigation preference",
+                "parameters": [
+                    {
+                        "description": "Irrigation Preference Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateIrrigationPreferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IrrigationPreferenceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid input or UUID",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Device not found",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error - Database or server issues",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/irrigation-preferences/{id}": {
+            "get": {
+                "description": "Retrieves the details of a specific irrigation preference using its ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Irrigation Preferences"
+                ],
+                "summary": "Get an irrigation preference by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Irrigation Preference ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IrrigationPreferenceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid ID format",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - Irrigation preference not found",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error - Database or server issues",
+                        "schema": {
+                            "type": "object"
                         }
                     }
                 }
@@ -773,6 +937,45 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CreateIrrigationPreferenceRequest": {
+            "type": "object",
+            "required": [
+                "device_uuid",
+                "dry_time_minutes",
+                "irrigation_mode",
+                "max_irrigation_per_day",
+                "moisture_threshold"
+            ],
+            "properties": {
+                "device_uuid": {
+                    "type": "string"
+                },
+                "dry_time_minutes": {
+                    "type": "integer"
+                },
+                "end_hour": {
+                    "type": "string"
+                },
+                "irrigation_mode": {
+                    "type": "string",
+                    "enum": [
+                        "INTELIGENTE",
+                        "MANUAL"
+                    ]
+                },
+                "max_irrigation_per_day": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "moisture_threshold": {
+                    "type": "integer",
+                    "maximum": 100
+                },
+                "start_hour": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.CreateUserRequest": {
             "type": "object",
             "required": [
@@ -831,6 +1034,41 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "wifi_ssid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.IrrigationPreferenceResponse": {
+            "type": "object",
+            "properties": {
+                "device_id": {
+                    "type": "integer"
+                },
+                "dry_time_minutes": {
+                    "type": "integer"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "end_hour": {
+                    "type": "string"
+                },
+                "irrigation_duration_seconds": {
+                    "type": "integer"
+                },
+                "irrigation_mode": {
+                    "type": "string"
+                },
+                "max_irrigations_per_day": {
+                    "type": "integer"
+                },
+                "moisture_threshold": {
+                    "type": "integer"
+                },
+                "start_hour": {
+                    "type": "string"
+                },
+                "uuid": {
                     "type": "string"
                 }
             }
@@ -924,6 +1162,9 @@ const docTemplate = `{
                 "password_changed_at": {
                     "type": "string"
                 },
+                "user_image": {
+                    "type": "string"
+                },
                 "username": {
                     "type": "string"
                 }
@@ -932,7 +1173,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and your PASETO token.",
+            "description": "Informe: Bearer {token}",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
@@ -942,12 +1183,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "1.0.0",
 	Host:             "localhost:8080",
-	BasePath:         "/",
-	Schemes:          []string{},
+	BasePath:         "/api/v1",
+	Schemes:          []string{"http", "https"},
 	Title:            "Ground Guard API",
-	Description:      "API do projeto ground guard automação de jardim",
+	Description:      "API REST do Ground Guard, uma plataforma IoT para monitoramento e automação de jardins e plantas.\nPermite gerenciamento de dispositivos, preferências de irrigação, monitoramento ambiental e acionamento remoto de irrigação.\nDesenvolvido como TCC e preparado para evolução comercial.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

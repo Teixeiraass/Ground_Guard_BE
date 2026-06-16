@@ -1,4 +1,4 @@
-basePath: /
+basePath: /api/v1
 definitions:
   dto.CreateDeviceRequest:
     properties:
@@ -23,6 +23,34 @@ definitions:
     - device_uid
     - name
     - status
+    type: object
+  dto.CreateIrrigationPreferenceRequest:
+    properties:
+      device_uuid:
+        type: string
+      dry_time_minutes:
+        type: integer
+      end_hour:
+        type: string
+      irrigation_mode:
+        enum:
+        - INTELIGENTE
+        - MANUAL
+        type: string
+      max_irrigation_per_day:
+        minimum: 1
+        type: integer
+      moisture_threshold:
+        maximum: 100
+        type: integer
+      start_hour:
+        type: string
+    required:
+    - device_uuid
+    - dry_time_minutes
+    - irrigation_mode
+    - max_irrigation_per_day
+    - moisture_threshold
     type: object
   dto.CreateUserRequest:
     properties:
@@ -64,6 +92,29 @@ definitions:
       uuid:
         type: string
       wifi_ssid:
+        type: string
+    type: object
+  dto.IrrigationPreferenceResponse:
+    properties:
+      device_id:
+        type: integer
+      dry_time_minutes:
+        type: integer
+      enabled:
+        type: boolean
+      end_hour:
+        type: string
+      irrigation_duration_seconds:
+        type: integer
+      irrigation_mode:
+        type: string
+      max_irrigations_per_day:
+        type: integer
+      moisture_threshold:
+        type: integer
+      start_hour:
+        type: string
+      uuid:
         type: string
     type: object
   dto.LoginUserRequest:
@@ -124,15 +175,25 @@ definitions:
         type: string
       password_changed_at:
         type: string
+      user_image:
+        type: string
       username:
         type: string
     type: object
 host: localhost:8080
 info:
-  contact: {}
-  description: API do projeto ground guard automação de jardim
+  contact:
+    email: contato@groundguard.com
+    name: Guilherme Teixeira
+  description: |-
+    API REST do Ground Guard, uma plataforma IoT para monitoramento e automação de jardins e plantas.
+    Permite gerenciamento de dispositivos, preferências de irrigação, monitoramento ambiental e acionamento remoto de irrigação.
+    Desenvolvido como TCC e preparado para evolução comercial.
+  license:
+    name: MIT
+  termsOfService: https://groundguard.com/terms
   title: Ground Guard API
-  version: "1.0"
+  version: 1.0.0
 paths:
   /devices:
     get:
@@ -223,6 +284,43 @@ paths:
       summary: Cadastrar novo dispositivo
       tags:
       - devices
+  /devices/{device_id}/irrigation-preferences:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all irrigation preferences associated with a specific
+        device using the device's UUID.
+      parameters:
+      - description: Device UUID
+        format: uuid
+        in: path
+        name: device_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.IrrigationPreferenceResponse'
+            type: array
+        "400":
+          description: Bad Request - Invalid Device UUID format
+          schema:
+            type: object
+        "404":
+          description: Not Found - Device or preferences not found
+          schema:
+            type: object
+        "500":
+          description: Internal Server Error - Database or server issues
+          schema:
+            type: object
+      summary: Get irrigation preferences by Device UUID
+      tags:
+      - Irrigation Preferences
   /devices/{uuid}:
     get:
       consumes:
@@ -399,6 +497,76 @@ paths:
       summary: Desvincular dispositivo do usuário
       tags:
       - devices
+  /irrigation-preferences:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new irrigation preference configuration for a specific
+        device based on its UUID.
+      parameters:
+      - description: Irrigation Preference Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateIrrigationPreferenceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.IrrigationPreferenceResponse'
+        "400":
+          description: Bad Request - Invalid input or UUID
+          schema:
+            type: object
+        "404":
+          description: Not Found - Device not found
+          schema:
+            type: object
+        "500":
+          description: Internal Server Error - Database or server issues
+          schema:
+            type: object
+      summary: Create an irrigation preference
+      tags:
+      - Irrigation Preferences
+  /irrigation-preferences/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the details of a specific irrigation preference using
+        its ID.
+      parameters:
+      - description: Irrigation Preference ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.IrrigationPreferenceResponse'
+        "400":
+          description: Bad Request - Invalid ID format
+          schema:
+            type: object
+        "404":
+          description: Not Found - Irrigation preference not found
+          schema:
+            type: object
+        "500":
+          description: Internal Server Error - Database or server issues
+          schema:
+            type: object
+      summary: Get an irrigation preference by ID
+      tags:
+      - Irrigation Preferences
   /tokens/refresh:
     post:
       consumes:
@@ -618,9 +786,12 @@ paths:
       summary: Atualiza a imagem de perfil
       tags:
       - users
+schemes:
+- http
+- https
 securityDefinitions:
   BearerAuth:
-    description: Type "Bearer" followed by a space and your PASETO token.
+    description: 'Informe: Bearer {token}'
     in: header
     name: Authorization
     type: apiKey

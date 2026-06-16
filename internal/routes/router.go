@@ -18,6 +18,7 @@ func Setup(tokenMaker token.Maker, handlers Handlers) *gin.Engine {
 	authRoutes := router.Group("/").Use(authMiddleware(tokenMaker))
 	registerAuthUserRoutes(authRoutes, handlers)
 	registerDeviceRoutes(authRoutes, handlers)
+	registerIrrigationPreferencesRoutes(authRoutes, handlers)
 
 	return router
 }
