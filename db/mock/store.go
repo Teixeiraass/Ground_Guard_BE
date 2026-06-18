@@ -66,6 +66,21 @@ func (mr *MockStoreMockRecorder) CreateIrrigationAction(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIrrigationAction", reflect.TypeOf((*MockStore)(nil).CreateIrrigationAction), arg0, arg1)
 }
 
+// CreateIrrigationPreferenceHistory mocks base method.
+func (m *MockStore) CreateIrrigationPreferenceHistory(arg0 context.Context, arg1 db.CreateIrrigationPreferenceHistoryParams) (db.IrrigationPreferencesHistory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIrrigationPreferenceHistory", arg0, arg1)
+	ret0, _ := ret[0].(db.IrrigationPreferencesHistory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateIrrigationPreferenceHistory indicates an expected call of CreateIrrigationPreferenceHistory.
+func (mr *MockStoreMockRecorder) CreateIrrigationPreferenceHistory(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIrrigationPreferenceHistory", reflect.TypeOf((*MockStore)(nil).CreateIrrigationPreferenceHistory), arg0, arg1)
+}
+
 // CreateIrrigationPreferences mocks base method.
 func (m *MockStore) CreateIrrigationPreferences(arg0 context.Context, arg1 db.CreateIrrigationPreferencesParams) (db.IrrigationPreference, error) {
 	m.ctrl.T.Helper()
@@ -96,6 +111,21 @@ func (mr *MockStoreMockRecorder) CreateUser(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockStore)(nil).CreateUser), arg0, arg1)
 }
 
+// CreateUserAcceptedTerm mocks base method.
+func (m *MockStore) CreateUserAcceptedTerm(arg0 context.Context, arg1 db.CreateUserAcceptedTermParams) (db.UserAcceptedTerm, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUserAcceptedTerm", arg0, arg1)
+	ret0, _ := ret[0].(db.UserAcceptedTerm)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUserAcceptedTerm indicates an expected call of CreateUserAcceptedTerm.
+func (mr *MockStoreMockRecorder) CreateUserAcceptedTerm(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserAcceptedTerm", reflect.TypeOf((*MockStore)(nil).CreateUserAcceptedTerm), arg0, arg1)
+}
+
 // DeleteIrrigationAction mocks base method.
 func (m *MockStore) DeleteIrrigationAction(arg0 context.Context, arg1 int64) error {
 	m.ctrl.T.Helper()
@@ -108,6 +138,34 @@ func (m *MockStore) DeleteIrrigationAction(arg0 context.Context, arg1 int64) err
 func (mr *MockStoreMockRecorder) DeleteIrrigationAction(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIrrigationAction", reflect.TypeOf((*MockStore)(nil).DeleteIrrigationAction), arg0, arg1)
+}
+
+// DeleteIrrigationPreference mocks base method.
+func (m *MockStore) DeleteIrrigationPreference(arg0 context.Context, arg1 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIrrigationPreference", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteIrrigationPreference indicates an expected call of DeleteIrrigationPreference.
+func (mr *MockStoreMockRecorder) DeleteIrrigationPreference(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIrrigationPreference", reflect.TypeOf((*MockStore)(nil).DeleteIrrigationPreference), arg0, arg1)
+}
+
+// DeleteIrrigationPreferenceByDeviceId mocks base method.
+func (m *MockStore) DeleteIrrigationPreferenceByDeviceId(arg0 context.Context, arg1 int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIrrigationPreferenceByDeviceId", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteIrrigationPreferenceByDeviceId indicates an expected call of DeleteIrrigationPreferenceByDeviceId.
+func (mr *MockStoreMockRecorder) DeleteIrrigationPreferenceByDeviceId(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIrrigationPreferenceByDeviceId", reflect.TypeOf((*MockStore)(nil).DeleteIrrigationPreferenceByDeviceId), arg0, arg1)
 }
 
 // GetDevice mocks base method.
@@ -138,6 +196,36 @@ func (m *MockStore) GetDeviceForUpdate(arg0 context.Context, arg1 uuid.UUID) (db
 func (mr *MockStoreMockRecorder) GetDeviceForUpdate(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceForUpdate", reflect.TypeOf((*MockStore)(nil).GetDeviceForUpdate), arg0, arg1)
+}
+
+// GetFaq mocks base method.
+func (m *MockStore) GetFaq(arg0 context.Context, arg1 uuid.UUID) (db.Faq, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFaq", arg0, arg1)
+	ret0, _ := ret[0].(db.Faq)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFaq indicates an expected call of GetFaq.
+func (mr *MockStoreMockRecorder) GetFaq(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFaq", reflect.TypeOf((*MockStore)(nil).GetFaq), arg0, arg1)
+}
+
+// GetHelpContent mocks base method.
+func (m *MockStore) GetHelpContent(arg0 context.Context, arg1 uuid.UUID) (db.HelpContent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHelpContent", arg0, arg1)
+	ret0, _ := ret[0].(db.HelpContent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHelpContent indicates an expected call of GetHelpContent.
+func (mr *MockStoreMockRecorder) GetHelpContent(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHelpContent", reflect.TypeOf((*MockStore)(nil).GetHelpContent), arg0, arg1)
 }
 
 // GetIrrigationAction mocks base method.
@@ -185,6 +273,36 @@ func (mr *MockStoreMockRecorder) GetIrrigationPreferenceByDevice(arg0, arg1 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIrrigationPreferenceByDevice", reflect.TypeOf((*MockStore)(nil).GetIrrigationPreferenceByDevice), arg0, arg1)
 }
 
+// GetLegalDocument mocks base method.
+func (m *MockStore) GetLegalDocument(arg0 context.Context, arg1 uuid.UUID) (db.LegalDocument, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLegalDocument", arg0, arg1)
+	ret0, _ := ret[0].(db.LegalDocument)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLegalDocument indicates an expected call of GetLegalDocument.
+func (mr *MockStoreMockRecorder) GetLegalDocument(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLegalDocument", reflect.TypeOf((*MockStore)(nil).GetLegalDocument), arg0, arg1)
+}
+
+// GetTutorial mocks base method.
+func (m *MockStore) GetTutorial(arg0 context.Context, arg1 uuid.UUID) (db.Tutorial, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTutorial", arg0, arg1)
+	ret0, _ := ret[0].(db.Tutorial)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTutorial indicates an expected call of GetTutorial.
+func (mr *MockStoreMockRecorder) GetTutorial(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTutorial", reflect.TypeOf((*MockStore)(nil).GetTutorial), arg0, arg1)
+}
+
 // GetUser mocks base method.
 func (m *MockStore) GetUser(arg0 context.Context, arg1 uuid.UUID) (db.User, error) {
 	m.ctrl.T.Helper()
@@ -198,6 +316,51 @@ func (m *MockStore) GetUser(arg0 context.Context, arg1 uuid.UUID) (db.User, erro
 func (mr *MockStoreMockRecorder) GetUser(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockStore)(nil).GetUser), arg0, arg1)
+}
+
+// GetUserAcceptedTerm mocks base method.
+func (m *MockStore) GetUserAcceptedTerm(arg0 context.Context, arg1 uuid.UUID) (db.UserAcceptedTerm, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserAcceptedTerm", arg0, arg1)
+	ret0, _ := ret[0].(db.UserAcceptedTerm)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserAcceptedTerm indicates an expected call of GetUserAcceptedTerm.
+func (mr *MockStoreMockRecorder) GetUserAcceptedTerm(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAcceptedTerm", reflect.TypeOf((*MockStore)(nil).GetUserAcceptedTerm), arg0, arg1)
+}
+
+// GetUserAcceptedTermByLegalDocument mocks base method.
+func (m *MockStore) GetUserAcceptedTermByLegalDocument(arg0 context.Context, arg1 int64) (db.UserAcceptedTerm, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserAcceptedTermByLegalDocument", arg0, arg1)
+	ret0, _ := ret[0].(db.UserAcceptedTerm)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserAcceptedTermByLegalDocument indicates an expected call of GetUserAcceptedTermByLegalDocument.
+func (mr *MockStoreMockRecorder) GetUserAcceptedTermByLegalDocument(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAcceptedTermByLegalDocument", reflect.TypeOf((*MockStore)(nil).GetUserAcceptedTermByLegalDocument), arg0, arg1)
+}
+
+// GetUserAcceptedTermByUser mocks base method.
+func (m *MockStore) GetUserAcceptedTermByUser(arg0 context.Context, arg1 int64) (db.UserAcceptedTerm, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserAcceptedTermByUser", arg0, arg1)
+	ret0, _ := ret[0].(db.UserAcceptedTerm)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserAcceptedTermByUser indicates an expected call of GetUserAcceptedTermByUser.
+func (mr *MockStoreMockRecorder) GetUserAcceptedTermByUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAcceptedTermByUser", reflect.TypeOf((*MockStore)(nil).GetUserAcceptedTermByUser), arg0, arg1)
 }
 
 // GetUserByEmail mocks base method.
@@ -245,6 +408,51 @@ func (mr *MockStoreMockRecorder) ListDevices(arg0, arg1 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDevices", reflect.TypeOf((*MockStore)(nil).ListDevices), arg0, arg1)
 }
 
+// ListFaqs mocks base method.
+func (m *MockStore) ListFaqs(arg0 context.Context, arg1 db.ListFaqsParams) ([]db.Faq, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListFaqs", arg0, arg1)
+	ret0, _ := ret[0].([]db.Faq)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListFaqs indicates an expected call of ListFaqs.
+func (mr *MockStoreMockRecorder) ListFaqs(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFaqs", reflect.TypeOf((*MockStore)(nil).ListFaqs), arg0, arg1)
+}
+
+// ListHelpContents mocks base method.
+func (m *MockStore) ListHelpContents(arg0 context.Context, arg1 db.ListHelpContentsParams) ([]db.HelpContent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListHelpContents", arg0, arg1)
+	ret0, _ := ret[0].([]db.HelpContent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListHelpContents indicates an expected call of ListHelpContents.
+func (mr *MockStoreMockRecorder) ListHelpContents(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListHelpContents", reflect.TypeOf((*MockStore)(nil).ListHelpContents), arg0, arg1)
+}
+
+// ListHelpContentsByCategory mocks base method.
+func (m *MockStore) ListHelpContentsByCategory(arg0 context.Context, arg1 db.ListHelpContentsByCategoryParams) ([]db.HelpContent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListHelpContentsByCategory", arg0, arg1)
+	ret0, _ := ret[0].([]db.HelpContent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListHelpContentsByCategory indicates an expected call of ListHelpContentsByCategory.
+func (mr *MockStoreMockRecorder) ListHelpContentsByCategory(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListHelpContentsByCategory", reflect.TypeOf((*MockStore)(nil).ListHelpContentsByCategory), arg0, arg1)
+}
+
 // ListIrrigationAction mocks base method.
 func (m *MockStore) ListIrrigationAction(arg0 context.Context, arg1 db.ListIrrigationActionParams) ([]db.IrrigationAction, error) {
 	m.ctrl.T.Helper()
@@ -273,6 +481,51 @@ func (m *MockStore) ListIrrigationPreferences(arg0 context.Context, arg1 db.List
 func (mr *MockStoreMockRecorder) ListIrrigationPreferences(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIrrigationPreferences", reflect.TypeOf((*MockStore)(nil).ListIrrigationPreferences), arg0, arg1)
+}
+
+// ListLegalDocuments mocks base method.
+func (m *MockStore) ListLegalDocuments(arg0 context.Context, arg1 db.ListLegalDocumentsParams) ([]db.LegalDocument, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListLegalDocuments", arg0, arg1)
+	ret0, _ := ret[0].([]db.LegalDocument)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListLegalDocuments indicates an expected call of ListLegalDocuments.
+func (mr *MockStoreMockRecorder) ListLegalDocuments(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLegalDocuments", reflect.TypeOf((*MockStore)(nil).ListLegalDocuments), arg0, arg1)
+}
+
+// ListTutorials mocks base method.
+func (m *MockStore) ListTutorials(arg0 context.Context, arg1 db.ListTutorialsParams) ([]db.Tutorial, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTutorials", arg0, arg1)
+	ret0, _ := ret[0].([]db.Tutorial)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTutorials indicates an expected call of ListTutorials.
+func (mr *MockStoreMockRecorder) ListTutorials(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTutorials", reflect.TypeOf((*MockStore)(nil).ListTutorials), arg0, arg1)
+}
+
+// ListTutorialsByCategory mocks base method.
+func (m *MockStore) ListTutorialsByCategory(arg0 context.Context, arg1 db.ListTutorialsByCategoryParams) ([]db.Tutorial, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTutorialsByCategory", arg0, arg1)
+	ret0, _ := ret[0].([]db.Tutorial)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTutorialsByCategory indicates an expected call of ListTutorialsByCategory.
+func (mr *MockStoreMockRecorder) ListTutorialsByCategory(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTutorialsByCategory", reflect.TypeOf((*MockStore)(nil).ListTutorialsByCategory), arg0, arg1)
 }
 
 // UnlinkDeviceFromUser mocks base method.
@@ -318,6 +571,21 @@ func (m *MockStore) UpdateIrrigationAction(arg0 context.Context, arg1 db.UpdateI
 func (mr *MockStoreMockRecorder) UpdateIrrigationAction(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIrrigationAction", reflect.TypeOf((*MockStore)(nil).UpdateIrrigationAction), arg0, arg1)
+}
+
+// UpdateIrrigationPreference mocks base method.
+func (m *MockStore) UpdateIrrigationPreference(arg0 context.Context, arg1 db.UpdateIrrigationPreferenceParams) (db.IrrigationPreference, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateIrrigationPreference", arg0, arg1)
+	ret0, _ := ret[0].(db.IrrigationPreference)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateIrrigationPreference indicates an expected call of UpdateIrrigationPreference.
+func (mr *MockStoreMockRecorder) UpdateIrrigationPreference(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIrrigationPreference", reflect.TypeOf((*MockStore)(nil).UpdateIrrigationPreference), arg0, arg1)
 }
 
 // UpdateNameDevice mocks base method.
