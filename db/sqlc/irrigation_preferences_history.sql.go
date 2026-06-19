@@ -11,26 +11,31 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
-const createIrrigationPreferencesHistory = `-- name: CreateIrrigationPreferencesHistory :one
+const createIrrigationPreferenceHistory = `-- name: CreateIrrigationPreferenceHistory :one
 INSERT INTO irrigation_preferences_history (
-  preference_id, 
+  preference_id,
   user_id,
   old_data,
   new_data
-) VALUES (
-  $1, $2, $3, $4
-) RETURNING id, preference_id, user_id, old_data, new_data, changed_at
+)
+VALUES (
+  $1,
+  $2,
+  $3,
+  $4
+)
+RETURNING id, preference_id, user_id, old_data, new_data, changed_at
 `
 
-type CreateIrrigationPreferencesHistoryParams struct {
+type CreateIrrigationPreferenceHistoryParams struct {
 	PreferenceID int64                 `json:"preference_id"`
 	UserID       int64                 `json:"user_id"`
 	OldData      pqtype.NullRawMessage `json:"old_data"`
 	NewData      pqtype.NullRawMessage `json:"new_data"`
 }
 
-func (q *Queries) CreateIrrigationPreferencesHistory(ctx context.Context, arg CreateIrrigationPreferencesHistoryParams) (IrrigationPreferencesHistory, error) {
-	row := q.db.QueryRowContext(ctx, createIrrigationPreferencesHistory,
+func (q *Queries) CreateIrrigationPreferenceHistory(ctx context.Context, arg CreateIrrigationPreferenceHistoryParams) (IrrigationPreferencesHistory, error) {
+	row := q.db.QueryRowContext(ctx, createIrrigationPreferenceHistory,
 		arg.PreferenceID,
 		arg.UserID,
 		arg.OldData,

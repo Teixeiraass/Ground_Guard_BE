@@ -65,6 +65,24 @@ func (q *Queries) CreateIrrigationPreferences(ctx context.Context, arg CreateIrr
 	return i, err
 }
 
+const deleteIrrigationPreference = `-- name: DeleteIrrigationPreference :exec
+DELETE FROM irrigation_preferences WHERE uuid = $1
+`
+
+func (q *Queries) DeleteIrrigationPreference(ctx context.Context, argUuid uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteIrrigationPreference, argUuid)
+	return err
+}
+
+const deleteIrrigationPreferenceByDeviceId = `-- name: DeleteIrrigationPreferenceByDeviceId :exec
+DELETE FROM irrigation_preferences WHERE device_id = $1
+`
+
+func (q *Queries) DeleteIrrigationPreferenceByDeviceId(ctx context.Context, deviceID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteIrrigationPreferenceByDeviceId, deviceID)
+	return err
+}
+
 const getIrrigationPreference = `-- name: GetIrrigationPreference :one
 SELECT id, uuid, device_id, enabled, irrigation_mode, moisture_threshold, dry_time_minutes, irrigation_duration_seconds, max_irrigations_per_day, start_hour, end_hour, created_at, updated_at FROM irrigation_preferences
 WHERE uuid = $1 LIMIT 1
@@ -164,4 +182,63 @@ func (q *Queries) ListIrrigationPreferences(ctx context.Context, arg ListIrrigat
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateIrrigationPreference = `-- name: UpdateIrrigationPreference :one
+UPDATE irrigation_preferences
+SET
+  enabled = COALESCE($1, enabled),
+  irrigation_mode = COALESCE($2, irrigation_mode),
+  moisture_threshold = COALESCE($3, moisture_threshold),
+  dry_time_minutes = COALESCE($4, dry_time_minutes),
+  irrigation_duration_seconds = COALESCE($5, irrigation_duration_seconds),
+  max_irrigations_per_day = COALESCE($6, max_irrigations_per_day),
+  start_hour = COALESCE($7, start_hour),
+  end_hour = COALESCE($8, end_hour),
+  updated_at = now()
+WHERE uuid = $9
+RETURNING id, uuid, device_id, enabled, irrigation_mode, moisture_threshold, dry_time_minutes, irrigation_duration_seconds, max_irrigations_per_day, start_hour, end_hour, created_at, updated_at
+`
+
+type UpdateIrrigationPreferenceParams struct {
+	Enabled                   sql.NullBool   `json:"enabled"`
+	IrrigationMode            sql.NullString `json:"irrigation_mode"`
+	MoistureThreshold         sql.NullInt32  `json:"moisture_threshold"`
+	DryTimeMinutes            sql.NullInt32  `json:"dry_time_minutes"`
+	IrrigationDurationSeconds sql.NullInt32  `json:"irrigation_duration_seconds"`
+	MaxIrrigationsPerDay      sql.NullInt32  `json:"max_irrigations_per_day"`
+	StartHour                 sql.NullTime   `json:"start_hour"`
+	EndHour                   sql.NullTime   `json:"end_hour"`
+	Uuid                      uuid.UUID      `json:"uuid"`
+}
+
+func (q *Queries) UpdateIrrigationPreference(ctx context.Context, arg UpdateIrrigationPreferenceParams) (IrrigationPreference, error) {
+	row := q.db.QueryRowContext(ctx, updateIrrigationPreference,
+		arg.Enabled,
+		arg.IrrigationMode,
+		arg.MoistureThreshold,
+		arg.DryTimeMinutes,
+		arg.IrrigationDurationSeconds,
+		arg.MaxIrrigationsPerDay,
+		arg.StartHour,
+		arg.EndHour,
+		arg.Uuid,
+	)
+	var i IrrigationPreference
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.DeviceID,
+		&i.Enabled,
+		&i.IrrigationMode,
+		&i.MoistureThreshold,
+		&i.DryTimeMinutes,
+		&i.IrrigationDurationSeconds,
+		&i.MaxIrrigationsPerDay,
+		&i.StartHour,
+		&i.EndHour,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

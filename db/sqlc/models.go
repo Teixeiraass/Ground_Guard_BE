@@ -30,6 +30,31 @@ type Device struct {
 	QrCodeFile      sql.NullString `json:"qr_code_file"`
 }
 
+type Faq struct {
+	ID          int64          `json:"id"`
+	Uuid        uuid.UUID      `json:"uuid"`
+	Question    string         `json:"question"`
+	Answer      string         `json:"answer"`
+	Category    sql.NullString `json:"category"`
+	Published   bool           `json:"published"`
+	OrderNumber int32          `json:"order_number"`
+	CreatedAt   time.Time      `json:"created_at"`
+}
+
+type HelpContent struct {
+	ID          int64          `json:"id"`
+	Uuid        uuid.UUID      `json:"uuid"`
+	Title       string         `json:"title"`
+	Slug        string         `json:"slug"`
+	Category    string         `json:"category"`
+	Content     string         `json:"content"`
+	ImageUrl    sql.NullString `json:"image_url"`
+	Published   bool           `json:"published"`
+	OrderNumber int32          `json:"order_number"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
 type IrrigationAction struct {
 	ID              int64          `json:"id"`
 	Uuid            uuid.UUID      `json:"uuid"`
@@ -70,6 +95,33 @@ type IrrigationPreferencesHistory struct {
 	ChangedAt    time.Time             `json:"changed_at"`
 }
 
+type LegalDocument struct {
+	ID          int64     `json:"id"`
+	Uuid        uuid.UUID `json:"uuid"`
+	Type        string    `json:"type"`
+	Version     string    `json:"version"`
+	Title       string    `json:"title"`
+	Content     string    `json:"content"`
+	Active      bool      `json:"active"`
+	PublishedAt time.Time `json:"published_at"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type Tutorial struct {
+	ID          int64          `json:"id"`
+	Uuid        uuid.UUID      `json:"uuid"`
+	Title       string         `json:"title"`
+	Description sql.NullString `json:"description"`
+	Content     string         `json:"content"`
+	ImageUrl    sql.NullString `json:"image_url"`
+	VideoUrl    sql.NullString `json:"video_url"`
+	Category    sql.NullString `json:"category"`
+	Published   bool           `json:"published"`
+	OrderNumber int32          `json:"order_number"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
 type User struct {
 	ID                int64          `json:"id"`
 	Uuid              uuid.UUID      `json:"uuid"`
@@ -80,4 +132,12 @@ type User struct {
 	PasswordChangedAt time.Time      `json:"password_changed_at"`
 	CreatedAt         time.Time      `json:"created_at"`
 	ProfileImage      sql.NullString `json:"profile_image"`
+}
+
+type UserAcceptedTerm struct {
+	ID              int64     `json:"id"`
+	Uuid            uuid.UUID `json:"uuid"`
+	UserID          int64     `json:"user_id"`
+	LegalDocumentID int64     `json:"legal_document_id"`
+	AcceptedAt      time.Time `json:"accepted_at"`
 }
