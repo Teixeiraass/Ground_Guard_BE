@@ -100,7 +100,7 @@ func TestGetDeviceAPI(t *testing.T) {
 			server := newTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/devices/%s", tc.deviceUuid)
+			url := fmt.Sprintf("/api/v1/devices/%s", tc.deviceUuid)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
