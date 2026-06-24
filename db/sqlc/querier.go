@@ -15,7 +15,6 @@ type Querier interface {
 	CreateIrrigationAction(ctx context.Context, arg CreateIrrigationActionParams) (IrrigationAction, error)
 	CreateIrrigationPreferenceHistory(ctx context.Context, arg CreateIrrigationPreferenceHistoryParams) (IrrigationPreferencesHistory, error)
 	CreateIrrigationPreferences(ctx context.Context, arg CreateIrrigationPreferencesParams) (IrrigationPreference, error)
-	CreateIrrigationPreferencesHistory(ctx context.Context, arg CreateIrrigationPreferencesHistoryParams) (IrrigationPreferencesHistory, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserAcceptedTerm(ctx context.Context, arg CreateUserAcceptedTermParams) (UserAcceptedTerm, error)
 	DeleteIrrigationAction(ctx context.Context, id int64) error

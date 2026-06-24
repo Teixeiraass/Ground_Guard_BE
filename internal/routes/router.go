@@ -12,13 +12,8 @@ func Setup(tokenMaker token.Maker, handlers Handlers) *gin.Engine {
 
 	router.Static("/uploads/profile", "./uploads/profile")
 
-	registerUserRoutes(router, handlers)
 	registerSwaggerRoutes(router)
-
-	authRoutes := router.Group("/").Use(authMiddleware(tokenMaker))
-	registerAuthUserRoutes(authRoutes, handlers)
-	registerDeviceRoutes(authRoutes, handlers)
-	registerIrrigationPreferencesRoutes(authRoutes, handlers)
+	registerV1Routes(router, tokenMaker, handlers)
 
 	return router
 }

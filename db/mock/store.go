@@ -96,21 +96,6 @@ func (mr *MockStoreMockRecorder) CreateIrrigationPreferences(arg0, arg1 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIrrigationPreferences", reflect.TypeOf((*MockStore)(nil).CreateIrrigationPreferences), arg0, arg1)
 }
 
-// CreateIrrigationPreferencesHistory mocks base method.
-func (m *MockStore) CreateIrrigationPreferencesHistory(arg0 context.Context, arg1 db.CreateIrrigationPreferencesHistoryParams) (db.IrrigationPreferencesHistory, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateIrrigationPreferencesHistory", arg0, arg1)
-	ret0, _ := ret[0].(db.IrrigationPreferencesHistory)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateIrrigationPreferencesHistory indicates an expected call of CreateIrrigationPreferencesHistory.
-func (mr *MockStoreMockRecorder) CreateIrrigationPreferencesHistory(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIrrigationPreferencesHistory", reflect.TypeOf((*MockStore)(nil).CreateIrrigationPreferencesHistory), arg0, arg1)
-}
-
 // CreateUser mocks base method.
 func (m *MockStore) CreateUser(arg0 context.Context, arg1 db.CreateUserParams) (db.User, error) {
 	m.ctrl.T.Helper()

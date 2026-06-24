@@ -94,6 +94,38 @@ definitions:
       wifi_ssid:
         type: string
     type: object
+  dto.FaqResponse:
+    properties:
+      answer:
+        type: string
+      category:
+        type: string
+      order_number:
+        type: integer
+      question:
+        type: string
+      uuid:
+        type: string
+    type: object
+  dto.HelpContentResponse:
+    properties:
+      category:
+        type: string
+      content:
+        type: string
+      image_url:
+        type: string
+      order_number:
+        type: integer
+      published:
+        type: boolean
+      slug:
+        type: string
+      title:
+        type: string
+      uuid:
+        type: string
+    type: object
   dto.IrrigationPreferenceResponse:
     properties:
       device_id:
@@ -115,6 +147,21 @@ definitions:
       start_hour:
         type: string
       uuid:
+        type: string
+    type: object
+  dto.LegalDocumentResponse:
+    properties:
+      active:
+        type: boolean
+      content:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      uuid:
+        type: string
+      version:
         type: string
     type: object
   dto.LoginUserRequest:
@@ -149,6 +196,27 @@ definitions:
   dto.RenewAccessTokenResponse:
     properties:
       access_token:
+        type: string
+    type: object
+  dto.TutorialResponse:
+    properties:
+      category:
+        type: string
+      content:
+        type: string
+      description:
+        type: string
+      image_url:
+        type: string
+      order_number:
+        type: integer
+      published:
+        type: boolean
+      title:
+        type: string
+      uuid:
+        type: string
+      video_url:
         type: string
     type: object
   dto.UpdateNameDeviceRequest:
@@ -497,6 +565,163 @@ paths:
       summary: Desvincular dispositivo do usuário
       tags:
       - devices
+  /faqs:
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma lista paginada de FAQs
+      parameters:
+      - description: Número da página
+        in: query
+        minimum: 1
+        name: page_id
+        required: true
+        type: integer
+      - description: Tamanho da página
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sucesso
+          schema:
+            items:
+              $ref: '#/definitions/dto.FaqResponse'
+            type: array
+        "400":
+          description: Requisição inválida (Erro de paginação)
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erro interno do servidor
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Listar FAQs
+      tags:
+      - faqs
+  /faqs/{uuid}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna os detalhes de um FAQ específico baseado no seu UUID
+      parameters:
+      - description: UUID do FAQ
+        format: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sucesso
+          schema:
+            $ref: '#/definitions/dto.FaqResponse'
+        "400":
+          description: Requisição inválida (Erro de bind ou UUID mal formatado)
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: FAQ não encontrado
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erro interno do servidor
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Obter um FAQ
+      tags:
+      - faqs
+  /help-contents:
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma lista paginada de conteúdos de ajuda
+      parameters:
+      - description: Número da página
+        in: query
+        minimum: 1
+        name: page_id
+        required: true
+        type: integer
+      - description: Tamanho da página
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sucesso
+          schema:
+            items:
+              $ref: '#/definitions/dto.HelpContentResponse'
+            type: array
+        "400":
+          description: Requisição inválida (Erro de paginação)
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erro interno do servidor
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Listar conteúdos de ajuda
+      tags:
+      - help-contents
+  /help-contents/{uuid}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna os detalhes de um conteúdo de ajuda específico baseado
+        no seu UUID
+      parameters:
+      - description: UUID do conteúdo de ajuda
+        format: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sucesso
+          schema:
+            $ref: '#/definitions/dto.HelpContentResponse'
+        "400":
+          description: Requisição inválida (Erro de bind ou UUID mal formatado)
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Conteúdo de ajuda não encontrado
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erro interno do servidor
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Obter um conteúdo de ajuda
+      tags:
+      - help-contents
   /irrigation-preferences:
     post:
       consumes:
@@ -567,6 +792,85 @@ paths:
       summary: Get an irrigation preference by ID
       tags:
       - Irrigation Preferences
+  /legal-document/{uuid}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna os detalhes de um documento legal específico baseado no
+        seu UUID
+      parameters:
+      - description: UUID do documento legal
+        format: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sucesso
+          schema:
+            $ref: '#/definitions/dto.LegalDocumentResponse'
+        "400":
+          description: Requisição inválida (Erro de bind ou UUID mal formatado)
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Documento legal não encontrado
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erro interno do servidor
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Obter um documento legal
+      tags:
+      - legal-documents
+  /legal-documents:
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma lista paginada de documentos legais
+      parameters:
+      - description: Número da página
+        in: query
+        minimum: 1
+        name: page_id
+        required: true
+        type: integer
+      - description: Tamanho da página
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sucesso
+          schema:
+            items:
+              $ref: '#/definitions/dto.LegalDocumentResponse'
+            type: array
+        "400":
+          description: Requisição inválida (Erro de paginação)
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erro interno do servidor
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Listar documentos legais
+      tags:
+      - legal-documents
   /tokens/refresh:
     post:
       consumes:
@@ -604,6 +908,84 @@ paths:
       summary: Renovar token de acesso
       tags:
       - auth
+  /tutorials:
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma lista paginada de tutoriais
+      parameters:
+      - description: Número da página
+        in: query
+        minimum: 1
+        name: page_id
+        required: true
+        type: integer
+      - description: Tamanho da página
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sucesso
+          schema:
+            items:
+              $ref: '#/definitions/dto.TutorialResponse'
+            type: array
+        "400":
+          description: Requisição inválida (Erro de paginação)
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erro interno do servidor
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Listar tutoriais
+      tags:
+      - tutorials
+  /tutorials/{uuid}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna os detalhes de um tutorial específico baseado no seu UUID
+      parameters:
+      - description: UUID do tutorial
+        format: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sucesso
+          schema:
+            $ref: '#/definitions/dto.TutorialResponse'
+        "400":
+          description: Requisição inválida (Erro de bind ou UUID mal formatado)
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Tutorial não encontrado
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Erro interno do servidor
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Obter um tutorial
+      tags:
+      - tutorials
   /users:
     post:
       consumes:

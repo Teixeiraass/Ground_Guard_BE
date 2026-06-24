@@ -15,7 +15,7 @@ type UserHandler interface {
 	UpdateProfileImage(c *gin.Context)
 }
 
-func registerUserRoutes(router *gin.Engine, h UserHandler) {
+func registerUserRoutes(router gin.IRoutes, h UserHandler) {
 	router.POST("/users", h.CreateUser)
 	router.POST("/users/login", h.LoginUser)
 	router.POST("/tokens/refresh", h.RenewAccessToken)
