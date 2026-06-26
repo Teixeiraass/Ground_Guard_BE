@@ -13,6 +13,7 @@ type UserHandler interface {
 	GetUser(c *gin.Context)
 	UpdateUserName(c *gin.Context)
 	UpdateProfileImage(c *gin.Context)
+	LogoutUser(c *gin.Context)
 }
 
 func registerUserRoutes(router gin.IRoutes, h UserHandler) {
@@ -25,6 +26,7 @@ func registerAuthUserRoutes(authRoutes gin.IRoutes, h UserHandler) {
 	authRoutes.GET("/users/me", h.GetUser)
 	authRoutes.PUT("/users/name/:uuid", h.UpdateUserName)
 	authRoutes.PUT("/users/profile-image", h.UpdateProfileImage)
+	authRoutes.POST("/users/logout", h.LogoutUser)
 }
 
 func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {

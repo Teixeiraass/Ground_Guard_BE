@@ -1198,6 +1198,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Invalida a sessão atual do usuário, garantindo que o token não possa mais ser usado.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Realizar logout do usuário",
+                "parameters": [
+                    {
+                        "description": "Dados para o logout (Ex: Session ID)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.LogoutUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Logout realizado com sucesso",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Requisição inválida (JSON mal formatado ou faltando campos)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Não autorizado (Token inválido/ausente ou Sessão inválida para este usuário)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor ao bloquear a sessão",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/users/me": {
             "get": {
                 "security": [
@@ -1616,17 +1679,34 @@ const docTemplate = `{
         "dto.LoginUserResponse": {
             "type": "object",
             "properties": {
-                "access_token": {
+                "acces_token_expires_at": {
                     "type": "string"
                 },
-                "access_token_expires_at": {
+                "access_token": {
                     "type": "string"
                 },
                 "refresh_token": {
                     "type": "string"
                 },
+                "refresh_token_expires_at": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                },
                 "user": {
                     "$ref": "#/definitions/dto.UserResponse"
+                }
+            }
+        },
+        "dto.LogoutUserRequest": {
+            "type": "object",
+            "required": [
+                "session_id"
+            ],
+            "properties": {
+                "session_id": {
+                    "type": "string"
                 }
             }
         },
@@ -1644,6 +1724,9 @@ const docTemplate = `{
         "dto.RenewAccessTokenResponse": {
             "type": "object",
             "properties": {
+                "acces_token_expires_at": {
+                    "type": "string"
+                },
                 "access_token": {
                     "type": "string"
                 }

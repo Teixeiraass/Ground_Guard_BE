@@ -31,4 +31,13 @@ server:
 mock: 
 	mockgen -package mockdb -destination db/mock/store.go github.com/Teixeiraass/ground_guard_be/db/sqlc Store
 
+db_docs: 
+	dbdocs build docs/db.dbml
+
+db_schema: 
+	dbml2sql --postgres -o docs/schema.sql docs/db.dbml
+
+swag:
+	swag init -g cmd/server/main.go
+
 .PHONY: postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc test server mock
