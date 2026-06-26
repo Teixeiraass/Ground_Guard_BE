@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -63,7 +64,6 @@ func (server *Server) CreateUser(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusCreated, dto.NewUserResponse(user))
 }
-
 
 // GetUser
 // @Summary      Obter perfil do usuário logado
@@ -129,7 +129,7 @@ func (server *Server) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, err := server.tokenMaker.CreateToken(
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
 		user.Username,
 		user.ID,
 		user.Uuid,
@@ -140,7 +140,7 @@ func (server *Server) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	refreshToken, err := server.tokenMaker.CreateToken(
+	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(
 		user.Username,
 		user.ID,
 		user.Uuid,
@@ -151,10 +151,26 @@ func (server *Server) LoginUser(ctx *gin.Context) {
 		return
 	}
 
+	session, err := server.store.CreateSession(ctx, db.CreateSessionParams{
+		ID:           refreshPayload.ID,
+		UserID:       user.ID,
+		RefreshToken: refreshToken,
+		UserAgent:    ctx.Request.UserAgent(), // TODO: fill it
+		ClientIp:     ctx.ClientIP(),
+		IsBlocked:    false,
+		ExpiresAt:    refreshPayload.ExpiredAt,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	rsp := dto.LoginUserResponse{
-		AccessToken:          accessToken,
-		RefreshToken:         refreshToken,
-		AccessTokenExpiresAt: time.Now().Add(server.config.AccessTokenDuration),
+		SessionID:             session.ID,
+		AccessToken:           accessToken,
+		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
 		User:                 dto.NewUserResponse(user),
 	}
 	ctx.JSON(http.StatusOK, rsp)
@@ -174,22 +190,57 @@ func (server *Server) LoginUser(ctx *gin.Context) {
 // @Router       /tokens/refresh [post]
 func (server *Server) RenewAccessToken(ctx *gin.Context) {
 	var req dto.RenewAccessTokenRequest
-
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	payload, err := server.tokenMaker.VerifyToken(req.RefreshToken)
+	refreshPayload, err := server.tokenMaker.VerifyToken(req.RefreshToken)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
-	accessToken, err := server.tokenMaker.CreateToken(
-		payload.Username,
-		payload.UserID,
-		payload.UserUUID,
+
+	session, err := server.store.GetSession(ctx, refreshPayload.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if session.IsBlocked {
+		err := fmt.Errorf("blocked session")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	if session.UserID != refreshPayload.UserID {
+		err := fmt.Errorf("incorrect session user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	if session.RefreshToken != req.RefreshToken {
+		err := fmt.Errorf("mismatched session token")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	if time.Now().After(session.ExpiresAt) {
+		err := fmt.Errorf("expired session")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
+		refreshPayload.Username,
+		refreshPayload.UserID,
+		refreshPayload.UserUUID,
 		server.config.AccessTokenDuration,
 	)
 	if err != nil {
@@ -197,7 +248,51 @@ func (server *Server) RenewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.RenewAccessTokenResponse{AccessToken: accessToken})
+	ctx.JSON(http.StatusOK, dto.RenewAccessTokenResponse{
+		AccessToken: accessToken,
+		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
+	})
+}
+
+// LogoutUser godoc
+// @Summary      Realizar logout do usuário
+// @Description  Invalida a sessão atual do usuário, garantindo que o token não possa mais ser usado.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request body dto.LogoutUserRequest true "Dados para o logout (Ex: Session ID)"
+// @Success      200 {object} map[string]string "Logout realizado com sucesso"
+// @Failure      400 {object} map[string]any "Requisição inválida (JSON mal formatado ou faltando campos)"
+// @Failure      401 {object} map[string]any "Não autorizado (Token inválido/ausente ou Sessão inválida para este usuário)"
+// @Failure      500 {object} map[string]any "Erro interno do servidor ao bloquear a sessão"
+// @Router       /users/logout [post]
+func (server *Server) LogoutUser(ctx *gin.Context) {
+	var req dto.LogoutUserRequest
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, errorResponse(err))
+        return
+    }
+
+	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+
+	session, err := server.store.GetSession(ctx, req.SessionID)
+	
+	if session.UserID != payload.UserID {
+		err := fmt.Errorf("invalid session")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+    err = server.store.BlockSession(ctx, req.SessionID)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+        return
+    }
+
+    ctx.JSON(http.StatusOK, gin.H{
+        "message": "logout successful",
+    })
 }
 
 // UpdateUserName
@@ -223,12 +318,12 @@ func (server *Server) UpdateUserName(ctx *gin.Context) {
 
 	userUUID, err := uuid.Parse(uuidStr)
 	if err != nil {
-        ctx.JSON(http.StatusBadRequest, errorResponse(err))
-        return
-    }
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
 
 	arg := db.UpdateUserNameParams{
-		Uuid: userUUID,
+		Uuid:     userUUID,
 		FullName: req.FullName,
 	}
 
@@ -255,46 +350,46 @@ func (server *Server) UpdateUserName(ctx *gin.Context) {
 // @Failure      500      {object}  map[string]interface{} "Internal Server Error"
 // @Router       /users/profile-image [put]
 func (server *Server) UpdateProfileImage(ctx *gin.Context) {
-    payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 
-    file, err := ctx.FormFile("image")
-    if err != nil {
-        ctx.JSON(http.StatusBadRequest, errorResponse(err))
-        return
-    }
+	file, err := ctx.FormFile("image")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
 
-    f, err := file.Open()
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-        return
-    }
-    defer f.Close()
+	f, err := file.Open()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	defer f.Close()
 
-    imageData, err := io.ReadAll(f)
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-        return
-    }
+	imageData, err := io.ReadAll(f)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
 
-    imagePath, err := util.SaveUserImage(imageData, payload.Username)
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-        return
-    }
+	imagePath, err := util.SaveUserImage(imageData, payload.Username)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
 
-    arg := db.UpdateUserProfileImageParams{
-        Uuid: payload.UserUUID,
-        ProfileImage: sql.NullString{
-            String: imagePath,
-            Valid:  true,
-        },
-    }
+	arg := db.UpdateUserProfileImageParams{
+		Uuid: payload.UserUUID,
+		ProfileImage: sql.NullString{
+			String: imagePath,
+			Valid:  true,
+		},
+	}
 
-    user, err := server.store.UpdateUserProfileImage(ctx, arg)
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-        return
-    }
+	user, err := server.store.UpdateUserProfileImage(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
 
-    ctx.JSON(http.StatusOK, dto.NewUserResponse(user))
-} 
+	ctx.JSON(http.StatusOK, dto.NewUserResponse(user))
+}

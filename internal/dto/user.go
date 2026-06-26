@@ -4,6 +4,7 @@ import (
 	"time"
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
+	"github.com/google/uuid"
 )
 
 type CreateUserRequest struct {
@@ -17,26 +18,26 @@ type UserResponse struct {
 	Username          string    `json:"username"`
 	FullName          string    `json:"full_name"`
 	Email             string    `json:"email"`
-	UserImage         *string    `json:"user_image"`
+	UserImage         *string   `json:"user_image"`
 	PasswordChangedAt time.Time `json:"password_changed_at"`
 	CreatedAt         time.Time `json:"created_at"`
 }
 
 func NewUserResponse(user db.User) UserResponse {
 	var imagePath *string
-    if user.ProfileImage.Valid && user.ProfileImage.String != "" {
-        path := user.ProfileImage.String
-        imagePath = &path 
-    }
+	if user.ProfileImage.Valid && user.ProfileImage.String != "" {
+		path := user.ProfileImage.String
+		imagePath = &path
+	}
 
-    return UserResponse{
-        Username:          user.Username,
-        FullName:          user.FullName,
-        Email:             user.Email,
-        UserImage:         imagePath, 
-        PasswordChangedAt: user.PasswordChangedAt,
-        CreatedAt:         user.CreatedAt,
-    }
+	return UserResponse{
+		Username:          user.Username,
+		FullName:          user.FullName,
+		Email:             user.Email,
+		UserImage:         imagePath,
+		PasswordChangedAt: user.PasswordChangedAt,
+		CreatedAt:         user.CreatedAt,
+	}
 }
 
 type LoginUserRequest struct {
@@ -45,10 +46,12 @@ type LoginUserRequest struct {
 }
 
 type LoginUserResponse struct {
-	AccessToken          string       `json:"access_token"`
-	RefreshToken         string       `json:"refresh_token"`
-	AccessTokenExpiresAt time.Time    `json:"access_token_expires_at"`
-	User                 UserResponse `json:"user"`
+	SessionID             uuid.UUID    `json:"session_id"`
+	AccessToken           string       `json:"access_token"`
+	AccessTokenExpiresAt  time.Time    `json:"acces_token_expires_at"`
+	RefreshToken          string       `json:"refresh_token"`
+	RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
+	User                  UserResponse `json:"user"`
 }
 
 type RenewAccessTokenRequest struct {
@@ -56,7 +59,12 @@ type RenewAccessTokenRequest struct {
 }
 
 type RenewAccessTokenResponse struct {
-	AccessToken string `json:"access_token"`
+	AccessToken          string    `json:"access_token"`
+	AccessTokenExpiresAt time.Time `json:"acces_token_expires_at"`
+}
+
+type LogoutUserRequest struct {
+    SessionID uuid.UUID `json:"session_id" binding:"required"`
 }
 
 type UpdateUserNameRequest struct {

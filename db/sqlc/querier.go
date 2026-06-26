@@ -11,10 +11,12 @@ import (
 )
 
 type Querier interface {
+	BlockSession(ctx context.Context, id uuid.UUID) error
 	CreateDevice(ctx context.Context, arg CreateDeviceParams) (Device, error)
 	CreateIrrigationAction(ctx context.Context, arg CreateIrrigationActionParams) (IrrigationAction, error)
 	CreateIrrigationPreferenceHistory(ctx context.Context, arg CreateIrrigationPreferenceHistoryParams) (IrrigationPreferencesHistory, error)
 	CreateIrrigationPreferences(ctx context.Context, arg CreateIrrigationPreferencesParams) (IrrigationPreference, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserAcceptedTerm(ctx context.Context, arg CreateUserAcceptedTermParams) (UserAcceptedTerm, error)
 	DeleteIrrigationAction(ctx context.Context, id int64) error
@@ -28,6 +30,7 @@ type Querier interface {
 	GetIrrigationPreference(ctx context.Context, argUuid uuid.UUID) (IrrigationPreference, error)
 	GetIrrigationPreferenceByDevice(ctx context.Context, deviceID int64) (IrrigationPreference, error)
 	GetLegalDocument(ctx context.Context, argUuid uuid.UUID) (LegalDocument, error)
+	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetTutorial(ctx context.Context, argUuid uuid.UUID) (Tutorial, error)
 	GetUser(ctx context.Context, argUuid uuid.UUID) (User, error)
 	GetUserAcceptedTerm(ctx context.Context, argUuid uuid.UUID) (UserAcceptedTerm, error)
