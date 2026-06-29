@@ -55,3 +55,16 @@ UPDATE devices
 set name = $2
 WHERE uuid = $1
 RETURNING *;
+
+-- name: GetDeviceByUID :one
+SELECT * FROM devices
+WHERE device_uid = $1 LIMIT 1;
+
+-- name: UpdateDeviceTelemetryByUID :one
+UPDATE devices
+SET last_seen = $2,
+    status = $3,
+    ip_address = $4,
+    wifi_ssid = $5
+WHERE device_uid = $1
+RETURNING *;

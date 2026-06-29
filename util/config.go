@@ -15,6 +15,12 @@ type Config struct {
 	TokenSymmetricKey    string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
+	MQTTEnabled          bool          `mapstructure:"MQTT_ENABLED"`
+	MQTTBrokerURL        string        `mapstructure:"MQTT_BROKER_URL"`
+	MQTTClientID         string        `mapstructure:"MQTT_CLIENT_ID"`
+	MQTTUsername         string        `mapstructure:"MQTT_USERNAME"`
+	MQTTPassword         string        `mapstructure:"MQTT_PASSWORD"`
+	MQTTTopicPrefix      string        `mapstructure:"MQTT_TOPIC_PREFIX"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
@@ -29,6 +35,12 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.BindEnv("SERVER_ADDRESS")
 	viper.BindEnv("TOKEN_SYMMETRIC_KEY")
 	viper.BindEnv("ACCESS_TOKEN_DURATION")
+	viper.BindEnv("MQTT_ENABLED")
+	viper.BindEnv("MQTT_BROKER_URL")
+	viper.BindEnv("MQTT_CLIENT_ID")
+	viper.BindEnv("MQTT_USERNAME")
+	viper.BindEnv("MQTT_PASSWORD")
+	viper.BindEnv("MQTT_TOPIC_PREFIX")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

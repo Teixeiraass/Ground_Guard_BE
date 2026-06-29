@@ -112,6 +112,34 @@ func (q *Queries) GetDevice(ctx context.Context, argUuid uuid.UUID) (Device, err
 	return i, err
 }
 
+const getDeviceByUID = `-- name: GetDeviceByUID :one
+SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file FROM devices
+WHERE device_uid = $1 LIMIT 1
+`
+
+func (q *Queries) GetDeviceByUID(ctx context.Context, deviceUid string) (Device, error) {
+	row := q.db.QueryRowContext(ctx, getDeviceByUID, deviceUid)
+	var i Device
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.DeviceUid,
+		&i.Name,
+		&i.FirmwareVersion,
+		&i.FirmwareBuild,
+		&i.LastUpdate,
+		&i.IpAddress,
+		&i.WifiSsid,
+		&i.LastSeen,
+		&i.Status,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
+	)
+	return i, err
+}
+
 const getDeviceForUpdate = `-- name: GetDeviceForUpdate :one
 SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file FROM devices
 WHERE uuid = $1 LIMIT 1
@@ -243,6 +271,53 @@ type UnlinkDeviceFromUserParams struct {
 
 func (q *Queries) UnlinkDeviceFromUser(ctx context.Context, arg UnlinkDeviceFromUserParams) (Device, error) {
 	row := q.db.QueryRowContext(ctx, unlinkDeviceFromUser, arg.Uuid, arg.UserID)
+	var i Device
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.DeviceUid,
+		&i.Name,
+		&i.FirmwareVersion,
+		&i.FirmwareBuild,
+		&i.LastUpdate,
+		&i.IpAddress,
+		&i.WifiSsid,
+		&i.LastSeen,
+		&i.Status,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
+	)
+	return i, err
+}
+
+const updateDeviceTelemetryByUID = `-- name: UpdateDeviceTelemetryByUID :one
+UPDATE devices
+SET last_seen = $2,
+    status = $3,
+    ip_address = $4,
+    wifi_ssid = $5
+WHERE device_uid = $1
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file
+`
+
+type UpdateDeviceTelemetryByUIDParams struct {
+	DeviceUid string         `json:"device_uid"`
+	LastSeen  sql.NullTime   `json:"last_seen"`
+	Status    string         `json:"status"`
+	IpAddress pqtype.Inet    `json:"ip_address"`
+	WifiSsid  sql.NullString `json:"wifi_ssid"`
+}
+
+func (q *Queries) UpdateDeviceTelemetryByUID(ctx context.Context, arg UpdateDeviceTelemetryByUIDParams) (Device, error) {
+	row := q.db.QueryRowContext(ctx, updateDeviceTelemetryByUID,
+		arg.DeviceUid,
+		arg.LastSeen,
+		arg.Status,
+		arg.IpAddress,
+		arg.WifiSsid,
+	)
 	var i Device
 	err := row.Scan(
 		&i.ID,

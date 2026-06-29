@@ -212,6 +212,21 @@ func (mr *MockStoreMockRecorder) GetDevice(arg0, arg1 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevice", reflect.TypeOf((*MockStore)(nil).GetDevice), arg0, arg1)
 }
 
+// GetDeviceByUID mocks base method.
+func (m *MockStore) GetDeviceByUID(arg0 context.Context, arg1 string) (db.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeviceByUID", arg0, arg1)
+	ret0, _ := ret[0].(db.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDeviceByUID indicates an expected call of GetDeviceByUID.
+func (mr *MockStoreMockRecorder) GetDeviceByUID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceByUID", reflect.TypeOf((*MockStore)(nil).GetDeviceByUID), arg0, arg1)
+}
+
 // GetDeviceForUpdate mocks base method.
 func (m *MockStore) GetDeviceForUpdate(arg0 context.Context, arg1 uuid.UUID) (db.Device, error) {
 	m.ctrl.T.Helper()
@@ -585,6 +600,21 @@ func (m *MockStore) UnlinkDeviceFromUser(arg0 context.Context, arg1 db.UnlinkDev
 func (mr *MockStoreMockRecorder) UnlinkDeviceFromUser(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkDeviceFromUser", reflect.TypeOf((*MockStore)(nil).UnlinkDeviceFromUser), arg0, arg1)
+}
+
+// UpdateDeviceTelemetryByUID mocks base method.
+func (m *MockStore) UpdateDeviceTelemetryByUID(arg0 context.Context, arg1 db.UpdateDeviceTelemetryByUIDParams) (db.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDeviceTelemetryByUID", arg0, arg1)
+	ret0, _ := ret[0].(db.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDeviceTelemetryByUID indicates an expected call of UpdateDeviceTelemetryByUID.
+func (mr *MockStoreMockRecorder) UpdateDeviceTelemetryByUID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceTelemetryByUID", reflect.TypeOf((*MockStore)(nil).UpdateDeviceTelemetryByUID), arg0, arg1)
 }
 
 // UpdateDevices mocks base method.
