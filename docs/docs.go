@@ -800,6 +800,87 @@ const docTemplate = `{
                 }
             }
         },
+        "/irrigation/commands": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra um comando pendente para ser enviado ao ESP32 via MQTT.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "irrigation"
+                ],
+                "summary": "Criar comando de irrigação",
+                "parameters": [
+                    {
+                        "description": "Dados do comando",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateIrrigationCommandRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateIrrigationCommandResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/legal-document/{uuid}": {
             "get": {
                 "description": "Retorna os detalhes de um documento legal específico baseado no seu UUID",
@@ -1448,6 +1529,39 @@ const docTemplate = `{
                     ]
                 },
                 "wifi_ssid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateIrrigationCommandRequest": {
+            "type": "object",
+            "required": [
+                "action",
+                "device_id"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": [
+                        "START",
+                        "STOP"
+                    ]
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.CreateIrrigationCommandResponse": {
+            "type": "object",
+            "properties": {
+                "command_id": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }

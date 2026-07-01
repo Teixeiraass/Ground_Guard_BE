@@ -8,9 +8,10 @@ INSERT INTO irrigation_actions (
   status,
   trigger_type,
   water_volume_ml,
-  error_message
+  error_message,
+  command_id
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 ) RETURNING *;
  
 -- name: GetIrrigationAction :one
@@ -31,7 +32,8 @@ SET
   duration_seconds = $3,
   status = $4,
   water_volume_ml = $5,
-  error_message = $6
+  error_message = $6,
+  command_id = $7
 WHERE uuid = $1
 RETURNING *;
 

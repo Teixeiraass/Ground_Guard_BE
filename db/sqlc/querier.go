@@ -14,12 +14,14 @@ type Querier interface {
 	BlockSession(ctx context.Context, id uuid.UUID) error
 	CreateDevice(ctx context.Context, arg CreateDeviceParams) (Device, error)
 	CreateIrrigationAction(ctx context.Context, arg CreateIrrigationActionParams) (IrrigationAction, error)
+	CreateIrrigationCommand(ctx context.Context, arg CreateIrrigationCommandParams) (IrrigationCommand, error)
 	CreateIrrigationPreferenceHistory(ctx context.Context, arg CreateIrrigationPreferenceHistoryParams) (IrrigationPreferencesHistory, error)
 	CreateIrrigationPreferences(ctx context.Context, arg CreateIrrigationPreferencesParams) (IrrigationPreference, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserAcceptedTerm(ctx context.Context, arg CreateUserAcceptedTermParams) (UserAcceptedTerm, error)
 	DeleteIrrigationAction(ctx context.Context, id int64) error
+	DeleteIrrigationCommand(ctx context.Context, argUuid uuid.UUID) error
 	DeleteIrrigationPreference(ctx context.Context, argUuid uuid.UUID) error
 	DeleteIrrigationPreferenceByDeviceId(ctx context.Context, deviceID int64) error
 	GetDevice(ctx context.Context, argUuid uuid.UUID) (Device, error)
@@ -28,6 +30,7 @@ type Querier interface {
 	GetFaq(ctx context.Context, argUuid uuid.UUID) (Faq, error)
 	GetHelpContent(ctx context.Context, argUuid uuid.UUID) (HelpContent, error)
 	GetIrrigationAction(ctx context.Context, argUuid uuid.UUID) (IrrigationAction, error)
+	GetIrrigationCommand(ctx context.Context, argUuid uuid.UUID) (IrrigationCommand, error)
 	GetIrrigationPreference(ctx context.Context, argUuid uuid.UUID) (IrrigationPreference, error)
 	GetIrrigationPreferenceByDevice(ctx context.Context, deviceID int64) (IrrigationPreference, error)
 	GetLegalDocument(ctx context.Context, argUuid uuid.UUID) (LegalDocument, error)
@@ -44,14 +47,17 @@ type Querier interface {
 	ListHelpContents(ctx context.Context, arg ListHelpContentsParams) ([]HelpContent, error)
 	ListHelpContentsByCategory(ctx context.Context, arg ListHelpContentsByCategoryParams) ([]HelpContent, error)
 	ListIrrigationAction(ctx context.Context, arg ListIrrigationActionParams) ([]IrrigationAction, error)
+	ListIrrigationCommands(ctx context.Context, arg ListIrrigationCommandsParams) ([]IrrigationCommand, error)
 	ListIrrigationPreferences(ctx context.Context, arg ListIrrigationPreferencesParams) ([]IrrigationPreference, error)
 	ListLegalDocuments(ctx context.Context, arg ListLegalDocumentsParams) ([]LegalDocument, error)
 	ListTutorials(ctx context.Context, arg ListTutorialsParams) ([]Tutorial, error)
 	ListTutorialsByCategory(ctx context.Context, arg ListTutorialsByCategoryParams) ([]Tutorial, error)
+	MarkTimedOutCommands(ctx context.Context) error
 	UnlinkDeviceFromUser(ctx context.Context, arg UnlinkDeviceFromUserParams) (Device, error)
 	UpdateDeviceTelemetryByUID(ctx context.Context, arg UpdateDeviceTelemetryByUIDParams) (Device, error)
 	UpdateDevices(ctx context.Context, arg UpdateDevicesParams) (Device, error)
 	UpdateIrrigationAction(ctx context.Context, arg UpdateIrrigationActionParams) (IrrigationAction, error)
+	UpdateIrrigationCommandStatus(ctx context.Context, arg UpdateIrrigationCommandStatusParams) (IrrigationCommand, error)
 	UpdateIrrigationPreference(ctx context.Context, arg UpdateIrrigationPreferenceParams) (IrrigationPreference, error)
 	UpdateNameDevice(ctx context.Context, arg UpdateNameDeviceParams) (Device, error)
 	UpdateUserName(ctx context.Context, arg UpdateUserNameParams) (User, error)

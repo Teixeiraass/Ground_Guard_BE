@@ -46,7 +46,7 @@ func (s *TelemetrySubscriber) HandleTelemetry(ctx context.Context, topic string,
 
 	status := telemetry.Status
 	if status == "" {
-		status = "online"
+		status = DeviceStatusOnline
 	}
 
 	_, err := s.store.UpdateDeviceTelemetryByUID(ctx, db.UpdateDeviceTelemetryByUIDParams{

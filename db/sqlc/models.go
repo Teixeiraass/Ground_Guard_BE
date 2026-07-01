@@ -68,6 +68,21 @@ type IrrigationAction struct {
 	WaterVolumeMl   sql.NullInt32  `json:"water_volume_ml"`
 	ErrorMessage    sql.NullString `json:"error_message"`
 	CreatedAt       time.Time      `json:"created_at"`
+	CommandID       int64          `json:"command_id"`
+}
+
+type IrrigationCommand struct {
+	ID              int64          `json:"id"`
+	Uuid            uuid.UUID      `json:"uuid"`
+	DeviceID        int64          `json:"device_id"`
+	UserID          int64          `json:"user_id"`
+	Action          string         `json:"action"`
+	DurationSeconds sql.NullInt32  `json:"duration_seconds"`
+	Status          string         `json:"status"`
+	ErrorMessage    sql.NullString `json:"error_message"`
+	RequestedAt     time.Time      `json:"requested_at"`
+	ProcessedAt     sql.NullTime   `json:"processed_at"`
+	CreatedAt       time.Time      `json:"created_at"`
 }
 
 type IrrigationPreference struct {
@@ -93,6 +108,30 @@ type IrrigationPreferencesHistory struct {
 	OldData      pqtype.NullRawMessage `json:"old_data"`
 	NewData      pqtype.NullRawMessage `json:"new_data"`
 	ChangedAt    time.Time             `json:"changed_at"`
+}
+
+type IrrigationSchedule struct {
+	ID              int64          `json:"id"`
+	Uuid            uuid.UUID      `json:"uuid"`
+	DeviceID        int64          `json:"device_id"`
+	UserID          int64          `json:"user_id"`
+	Name            sql.NullString `json:"name"`
+	Enabled         bool           `json:"enabled"`
+	StartTime       time.Time      `json:"start_time"`
+	DurationSeconds int32          `json:"duration_seconds"`
+	DaysOfWeek      string         `json:"days_of_week"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+}
+
+type IrrigationScheduleHistory struct {
+	ID           int64          `json:"id"`
+	ScheduleID   int64          `json:"schedule_id"`
+	StartedAt    sql.NullTime   `json:"started_at"`
+	FinishedAt   sql.NullTime   `json:"finished_at"`
+	Status       string         `json:"status"`
+	ErrorMessage sql.NullString `json:"error_message"`
+	CreatedAt    time.Time      `json:"created_at"`
 }
 
 type LegalDocument struct {
