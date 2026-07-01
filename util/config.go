@@ -21,6 +21,14 @@ type Config struct {
 	MQTTUsername         string        `mapstructure:"MQTT_USERNAME"`
 	MQTTPassword         string        `mapstructure:"MQTT_PASSWORD"`
 	MQTTTopicPrefix      string        `mapstructure:"MQTT_TOPIC_PREFIX"`
+	GoogleClientID       string        `mapstructure:"GOOGLE_CLIENT_ID"`
+	GoogleClientSecret   string        `mapstructure:"GOOGLE_CLIENT_SECRET"`
+	GoogleRedirectURL    string        `mapstructure:"GOOGLE_REDIRECT_URL"`
+	AppleClientID        string        `mapstructure:"APPLE_CLIENT_ID"`
+	AppleTeamID          string        `mapstructure:"APPLE_TEAM_ID"`
+	AppleKeyID           string        `mapstructure:"APPLE_KEY_ID"`
+	ApplePrivateKey      string        `mapstructure:"APPLE_PRIVATE_KEY"`
+	AppleRedirectURL     string        `mapstructure:"APPLE_REDIRECT_URL"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
@@ -41,6 +49,14 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.BindEnv("MQTT_USERNAME")
 	viper.BindEnv("MQTT_PASSWORD")
 	viper.BindEnv("MQTT_TOPIC_PREFIX")
+	viper.BindEnv("GOOGLE_CLIENT_ID")
+	viper.BindEnv("GOOGLE_CLIENT_SECRET")
+	viper.BindEnv("GOOGLE_REDIRECT_URL")
+	viper.BindEnv("APPLE_CLIENT_ID")
+	viper.BindEnv("APPLE_TEAM_ID")
+	viper.BindEnv("APPLE_KEY_ID")
+	viper.BindEnv("APPLE_PRIVATE_KEY")
+	viper.BindEnv("APPLE_REDIRECT_URL")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

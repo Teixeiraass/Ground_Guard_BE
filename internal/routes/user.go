@@ -11,6 +11,7 @@ type UserHandler interface {
 	LoginUser(c *gin.Context)
 	RenewAccessToken(c *gin.Context)
 	GetUser(c *gin.Context)
+	OAuthLogin(c *gin.Context)
 	UpdateUserName(c *gin.Context)
 	UpdateProfileImage(c *gin.Context)
 	LogoutUser(c *gin.Context)
@@ -19,6 +20,7 @@ type UserHandler interface {
 func registerUserRoutes(router gin.IRoutes, h UserHandler) {
 	router.POST("/users", h.CreateUser)
 	router.POST("/users/login", h.LoginUser)
+	router.POST("/users/oauth/:provider", h.OAuthLogin)
 	router.POST("/tokens/refresh", h.RenewAccessToken)
 }
 

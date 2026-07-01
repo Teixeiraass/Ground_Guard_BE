@@ -125,6 +125,21 @@ func (mr *MockStoreMockRecorder) CreateIrrigationPreferences(arg0, arg1 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIrrigationPreferences", reflect.TypeOf((*MockStore)(nil).CreateIrrigationPreferences), arg0, arg1)
 }
 
+// CreateOAuthIdentity mocks base method.
+func (m *MockStore) CreateOAuthIdentity(arg0 context.Context, arg1 db.CreateOAuthIdentityParams) (db.OauthIdentity, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOAuthIdentity", arg0, arg1)
+	ret0, _ := ret[0].(db.OauthIdentity)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOAuthIdentity indicates an expected call of CreateOAuthIdentity.
+func (mr *MockStoreMockRecorder) CreateOAuthIdentity(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOAuthIdentity", reflect.TypeOf((*MockStore)(nil).CreateOAuthIdentity), arg0, arg1)
+}
+
 // CreateSession mocks base method.
 func (m *MockStore) CreateSession(arg0 context.Context, arg1 db.CreateSessionParams) (db.Session, error) {
 	m.ctrl.T.Helper()
@@ -376,6 +391,21 @@ func (mr *MockStoreMockRecorder) GetLegalDocument(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLegalDocument", reflect.TypeOf((*MockStore)(nil).GetLegalDocument), arg0, arg1)
 }
 
+// GetOAuthIdentityByProviderAndSubject mocks base method.
+func (m *MockStore) GetOAuthIdentityByProviderAndSubject(arg0 context.Context, arg1 db.GetOAuthIdentityByProviderAndSubjectParams) (db.OauthIdentity, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOAuthIdentityByProviderAndSubject", arg0, arg1)
+	ret0, _ := ret[0].(db.OauthIdentity)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOAuthIdentityByProviderAndSubject indicates an expected call of GetOAuthIdentityByProviderAndSubject.
+func (mr *MockStoreMockRecorder) GetOAuthIdentityByProviderAndSubject(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOAuthIdentityByProviderAndSubject", reflect.TypeOf((*MockStore)(nil).GetOAuthIdentityByProviderAndSubject), arg0, arg1)
+}
+
 // GetSession mocks base method.
 func (m *MockStore) GetSession(arg0 context.Context, arg1 uuid.UUID) (db.Session, error) {
 	m.ctrl.T.Helper()
@@ -479,6 +509,21 @@ func (m *MockStore) GetUserByEmail(arg0 context.Context, arg1 string) (db.User, 
 func (mr *MockStoreMockRecorder) GetUserByEmail(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmail", reflect.TypeOf((*MockStore)(nil).GetUserByEmail), arg0, arg1)
+}
+
+// GetUserByID mocks base method.
+func (m *MockStore) GetUserByID(arg0 context.Context, arg1 int64) (db.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserByID", arg0, arg1)
+	ret0, _ := ret[0].(db.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByID indicates an expected call of GetUserByID.
+func (mr *MockStoreMockRecorder) GetUserByID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockStore)(nil).GetUserByID), arg0, arg1)
 }
 
 // LinkDeviceToUserByQrToken mocks base method.
