@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
+	appoauth "github.com/Teixeiraass/ground_guard_be/internal/oauth"
 	"github.com/Teixeiraass/ground_guard_be/internal/routes"
 	"github.com/Teixeiraass/ground_guard_be/mqtt"
 	"github.com/Teixeiraass/ground_guard_be/token"
@@ -12,11 +13,12 @@ import (
 )
 
 type Server struct {
-	config     util.Config
-	store      db.Store
-	tokenMaker token.Maker
-	mqttClient mqtt.Client
-	router     *gin.Engine
+	config       util.Config
+	store        db.Store
+	tokenMaker   token.Maker
+	oauthService *appoauth.Service
+	mqttClient   mqtt.Client
+	router       *gin.Engine
 }
 
 func NewServer(config util.Config, store db.Store, mqttClient mqtt.Client) (*Server, error) {
@@ -33,10 +35,11 @@ func NewServer(config util.Config, store db.Store, mqttClient mqtt.Client) (*Ser
 	}
 
 	server := &Server{
-		config:     config,
-		store:      store,
-		tokenMaker: tokenMaker,
-		mqttClient: mqttClient,
+		config:       config,
+		store:        store,
+		tokenMaker:   tokenMaker,
+		oauthService: appoauth.NewService(config),
+		mqttClient:   mqttClient,
 	}
 
 	server.router = routes.Setup(server.tokenMaker, server)

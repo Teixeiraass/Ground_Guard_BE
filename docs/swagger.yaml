@@ -219,6 +219,13 @@ definitions:
     required:
     - session_id
     type: object
+  dto.OAuthLoginRequest:
+    properties:
+      id_token:
+        type: string
+    required:
+    - id_token
+    type: object
   dto.RenewAccessTokenRequest:
     properties:
       refresh_token:
@@ -1261,6 +1268,49 @@ paths:
       summary: Atualiza o nome do usuário
       tags:
       - users
+  /users/oauth/{provider}:
+    post:
+      consumes:
+      - application/json
+      description: Autentica um usuário com Google ou Apple via id_token e cria a
+        sessão local.
+      parameters:
+      - description: google ou apple
+        in: path
+        name: provider
+        required: true
+        type: string
+      - description: ID token do provider
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OAuthLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.LoginUserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login via OAuth 2.0
+      tags:
+      - auth
   /users/profile-image:
     put:
       consumes:

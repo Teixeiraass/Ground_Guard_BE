@@ -146,6 +146,18 @@ type LegalDocument struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type OauthIdentity struct {
+	ID              int64     `json:"id"`
+	Uuid            uuid.UUID `json:"uuid"`
+	UserID          int64     `json:"user_id"`
+	Provider        string    `json:"provider"`
+	ProviderSubject string    `json:"provider_subject"`
+	Email           string    `json:"email"`
+	EmailVerified   bool      `json:"email_verified"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
 type Session struct {
 	ID           uuid.UUID `json:"id"`
 	UserID       int64     `json:"user_id"`

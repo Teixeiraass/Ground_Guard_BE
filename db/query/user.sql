@@ -17,6 +17,10 @@ WHERE uuid = $1 LIMIT 1;
 SELECT * FROM users
 WHERE email = $1 LIMIT 1;
 
+-- name: GetUserByID :one
+SELECT * FROM users
+WHERE id = $1 LIMIT 1;
+
 -- name: UpdateUserName :one
 UPDATE users
 SET full_name = $2
