@@ -24,6 +24,28 @@ definitions:
     - name
     - status
     type: object
+  dto.CreateIrrigationCommandRequest:
+    properties:
+      action:
+        enum:
+        - START
+        - STOP
+        type: string
+      device_id:
+        type: string
+      duration:
+        type: integer
+    required:
+    - action
+    - device_id
+    type: object
+  dto.CreateIrrigationCommandResponse:
+    properties:
+      command_id:
+        type: string
+      status:
+        type: string
+    type: object
   dto.CreateIrrigationPreferenceRequest:
     properties:
       device_uuid:
@@ -805,6 +827,60 @@ paths:
       summary: Get an irrigation preference by ID
       tags:
       - Irrigation Preferences
+  /irrigation/commands:
+    post:
+      consumes:
+      - application/json
+      description: Registra um comando pendente para ser enviado ao ESP32 via MQTT.
+      parameters:
+      - description: Dados do comando
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateIrrigationCommandRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CreateIrrigationCommandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar comando de irrigação
+      tags:
+      - irrigation
   /legal-document/{uuid}:
     get:
       consumes:

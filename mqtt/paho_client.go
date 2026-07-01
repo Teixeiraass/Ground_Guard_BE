@@ -8,6 +8,8 @@ import (
 	pahomqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
+const mqttPublishWaitTimeout = 5 * time.Second
+
 // PahoClient implements Client using Eclipse Mosquitto via paho.mqtt.golang.
 type PahoClient struct {
 	client      pahomqtt.Client
@@ -58,20 +60,18 @@ func NewPahoClient(config util.Config) (Client, error) {
 
 func (c *PahoClient) Publish(topic string, payload []byte) error {
 	token := c.client.Publish(topic, 1, false, payload)
-	if token.Wait() && token.Error() != nil {
-		return token.Error()
+	if !token.WaitTimeout(mqttPublishWaitTimeout) {
+		return fmt.Errorf("mqtt publish timed out after %s", mqttPublishWaitTimeout)
 	}
-	return nil
+	return token.Error()
 }
 
 func (c *PahoClient) Subscribe(topic string, handler MessageHandler) error {
 	token := c.client.Subscribe(topic, 1, func(_ pahomqtt.Client, msg pahomqtt.Message) {
 		handler(msg.Topic(), msg.Payload())
 	})
-	if token.Wait() && token.Error() != nil {
-		return token.Error()
-	}
-	return nil
+	token.Wait()
+	return token.Error()
 }
 
 func (c *PahoClient) Close() {

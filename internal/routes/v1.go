@@ -18,4 +18,5 @@ func registerV1Routes(router *gin.Engine, tokenMaker token.Maker, handlers Handl
 	registerAuthUserRoutes(authRoutes, handlers)
 	registerDeviceRoutes(authRoutes, handlers)
 	registerIrrigationPreferencesRoutes(authRoutes, handlers)
+	registerIrrigationActionRoutes(authRoutes, handlers)
 }

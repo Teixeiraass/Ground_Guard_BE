@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS "irrigation_schedule_history";

@@ -23,10 +23,11 @@ INSERT INTO irrigation_actions (
   status,
   trigger_type,
   water_volume_ml,
-  error_message
+  error_message,
+  command_id
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9
-) RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+) RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, command_id
 `
 
 type CreateIrrigationActionParams struct {
@@ -39,6 +40,7 @@ type CreateIrrigationActionParams struct {
 	TriggerType     string         `json:"trigger_type"`
 	WaterVolumeMl   sql.NullInt32  `json:"water_volume_ml"`
 	ErrorMessage    sql.NullString `json:"error_message"`
+	CommandID       int64          `json:"command_id"`
 }
 
 func (q *Queries) CreateIrrigationAction(ctx context.Context, arg CreateIrrigationActionParams) (IrrigationAction, error) {
@@ -52,6 +54,7 @@ func (q *Queries) CreateIrrigationAction(ctx context.Context, arg CreateIrrigati
 		arg.TriggerType,
 		arg.WaterVolumeMl,
 		arg.ErrorMessage,
+		arg.CommandID,
 	)
 	var i IrrigationAction
 	err := row.Scan(
@@ -67,6 +70,7 @@ func (q *Queries) CreateIrrigationAction(ctx context.Context, arg CreateIrrigati
 		&i.WaterVolumeMl,
 		&i.ErrorMessage,
 		&i.CreatedAt,
+		&i.CommandID,
 	)
 	return i, err
 }
@@ -81,7 +85,7 @@ func (q *Queries) DeleteIrrigationAction(ctx context.Context, id int64) error {
 }
 
 const getIrrigationAction = `-- name: GetIrrigationAction :one
-SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at FROM irrigation_actions
+SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, command_id FROM irrigation_actions
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -101,12 +105,13 @@ func (q *Queries) GetIrrigationAction(ctx context.Context, argUuid uuid.UUID) (I
 		&i.WaterVolumeMl,
 		&i.ErrorMessage,
 		&i.CreatedAt,
+		&i.CommandID,
 	)
 	return i, err
 }
 
 const listIrrigationAction = `-- name: ListIrrigationAction :many
-SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at FROM irrigation_actions
+SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, command_id FROM irrigation_actions
 WHERE user_id = $1
 ORDER BY id
 LIMIT $2
@@ -141,6 +146,7 @@ func (q *Queries) ListIrrigationAction(ctx context.Context, arg ListIrrigationAc
 			&i.WaterVolumeMl,
 			&i.ErrorMessage,
 			&i.CreatedAt,
+			&i.CommandID,
 		); err != nil {
 			return nil, err
 		}
@@ -162,9 +168,10 @@ SET
   duration_seconds = $3,
   status = $4,
   water_volume_ml = $5,
-  error_message = $6
+  error_message = $6,
+  command_id = $7
 WHERE uuid = $1
-RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at
+RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, command_id
 `
 
 type UpdateIrrigationActionParams struct {
@@ -174,6 +181,7 @@ type UpdateIrrigationActionParams struct {
 	Status          string         `json:"status"`
 	WaterVolumeMl   sql.NullInt32  `json:"water_volume_ml"`
 	ErrorMessage    sql.NullString `json:"error_message"`
+	CommandID       int64          `json:"command_id"`
 }
 
 func (q *Queries) UpdateIrrigationAction(ctx context.Context, arg UpdateIrrigationActionParams) (IrrigationAction, error) {
@@ -184,6 +192,7 @@ func (q *Queries) UpdateIrrigationAction(ctx context.Context, arg UpdateIrrigati
 		arg.Status,
 		arg.WaterVolumeMl,
 		arg.ErrorMessage,
+		arg.CommandID,
 	)
 	var i IrrigationAction
 	err := row.Scan(
@@ -199,6 +208,7 @@ func (q *Queries) UpdateIrrigationAction(ctx context.Context, arg UpdateIrrigati
 		&i.WaterVolumeMl,
 		&i.ErrorMessage,
 		&i.CreatedAt,
+		&i.CommandID,
 	)
 	return i, err
 }
