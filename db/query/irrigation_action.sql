@@ -18,6 +18,14 @@ INSERT INTO irrigation_actions (
 SELECT * FROM irrigation_actions
 WHERE uuid = $1 LIMIT 1;
 
+-- name: ExistsActiveIrrigationAction :one
+SELECT EXISTS (
+    SELECT 1
+    FROM irrigation_actions
+    WHERE device_id = $1
+      AND status = 'ATIVO'
+);
+
 -- name: ListIrrigationAction :many
 SELECT * FROM irrigation_actions
 WHERE user_id = $1

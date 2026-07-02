@@ -74,7 +74,7 @@ func TestUpdateIrrigationCommand(t *testing.T) {
 
 	arg := UpdateIrrigationCommandStatusParams{
 		Uuid:   irrigationCommand1.Uuid,
-		Status: "COMPLETED",
+		Status: "SUCCESS",
 	}
 
 	irrigationCommand2, err := testQueries.UpdateIrrigationCommandStatus(context.Background(), arg)

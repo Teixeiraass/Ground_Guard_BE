@@ -84,6 +84,22 @@ func (q *Queries) DeleteIrrigationAction(ctx context.Context, id int64) error {
 	return err
 }
 
+const existsActiveIrrigationAction = `-- name: ExistsActiveIrrigationAction :one
+SELECT EXISTS (
+    SELECT 1
+    FROM irrigation_actions
+    WHERE device_id = $1
+      AND status = 'ATIVO'
+)
+`
+
+func (q *Queries) ExistsActiveIrrigationAction(ctx context.Context, deviceID int64) (bool, error) {
+	row := q.db.QueryRowContext(ctx, existsActiveIrrigationAction, deviceID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const getIrrigationAction = `-- name: GetIrrigationAction :one
 SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, command_id FROM irrigation_actions
 WHERE uuid = $1 LIMIT 1

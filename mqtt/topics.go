@@ -43,3 +43,29 @@ func DeviceUIDFromTelemetryTopic(prefix, topic string) (string, bool) {
 
 	return deviceUID, true
 }
+
+func DeviceEventTopic(prefix, deviceUID string) string {
+	return fmt.Sprintf("%s/devices/%s/events", NormalizeTopicPrefix(prefix), deviceUID)
+}
+
+func DeviceEventWildcard(prefix string) string {
+	return fmt.Sprintf("%s/devices/+/events", NormalizeTopicPrefix(prefix))
+}
+
+func DeviceUIDFromEventTopic(prefix, topic string) (string, bool) {
+	expectedPrefix := NormalizeTopicPrefix(prefix) + "/devices/"
+	suffix := "/events"
+
+	if !strings.HasPrefix(topic, expectedPrefix) || !strings.HasSuffix(topic, suffix) {
+		return "", false
+	}
+
+	deviceUID := strings.TrimPrefix(topic, expectedPrefix)
+	deviceUID = strings.TrimSuffix(deviceUID, suffix)
+
+	if deviceUID == "" || strings.Contains(deviceUID, "/") {
+		return "", false
+	}
+
+	return deviceUID, true
+}

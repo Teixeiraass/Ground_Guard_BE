@@ -241,6 +241,50 @@ func (mr *MockStoreMockRecorder) DeleteIrrigationPreferenceByDeviceId(arg0, arg1
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIrrigationPreferenceByDeviceId", reflect.TypeOf((*MockStore)(nil).DeleteIrrigationPreferenceByDeviceId), arg0, arg1)
 }
 
+// ExistsActiveIrrigationAction mocks base method.
+func (m *MockStore) ExistsActiveIrrigationAction(arg0 context.Context, arg1 int64) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExistsActiveIrrigationAction", arg0, arg1)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExistsActiveIrrigationAction indicates an expected call of ExistsActiveIrrigationAction.
+func (mr *MockStoreMockRecorder) ExistsActiveIrrigationAction(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistsActiveIrrigationAction", reflect.TypeOf((*MockStore)(nil).ExistsActiveIrrigationAction), arg0, arg1)
+}
+
+// ExistsPendingIrrigationCommand mocks base method.
+func (m *MockStore) ExistsPendingIrrigationCommand(arg0 context.Context, arg1 int64) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExistsPendingIrrigationCommand", arg0, arg1)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExistsPendingIrrigationCommand indicates an expected call of ExistsPendingIrrigationCommand.
+func (mr *MockStoreMockRecorder) ExistsPendingIrrigationCommand(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExistsPendingIrrigationCommand", reflect.TypeOf((*MockStore)(nil).ExistsPendingIrrigationCommand), arg0, arg1)
+}
+
+// FailTimedOutCommands mocks base method.
+func (m *MockStore) FailTimedOutCommands(arg0 context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FailTimedOutCommands", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// FailTimedOutCommands indicates an expected call of FailTimedOutCommands.
+func (mr *MockStoreMockRecorder) FailTimedOutCommands(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailTimedOutCommands", reflect.TypeOf((*MockStore)(nil).FailTimedOutCommands), arg0)
+}
+
 // GetDevice mocks base method.
 func (m *MockStore) GetDevice(arg0 context.Context, arg1 uuid.UUID) (db.Device, error) {
 	m.ctrl.T.Helper()
@@ -689,20 +733,6 @@ func (m *MockStore) ListTutorialsByCategory(arg0 context.Context, arg1 db.ListTu
 func (mr *MockStoreMockRecorder) ListTutorialsByCategory(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTutorialsByCategory", reflect.TypeOf((*MockStore)(nil).ListTutorialsByCategory), arg0, arg1)
-}
-
-// MarkTimedOutCommands mocks base method.
-func (m *MockStore) MarkTimedOutCommands(arg0 context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "MarkTimedOutCommands", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// MarkTimedOutCommands indicates an expected call of MarkTimedOutCommands.
-func (mr *MockStoreMockRecorder) MarkTimedOutCommands(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkTimedOutCommands", reflect.TypeOf((*MockStore)(nil).MarkTimedOutCommands), arg0)
 }
 
 // UnlinkDeviceFromUser mocks base method.

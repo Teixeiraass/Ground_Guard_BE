@@ -6,6 +6,7 @@ import (
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	appoauth "github.com/Teixeiraass/ground_guard_be/internal/oauth"
 	"github.com/Teixeiraass/ground_guard_be/internal/routes"
+	"github.com/Teixeiraass/ground_guard_be/internal/worker"
 	"github.com/Teixeiraass/ground_guard_be/mqtt"
 	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/Teixeiraass/ground_guard_be/util"
@@ -33,6 +34,9 @@ func NewServer(config util.Config, store db.Store, mqttClient mqtt.Client) (*Ser
 			return nil, fmt.Errorf("cannot start mqtt telemetry subscriber: %w", err)
 		}
 	}
+
+	timeoutWorker := worker.NewIrrigationTimeoutWorker(store)
+	timeoutWorker.Start()
 
 	server := &Server{
 		config:       config,
