@@ -48,31 +48,65 @@ func TestCreateIrrigationCommandAPI(t *testing.T) {
 				middleware.AddAuthorization(t, request, tokenMaker, middleware.AuthorizationTypeBearer, user.Username, user.ID, user.Uuid, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore, mqttClient *mockmqtt.MockClient) {
-				store.EXPECT().GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).Times(1).Return(device, nil)
-				store.EXPECT().CreateIrrigationCommand(gomock.Any(), gomock.Eq(db.CreateIrrigationCommandParams{
-					DeviceID:        device.ID,
-					UserID:          user.ID,
-					Action:          "START",
-					DurationSeconds: sql.NullInt32{Int32: 300, Valid: true},
-				})).Times(1).Return(db.IrrigationCommand{
-					ID:       1,
-					Uuid:     commandUUID,
-					Action:   "START",
-					Status:   "PENDING",
-					DeviceID: device.ID,
-					UserID:   user.ID,
-				}, nil)
-				store.EXPECT().UpdateIrrigationCommandStatus(gomock.Any(), gomock.Any()).Times(0)
+				store.EXPECT().
+					GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).
+					Times(1).
+					Return(device, nil)
+
+				store.EXPECT().
+					ExistsPendingIrrigationCommand(gomock.Any(), device.ID).
+					Times(1).
+					Return(false, nil)
+
+				store.EXPECT().
+					ExistsActiveIrrigationAction(gomock.Any(), device.ID).
+					Times(1).
+					Return(false, nil)
+
+				store.EXPECT().
+					CreateIrrigationCommand(
+						gomock.Any(),
+						gomock.Eq(db.CreateIrrigationCommandParams{
+							DeviceID:        device.ID,
+							UserID:          user.ID,
+							Action:          "START",
+							DurationSeconds: sql.NullInt32{Int32: 300, Valid: true},
+						}),
+					).
+					Times(1).
+					Return(db.IrrigationCommand{
+						ID:       1,
+						Uuid:     commandUUID,
+						Action:   "START",
+						Status:   "PENDING",
+						DeviceID: device.ID,
+						UserID:   user.ID,
+					}, nil)
+
+				store.EXPECT().
+					UpdateIrrigationCommandStatus(gomock.Any(), gomock.Any()).
+					Times(0)
 
 				expectedPayload, err := json.Marshal(dto.IrrigationCommandPayload{
-					CommandID:       commandUUID.String(),
-					Action:          "START",
-					DurationSeconds: func() *int32 { v := int32(300); return &v }(),
+					CommandID: commandUUID.String(),
+					Action:    "START",
+					DurationSeconds: func() *int32 {
+						v := int32(300)
+						return &v
+					}(),
 				})
 				require.NoError(t, err)
 
-				mqttClient.EXPECT().TopicPrefix().Times(1).Return("ground-guard")
-				mqttClient.EXPECT().Publish("ground-guard/devices/"+device.DeviceUid+"/commands", expectedPayload).Times(1).Return(nil)
+				mqttClient.EXPECT().
+					TopicPrefix().
+					Return("ground-guard")
+
+				mqttClient.EXPECT().
+					Publish(
+						"ground-guard/devices/"+device.DeviceUid+"/commands",
+						expectedPayload,
+					).
+					Return(nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusCreated, recorder.Code)
@@ -156,31 +190,58 @@ func TestCreateIrrigationCommandAPI(t *testing.T) {
 				middleware.AddAuthorization(t, request, tokenMaker, middleware.AuthorizationTypeBearer, user.Username, user.ID, user.Uuid, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore, mqttClient *mockmqtt.MockClient) {
-				store.EXPECT().GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).Times(1).Return(device, nil)
-				store.EXPECT().CreateIrrigationCommand(gomock.Any(), gomock.Eq(db.CreateIrrigationCommandParams{
-					DeviceID:        device.ID,
-					UserID:          user.ID,
-					Action:          "START",
-					DurationSeconds: sql.NullInt32{Int32: 300, Valid: true},
-				})).Times(1).Return(db.IrrigationCommand{
-					ID:       2,
-					Uuid:     commandUUID,
-					Action:   "START",
-					Status:   "PENDING",
-					DeviceID: device.ID,
-					UserID:   user.ID,
-				}, nil)
-				store.EXPECT().UpdateIrrigationCommandStatus(gomock.Any(), gomock.Eq(db.UpdateIrrigationCommandStatusParams{
-					Uuid:   commandUUID,
-					Status: "FAILED",
-					ErrorMessage: sql.NullString{
-						String: "mqtt publish failed",
-						Valid:  true,
-					},
-				})).Times(1).Return(db.IrrigationCommand{}, nil)
+				store.EXPECT().
+					GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).
+					Return(device, nil)
 
-				mqttClient.EXPECT().TopicPrefix().Times(1).Return("ground-guard")
-				mqttClient.EXPECT().Publish(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("mqtt publish failed"))
+				store.EXPECT().
+					ExistsPendingIrrigationCommand(gomock.Any(), device.ID).
+					Return(false, nil)
+
+				store.EXPECT().
+					ExistsActiveIrrigationAction(gomock.Any(), device.ID).
+					Return(false, nil)
+
+				store.EXPECT().
+					CreateIrrigationCommand(
+						gomock.Any(),
+						gomock.Eq(db.CreateIrrigationCommandParams{
+							DeviceID:        device.ID,
+							UserID:          user.ID,
+							Action:          "START",
+							DurationSeconds: sql.NullInt32{Int32: 300, Valid: true},
+						}),
+					).
+					Return(db.IrrigationCommand{
+						ID:       2,
+						Uuid:     commandUUID,
+						Action:   "START",
+						Status:   "PENDING",
+						DeviceID: device.ID,
+						UserID:   user.ID,
+					}, nil)
+
+				store.EXPECT().
+					UpdateIrrigationCommandStatus(
+						gomock.Any(),
+						gomock.Eq(db.UpdateIrrigationCommandStatusParams{
+							Uuid:   commandUUID,
+							Status: "FAILED",
+							ErrorMessage: sql.NullString{
+								String: "mqtt publish failed",
+								Valid:  true,
+							},
+						}),
+					).
+					Return(db.IrrigationCommand{}, nil)
+
+				mqttClient.EXPECT().
+					TopicPrefix().
+					Return("ground-guard")
+
+				mqttClient.EXPECT().
+					Publish(gomock.Any(), gomock.Any()).
+					Return(errors.New("mqtt publish failed"))
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
