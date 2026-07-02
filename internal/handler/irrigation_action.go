@@ -71,6 +71,40 @@ func (server *Server) CreateIrrigationCommand(ctx *gin.Context) {
 		return
 	}
 
+	pending, err := server.store.ExistsPendingIrrigationCommand(ctx, device.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if pending {
+		ctx.JSON(http.StatusConflict,
+			errorResponse(errors.New("device already has a pending command")))
+		return
+	}
+
+	active, err := server.store.ExistsActiveIrrigationAction(ctx, device.ID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	switch req.Action {
+	case "START":
+		if active {
+			ctx.JSON(http.StatusConflict,
+				errorResponse(errors.New("device is already irrigating")))
+			return
+		}
+
+	case "STOP":
+		if !active {
+			ctx.JSON(http.StatusConflict,
+				errorResponse(errors.New("device is not irrigating")))
+			return
+		}
+	}
+
 	var durationSeconds sql.NullInt32
 	if req.Duration != nil {
 		durationSeconds = sql.NullInt32{Int32: *req.Duration, Valid: true}
@@ -122,7 +156,9 @@ func (server *Server) CreateIrrigationCommand(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, dto.NewIrrigationCommandResponse(command))
 }
 
-func (server *Server) UpdateIrrigationCommand(ctx *gin.Context) {}
+func (server *Server) UpdateIrrigationCommand(ctx *gin.Context) {
+
+}
 
 func (server *Server) ListIrrigationHistory(ctx *gin.Context) {}
 

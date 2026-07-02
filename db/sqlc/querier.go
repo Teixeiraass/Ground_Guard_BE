@@ -25,6 +25,9 @@ type Querier interface {
 	DeleteIrrigationCommand(ctx context.Context, argUuid uuid.UUID) error
 	DeleteIrrigationPreference(ctx context.Context, argUuid uuid.UUID) error
 	DeleteIrrigationPreferenceByDeviceId(ctx context.Context, deviceID int64) error
+	ExistsActiveIrrigationAction(ctx context.Context, deviceID int64) (bool, error)
+	ExistsPendingIrrigationCommand(ctx context.Context, deviceID int64) (bool, error)
+	FailTimedOutCommands(ctx context.Context) error
 	GetDevice(ctx context.Context, argUuid uuid.UUID) (Device, error)
 	GetDeviceByUID(ctx context.Context, deviceUid string) (Device, error)
 	GetDeviceForUpdate(ctx context.Context, argUuid uuid.UUID) (Device, error)
@@ -55,7 +58,6 @@ type Querier interface {
 	ListLegalDocuments(ctx context.Context, arg ListLegalDocumentsParams) ([]LegalDocument, error)
 	ListTutorials(ctx context.Context, arg ListTutorialsParams) ([]Tutorial, error)
 	ListTutorialsByCategory(ctx context.Context, arg ListTutorialsByCategoryParams) ([]Tutorial, error)
-	MarkTimedOutCommands(ctx context.Context) error
 	UnlinkDeviceFromUser(ctx context.Context, arg UnlinkDeviceFromUserParams) (Device, error)
 	UpdateDeviceTelemetryByUID(ctx context.Context, arg UpdateDeviceTelemetryByUIDParams) (Device, error)
 	UpdateDevices(ctx context.Context, arg UpdateDevicesParams) (Device, error)

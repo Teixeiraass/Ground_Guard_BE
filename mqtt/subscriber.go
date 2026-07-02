@@ -2,17 +2,26 @@ package mqtt
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/util"
+	"github.com/google/uuid"
 )
 
 type TelemetrySubscriber struct {
 	client Client
 	store  db.Store
+}
+
+type IrrigationEventPayload struct {
+	CommandID string `json:"command_id"`
+	Status    string `json:"status"`
+	Error     string `json:"error,omitempty"`
+	Action    string `json:"action,omitempty"`
 }
 
 func NewTelemetrySubscriber(client Client, store db.Store) *TelemetrySubscriber {
@@ -23,14 +32,104 @@ func NewTelemetrySubscriber(client Client, store db.Store) *TelemetrySubscriber 
 }
 
 func (s *TelemetrySubscriber) Start() error {
-	topic := DeviceTelemetryWildcard(s.client.TopicPrefix())
-	return s.client.Subscribe(topic, s.handleMessage)
+    if err := s.client.Subscribe(
+        DeviceTelemetryWildcard(s.client.TopicPrefix()),
+        s.handleTelemetryMessage,
+    ); err != nil {
+        return err
+    }
+
+    if err := s.client.Subscribe(
+        DeviceEventWildcard(s.client.TopicPrefix()),
+        s.handleEventMessage,
+    ); err != nil {
+        return err
+    }
+
+    return nil
 }
 
-func (s *TelemetrySubscriber) handleMessage(topic string, payload []byte) {
-	if err := s.HandleTelemetry(context.Background(), topic, payload); err != nil {
-		fmt.Printf("mqtt telemetry error on topic %s: %v\n", topic, err)
+func (s *TelemetrySubscriber) handleTelemetryMessage(topic string, payload []byte) {
+    if err := s.HandleTelemetry(context.Background(), topic, payload); err != nil {
+        fmt.Printf("mqtt telemetry error on topic %s: %v\n", topic, err)
+    }
+}
+
+func (s *TelemetrySubscriber) handleEventMessage(topic string, payload []byte) {
+    if err := s.HandleEvent(context.Background(), topic, payload); err != nil {
+        fmt.Printf("mqtt event error on topic %s: %v\n", topic, err)
+    }
+}
+
+
+func (s *TelemetrySubscriber) HandleEvent(ctx context.Context, topic string, payload []byte) error {
+	deviceUID, ok := DeviceUIDFromEventTopic(s.client.TopicPrefix(), topic)
+	if !ok {
+		return fmt.Errorf("invalid event topic: %s", topic)
 	}
+
+	var event IrrigationEventPayload
+	if err := json.Unmarshal(payload, &event); err != nil {
+		return fmt.Errorf("invalid event payload: %w", err)
+	}
+
+	switch event.Status {
+	case "SUCCESS", "FAILED":
+	default:
+		return fmt.Errorf("invalid status %s", event.Status)
+	}
+
+	commandUUID, err := uuid.Parse(event.CommandID)
+	if err != nil {
+		return fmt.Errorf("invalid command id: %w", err)
+	}
+
+	command, err := s.store.GetIrrigationCommand(ctx, commandUUID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("command not found")
+		}
+		return err
+	}
+
+	if command.Status != "PENDING" {
+		return nil
+	}
+
+	device, err := s.store.GetDeviceByUID(ctx, deviceUID)
+	if err != nil {
+		return fmt.Errorf("failed to get device: %w", err)
+	}
+
+	if command.DeviceID != device.ID {
+		return fmt.Errorf("device mismatch")
+	}
+
+	command, err = s.store.UpdateIrrigationCommandStatus(ctx, db.UpdateIrrigationCommandStatusParams{
+		Uuid:   command.Uuid,
+		Status: event.Status,
+		ErrorMessage: sql.NullString{
+			String: event.Error,
+			Valid:  event.Error != "",
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update command: %w", err)
+	}
+
+	if event.Status != "SUCCESS" {
+		return nil
+	}
+
+	switch command.Action {
+	case "START":
+		// TODO: criar irrigation_action
+
+	case "STOP":
+		// TODO: finalizar irrigation_action
+	}
+
+	return nil
 }
 
 func (s *TelemetrySubscriber) HandleTelemetry(ctx context.Context, topic string, payload []byte) error {
