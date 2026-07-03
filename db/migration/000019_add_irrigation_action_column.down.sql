@@ -1,0 +1,7 @@
+DROP INDEX IF EXISTS idx_irrigation_commands_irrigation_action_id;
+
+ALTER TABLE irrigation_commands
+DROP CONSTRAINT IF EXISTS irrigation_commands_irrigation_action_id_fkey;
+
+ALTER TABLE irrigation_commands
+DROP COLUMN IF EXISTS irrigation_action_id;

@@ -162,6 +162,47 @@ func (server *Server) UpdateIrrigationCommand(ctx *gin.Context) {
 
 func (server *Server) ListIrrigationHistory(ctx *gin.Context) {}
 
+// GetIrrigationCommands
+// @Summary      Obter comando de irrigação
+// @Description  Retorna os detalhes de um comando de irrigação específico através do seu UUID.
+// @Tags         irrigation
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        uuid  path      string  true  "UUID do comando de irrigação"
+// @Success      200   {object}  dto.CreateIrrigationCommandResponse
+// @Failure      400   {object}  map[string]interface{} "Bad Request"
+// @Failure      401   {object}  map[string]interface{} "Unauthorized"
+// @Failure      404   {object}  map[string]interface{} "Not Found"
+// @Failure      500   {object}  map[string]interface{} "Internal Server Error"
+// @Router       /irrigation/command/{uuid} [get]
+func (server *Server) GetIrrigationCommands(ctx *gin.Context) {
+	var req dto.GetIrrigationCommandRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	irrigationCommandUUID, err := uuid.Parse(req.UUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	irrigationCommand, err := server.store.GetIrrigationCommand(ctx, irrigationCommandUUID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.NewIrrigationCommandResponse(irrigationCommand))
+}
+
 func (server *Server) GetIrrigationHistory(ctx *gin.Context) {}
 
 func (server *Server) GetIrrigationStatus(ctx *gin.Context) {}

@@ -52,6 +52,12 @@ WHERE
     status = 'PENDING'
     AND requested_at <= now() - interval '10 seconds';
 
+-- name: LinkIrrigationCommandAction :one
+UPDATE irrigation_commands
+SET irrigation_action_id = $2
+WHERE id = $1
+RETURNING *;
+
 -- name: DeleteIrrigationCommand :exec
 DELETE
 FROM irrigation_commands

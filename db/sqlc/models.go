@@ -68,21 +68,21 @@ type IrrigationAction struct {
 	WaterVolumeMl   sql.NullInt32  `json:"water_volume_ml"`
 	ErrorMessage    sql.NullString `json:"error_message"`
 	CreatedAt       time.Time      `json:"created_at"`
-	CommandID       int64          `json:"command_id"`
 }
 
 type IrrigationCommand struct {
-	ID              int64          `json:"id"`
-	Uuid            uuid.UUID      `json:"uuid"`
-	DeviceID        int64          `json:"device_id"`
-	UserID          int64          `json:"user_id"`
-	Action          string         `json:"action"`
-	DurationSeconds sql.NullInt32  `json:"duration_seconds"`
-	Status          string         `json:"status"`
-	ErrorMessage    sql.NullString `json:"error_message"`
-	RequestedAt     time.Time      `json:"requested_at"`
-	ProcessedAt     sql.NullTime   `json:"processed_at"`
-	CreatedAt       time.Time      `json:"created_at"`
+	ID                 int64          `json:"id"`
+	Uuid               uuid.UUID      `json:"uuid"`
+	DeviceID           int64          `json:"device_id"`
+	UserID             int64          `json:"user_id"`
+	Action             string         `json:"action"`
+	DurationSeconds    sql.NullInt32  `json:"duration_seconds"`
+	Status             string         `json:"status"`
+	ErrorMessage       sql.NullString `json:"error_message"`
+	RequestedAt        time.Time      `json:"requested_at"`
+	ProcessedAt        sql.NullTime   `json:"processed_at"`
+	CreatedAt          time.Time      `json:"created_at"`
+	IrrigationActionID sql.NullInt64  `json:"irrigation_action_id"`
 }
 
 type IrrigationPreference struct {
