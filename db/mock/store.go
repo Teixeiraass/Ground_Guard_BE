@@ -285,6 +285,21 @@ func (mr *MockStoreMockRecorder) FailTimedOutCommands(arg0 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailTimedOutCommands", reflect.TypeOf((*MockStore)(nil).FailTimedOutCommands), arg0)
 }
 
+// GetActiveIrrigationActionByDevice mocks base method.
+func (m *MockStore) GetActiveIrrigationActionByDevice(arg0 context.Context, arg1 int64) (db.IrrigationAction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetActiveIrrigationActionByDevice", arg0, arg1)
+	ret0, _ := ret[0].(db.IrrigationAction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetActiveIrrigationActionByDevice indicates an expected call of GetActiveIrrigationActionByDevice.
+func (mr *MockStoreMockRecorder) GetActiveIrrigationActionByDevice(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveIrrigationActionByDevice", reflect.TypeOf((*MockStore)(nil).GetActiveIrrigationActionByDevice), arg0, arg1)
+}
+
 // GetDevice mocks base method.
 func (m *MockStore) GetDevice(arg0 context.Context, arg1 uuid.UUID) (db.Device, error) {
 	m.ctrl.T.Helper()
@@ -583,6 +598,21 @@ func (m *MockStore) LinkDeviceToUserByQrToken(arg0 context.Context, arg1 db.Link
 func (mr *MockStoreMockRecorder) LinkDeviceToUserByQrToken(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkDeviceToUserByQrToken", reflect.TypeOf((*MockStore)(nil).LinkDeviceToUserByQrToken), arg0, arg1)
+}
+
+// LinkIrrigationCommandAction mocks base method.
+func (m *MockStore) LinkIrrigationCommandAction(arg0 context.Context, arg1 db.LinkIrrigationCommandActionParams) (db.IrrigationCommand, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LinkIrrigationCommandAction", arg0, arg1)
+	ret0, _ := ret[0].(db.IrrigationCommand)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LinkIrrigationCommandAction indicates an expected call of LinkIrrigationCommandAction.
+func (mr *MockStoreMockRecorder) LinkIrrigationCommandAction(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkIrrigationCommandAction", reflect.TypeOf((*MockStore)(nil).LinkIrrigationCommandAction), arg0, arg1)
 }
 
 // ListDevices mocks base method.

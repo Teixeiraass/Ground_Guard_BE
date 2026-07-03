@@ -834,6 +834,50 @@ paths:
       summary: Get an irrigation preference by ID
       tags:
       - Irrigation Preferences
+  /irrigation/command/{uuid}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna os detalhes de um comando de irrigação específico através
+        do seu UUID.
+      parameters:
+      - description: UUID do comando de irrigação
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CreateIrrigationCommandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obter comando de irrigação
+      tags:
+      - irrigation
   /irrigation/commands:
     post:
       consumes:

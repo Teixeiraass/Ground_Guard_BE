@@ -24,6 +24,11 @@ type IrrigationEventPayload struct {
 	Action    string `json:"action,omitempty"`
 }
 
+const (
+    IrrigationActionActive = "ATIVO"
+    IrrigationActionFinished = "FINALIZADO"
+)
+
 func NewTelemetrySubscriber(client Client, store db.Store) *TelemetrySubscriber {
 	return &TelemetrySubscriber{
 		client: client,
@@ -123,10 +128,59 @@ func (s *TelemetrySubscriber) HandleEvent(ctx context.Context, topic string, pay
 
 	switch command.Action {
 	case "START":
-		// TODO: criar irrigation_action
+		action, err := s.store.CreateIrrigationAction(ctx, db.CreateIrrigationActionParams{
+			DeviceID: device.ID,
+			UserID: command.UserID,
+			DurationSeconds: command.DurationSeconds,
+			Status: IrrigationActionActive,
+			TriggerType: "MANUAL",
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create irrigation action: %w", err)
+		}
 
+		_, err = s.store.LinkIrrigationCommandAction(ctx, db.LinkIrrigationCommandActionParams{
+			ID: command.ID,
+			IrrigationActionID: sql.NullInt64{
+				Int64: action.ID,
+				Valid: true,
+			},
+		})
+		if err != nil {
+			return err
+		}
 	case "STOP":
-		// TODO: finalizar irrigation_action
+		action, err := s.store.GetActiveIrrigationActionByDevice(ctx, device.ID)
+		if err != nil {
+			return err
+		}
+
+		_, err = s.store.UpdateIrrigationAction(ctx, db.UpdateIrrigationActionParams{
+			Uuid: action.Uuid,
+			FinishedAt: sql.NullTime{
+				Time: time.Now(),
+				Valid: true,
+			},
+			DurationSeconds: sql.NullInt32{
+				Int32: int32(time.Since(action.StartedAt).Seconds()),
+				Valid: true,
+			},
+			Status: IrrigationActionFinished,
+		})
+		if err != nil {
+			return err
+		}
+
+		_, err = s.store.LinkIrrigationCommandAction(ctx, db.LinkIrrigationCommandActionParams{
+			ID: command.ID,
+			IrrigationActionID: sql.NullInt64{
+				Int64: action.ID,
+				Valid: true,
+			},
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

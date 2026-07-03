@@ -28,6 +28,7 @@ type Querier interface {
 	ExistsActiveIrrigationAction(ctx context.Context, deviceID int64) (bool, error)
 	ExistsPendingIrrigationCommand(ctx context.Context, deviceID int64) (bool, error)
 	FailTimedOutCommands(ctx context.Context) error
+	GetActiveIrrigationActionByDevice(ctx context.Context, deviceID int64) (IrrigationAction, error)
 	GetDevice(ctx context.Context, argUuid uuid.UUID) (Device, error)
 	GetDeviceByUID(ctx context.Context, deviceUid string) (Device, error)
 	GetDeviceForUpdate(ctx context.Context, argUuid uuid.UUID) (Device, error)
@@ -48,6 +49,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	LinkDeviceToUserByQrToken(ctx context.Context, arg LinkDeviceToUserByQrTokenParams) (Device, error)
+	LinkIrrigationCommandAction(ctx context.Context, arg LinkIrrigationCommandActionParams) (IrrigationCommand, error)
 	ListDevices(ctx context.Context, arg ListDevicesParams) ([]Device, error)
 	ListFaqs(ctx context.Context, arg ListFaqsParams) ([]Faq, error)
 	ListHelpContents(ctx context.Context, arg ListHelpContentsParams) ([]HelpContent, error)

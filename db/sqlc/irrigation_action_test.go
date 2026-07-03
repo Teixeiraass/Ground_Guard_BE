@@ -13,13 +13,11 @@ import (
 func createRandomIrrigationAction(t *testing.T) IrrigationAction {
 	user := createRandomUser(t)
 	device := createRandomDevice(t)
-	irrigationCommand := createRandomIrrigationCommand(t, user, device)
 
 	arg := CreateIrrigationActionParams {
 		DeviceID: device.ID,
 		UserID: user.ID,
 		TriggerType: "MANUAL",
-		CommandID: irrigationCommand.ID,
 	}
 
 	irrigationAction, err := testQueries.CreateIrrigationAction(context.Background(), arg) 
@@ -29,7 +27,7 @@ func createRandomIrrigationAction(t *testing.T) IrrigationAction {
 	require.Equal(t, arg.DeviceID, irrigationAction.DeviceID)
 	require.Equal(t, arg.UserID, irrigationAction.UserID)
 	require.Equal(t, arg.TriggerType, irrigationAction.TriggerType)
-	require.Equal(t, arg.CommandID, irrigationAction.CommandID)
+
 
 	return irrigationAction
 }
@@ -73,7 +71,6 @@ func TestUpdateIrrigationAction(t * testing.T) {
 			Valid: true,
 		},
 		Status: "FINALIZADO",
-		CommandID: irrigationAction1.CommandID,
 	}
 
 	irrigationAction2, err := testQueries.UpdateIrrigationAction(context.Background(), arg)
@@ -97,7 +94,6 @@ func TestUpdateIrrigationAction(t * testing.T) {
 	require.Equal(t, irrigationAction1.TriggerType, irrigationAction2.TriggerType)
 	require.Equal(t, irrigationAction1.WaterVolumeMl, irrigationAction2.WaterVolumeMl)
 	require.Equal(t, irrigationAction1.ErrorMessage, irrigationAction2.ErrorMessage)
-	require.Equal(t, irrigationAction1.CommandID, irrigationAction2.CommandID)
 	require.WithinDuration(t, irrigationAction1.CreatedAt, irrigationAction2.CreatedAt, time.Second)
 }
 
