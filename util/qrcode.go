@@ -10,7 +10,7 @@ import (
 
 func GenerateQRCodeImage(token string) (string, error) {
 	dir := "uploads/qrcodes"
-	
+
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return "", fmt.Errorf("erro ao criar diretório de qrcode: %v", err)
 	}

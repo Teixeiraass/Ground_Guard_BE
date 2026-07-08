@@ -6,7 +6,7 @@ import (
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/handler"
-	"github.com/Teixeiraass/ground_guard_be/mqtt"
+	"github.com/Teixeiraass/ground_guard_be/mqtt/client"
 	"github.com/Teixeiraass/ground_guard_be/util"
 
 	_ "github.com/lib/pq"
@@ -42,7 +42,7 @@ func main() {
 
 	store := db.NewStore(conn)
 
-	mqttClient, err := mqtt.NewPahoClient(config)
+	mqttClient, err := client.NewPahoClient(config)
 	if err != nil {
 		log.Fatal("cannot connect to mqtt broker:", err)
 	}

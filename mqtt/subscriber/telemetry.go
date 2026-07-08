@@ -1,4 +1,4 @@
-package mqtt
+package subscriber
 
 import (
 	"context"
@@ -8,12 +8,14 @@ import (
 	"time"
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
+	"github.com/Teixeiraass/ground_guard_be/mqtt"
+	"github.com/Teixeiraass/ground_guard_be/mqtt/client"
 	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/google/uuid"
 )
 
 type TelemetrySubscriber struct {
-	client Client
+	client client.Client
 	store  db.Store
 }
 
@@ -25,50 +27,49 @@ type IrrigationEventPayload struct {
 }
 
 const (
-    IrrigationActionActive = "ATIVO"
-    IrrigationActionFinished = "FINALIZADO"
+	IrrigationActionActive   = "ATIVO"
+	IrrigationActionFinished = "FINALIZADO"
 )
 
-func NewTelemetrySubscriber(client Client, store db.Store) *TelemetrySubscriber {
+func NewTelemetrySubscriber(c client.Client, store db.Store) *TelemetrySubscriber {
 	return &TelemetrySubscriber{
-		client: client,
+		client: c,
 		store:  store,
 	}
 }
 
 func (s *TelemetrySubscriber) Start() error {
-    if err := s.client.Subscribe(
-        DeviceTelemetryWildcard(s.client.TopicPrefix()),
-        s.handleTelemetryMessage,
-    ); err != nil {
-        return err
-    }
+	if err := s.client.Subscribe(
+		mqtt.DeviceTelemetryWildcard(s.client.TopicPrefix()),
+		s.handleTelemetryMessage,
+	); err != nil {
+		return err
+	}
 
-    if err := s.client.Subscribe(
-        DeviceEventWildcard(s.client.TopicPrefix()),
-        s.handleEventMessage,
-    ); err != nil {
-        return err
-    }
+	if err := s.client.Subscribe(
+		mqtt.DeviceEventWildcard(s.client.TopicPrefix()),
+		s.handleEventMessage,
+	); err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
 
 func (s *TelemetrySubscriber) handleTelemetryMessage(topic string, payload []byte) {
-    if err := s.HandleTelemetry(context.Background(), topic, payload); err != nil {
-        fmt.Printf("mqtt telemetry error on topic %s: %v\n", topic, err)
-    }
+	if err := s.HandleTelemetry(context.Background(), topic, payload); err != nil {
+		fmt.Printf("mqtt telemetry error on topic %s: %v\n", topic, err)
+	}
 }
 
 func (s *TelemetrySubscriber) handleEventMessage(topic string, payload []byte) {
-    if err := s.HandleEvent(context.Background(), topic, payload); err != nil {
-        fmt.Printf("mqtt event error on topic %s: %v\n", topic, err)
-    }
+	if err := s.HandleEvent(context.Background(), topic, payload); err != nil {
+		fmt.Printf("mqtt event error on topic %s: %v\n", topic, err)
+	}
 }
 
-
 func (s *TelemetrySubscriber) HandleEvent(ctx context.Context, topic string, payload []byte) error {
-	deviceUID, ok := DeviceUIDFromEventTopic(s.client.TopicPrefix(), topic)
+	deviceUID, ok := mqtt.DeviceUIDFromEventTopic(s.client.TopicPrefix(), topic)
 	if !ok {
 		return fmt.Errorf("invalid event topic: %s", topic)
 	}
@@ -129,11 +130,11 @@ func (s *TelemetrySubscriber) HandleEvent(ctx context.Context, topic string, pay
 	switch command.Action {
 	case "START":
 		action, err := s.store.CreateIrrigationAction(ctx, db.CreateIrrigationActionParams{
-			DeviceID: device.ID,
-			UserID: command.UserID,
+			DeviceID:        device.ID,
+			UserID:          command.UserID,
 			DurationSeconds: command.DurationSeconds,
-			Status: IrrigationActionActive,
-			TriggerType: "MANUAL",
+			Status:          IrrigationActionActive,
+			TriggerType:     "MANUAL",
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create irrigation action: %w", err)
@@ -158,7 +159,7 @@ func (s *TelemetrySubscriber) HandleEvent(ctx context.Context, topic string, pay
 		_, err = s.store.UpdateIrrigationAction(ctx, db.UpdateIrrigationActionParams{
 			Uuid: action.Uuid,
 			FinishedAt: sql.NullTime{
-				Time: time.Now(),
+				Time:  time.Now(),
 				Valid: true,
 			},
 			DurationSeconds: sql.NullInt32{
@@ -187,19 +188,19 @@ func (s *TelemetrySubscriber) HandleEvent(ctx context.Context, topic string, pay
 }
 
 func (s *TelemetrySubscriber) HandleTelemetry(ctx context.Context, topic string, payload []byte) error {
-	deviceUID, ok := DeviceUIDFromTelemetryTopic(s.client.TopicPrefix(), topic)
+	deviceUID, ok := mqtt.DeviceUIDFromTelemetryTopic(s.client.TopicPrefix(), topic)
 	if !ok {
 		return fmt.Errorf("invalid telemetry topic: %s", topic)
 	}
 
-	var telemetry TelemetryPayload
+	var telemetry mqtt.TelemetryPayload
 	if err := json.Unmarshal(payload, &telemetry); err != nil {
 		return fmt.Errorf("invalid telemetry payload: %w", err)
 	}
 
 	status := telemetry.Status
 	if status == "" {
-		status = DeviceStatusOnline
+		status = mqtt.DeviceStatusOnline
 	}
 
 	_, err := s.store.UpdateDeviceTelemetryByUID(ctx, db.UpdateDeviceTelemetryByUIDParams{
@@ -214,10 +215,4 @@ func (s *TelemetrySubscriber) HandleTelemetry(ctx context.Context, topic string,
 	}
 
 	return nil
-}
-
-// PublishCommand sends a command to a device via MQTT.
-func PublishCommand(client Client, deviceUID string, payload []byte) error {
-	topic := DeviceCommandTopic(client.TopicPrefix(), deviceUID)
-	return client.Publish(topic, payload)
 }

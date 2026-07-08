@@ -1,4 +1,6 @@
-package mqtt
+package client
+
+import "github.com/Teixeiraass/ground_guard_be/mqtt"
 
 // NoopClient is used when MQTT is disabled or in unit tests.
 type NoopClient struct {
@@ -7,7 +9,7 @@ type NoopClient struct {
 
 func NewNoopClient() Client {
 	return &NoopClient{
-		topicPrefix: defaultTopicPrefix,
+		topicPrefix: mqtt.DefaultTopicPrefix,
 	}
 }
 
@@ -22,5 +24,5 @@ func (c *NoopClient) Subscribe(topic string, handler MessageHandler) error {
 func (c *NoopClient) Close() {}
 
 func (c *NoopClient) TopicPrefix() string {
-	return c.topicPrefix
+	return mqtt.DefaultTopicPrefix
 }

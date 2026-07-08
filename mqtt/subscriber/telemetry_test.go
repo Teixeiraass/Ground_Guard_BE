@@ -1,4 +1,4 @@
-package mqtt
+package subscriber_test
 
 import (
 	"context"
@@ -9,6 +9,9 @@ import (
 
 	mockdb "github.com/Teixeiraass/ground_guard_be/db/mock"
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
+	"github.com/Teixeiraass/ground_guard_be/mqtt"
+	"github.com/Teixeiraass/ground_guard_be/mqtt/client"
+	"github.com/Teixeiraass/ground_guard_be/mqtt/subscriber"
 	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -16,9 +19,9 @@ import (
 
 func TestHandleTelemetry(t *testing.T) {
 	deviceUID := "ESP32-TEST-001"
-	topic := DeviceTelemetryTopic("ground-guard", deviceUID)
+	topic := mqtt.DeviceTelemetryTopic("ground-guard", deviceUID)
 
-	payload, err := json.Marshal(TelemetryPayload{
+	payload, err := json.Marshal(mqtt.TelemetryPayload{
 		Status:    "online",
 		IPAddress: "192.168.0.50",
 		WifiSSID:  "GroundGuard-WiFi",
@@ -106,8 +109,8 @@ func TestHandleTelemetry(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			subscriber := NewTelemetrySubscriber(NewNoopClient(), store)
-			err := subscriber.HandleTelemetry(context.Background(), tc.topic, tc.payload)
+			sub := subscriber.NewTelemetrySubscriber(client.NewNoopClient(), store)
+			err := sub.HandleTelemetry(context.Background(), tc.topic, tc.payload)
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -124,13 +127,13 @@ func TestTelemetrySubscriberStart(t *testing.T) {
 	defer ctrl.Finish()
 
 	store := mockdb.NewMockStore(ctrl)
-	subscriber := NewTelemetrySubscriber(NewNoopClient(), store)
+	sub := subscriber.NewTelemetrySubscriber(client.NewNoopClient(), store)
 
-	require.NoError(t, subscriber.Start())
+	require.NoError(t, sub.Start())
 }
 
 func TestTelemetryPayloadRoundTrip(t *testing.T) {
-	original := TelemetryPayload{
+	original := mqtt.TelemetryPayload{
 		Status:    util.RandomStatus(),
 		IPAddress: "192.168.1.10",
 		WifiSSID:  util.RandomString(8),
@@ -139,7 +142,7 @@ func TestTelemetryPayloadRoundTrip(t *testing.T) {
 	data, err := json.Marshal(original)
 	require.NoError(t, err)
 
-	var decoded TelemetryPayload
+	var decoded mqtt.TelemetryPayload
 	require.NoError(t, json.Unmarshal(data, &decoded))
 	require.Equal(t, original, decoded)
 	require.WithinDuration(t, time.Now(), time.Now(), time.Second)

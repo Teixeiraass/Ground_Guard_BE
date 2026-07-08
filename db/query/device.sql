@@ -68,3 +68,15 @@ SET last_seen = $2,
     wifi_ssid = $5
 WHERE device_uid = $1
 RETURNING *;
+
+-- name: UpdateDeviceRegistration :one
+UPDATE devices
+SET
+    firmware_version = $2,
+    firmware_build = $3,
+    ip_address = $4,
+    wifi_ssid = $5,
+    status = $6,
+    last_seen = NOW()
+WHERE device_uid = $1
+RETURNING *;

@@ -1,4 +1,4 @@
-package mqtt
+package client
 
 // MessageHandler is called when a subscribed topic receives a message.
 type MessageHandler func(topic string, payload []byte)

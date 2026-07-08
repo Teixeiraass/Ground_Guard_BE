@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"net/http"
 
-	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -35,7 +34,7 @@ func (server *Server) GetTutorial(ctx *gin.Context) {
 		return
 	}
 
-	tutorial, err := server.store.GetTutorial(ctx, tutorialUUID)
+	tutorial, err := server.ContentService.GetTutorial(ctx, tutorialUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -46,9 +45,8 @@ func (server *Server) GetTutorial(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewTutorialResponse(tutorial))
+	ctx.JSON(http.StatusOK, dto.NewTutorialResponse(*tutorial))
 }
-
 
 // ListTutorials godoc
 // @Summary      Listar tutoriais
@@ -69,19 +67,14 @@ func (server *Server) ListTutorials(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.ListTutorialsParams{
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-	}
-
-	tutorials, err := server.store.ListTutorials(ctx, arg)
+	tutorials, err := server.ContentService.ListTutorial(ctx, req.PageSize, (req.PageID-1)*req.PageSize)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	rsp := []dto.TutorialResponse{} 
-	
+	rsp := []dto.TutorialResponse{}
+
 	for _, tutorial := range tutorials {
 		rsp = append(rsp, dto.NewTutorialResponse(tutorial))
 	}

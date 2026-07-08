@@ -14,10 +14,10 @@ func createRandomUser(t *testing.T) User {
 	require.NoError(t, err)
 
 	arg := CreateUserParams{
-		Username: util.RandomUser(),
+		Username:       util.RandomUser(),
 		HashedPassword: hashedPassword,
-		FullName: util.RandomUser(),
-		Email: util.RandomEmail(),
+		FullName:       util.RandomUser(),
+		Email:          util.RandomEmail(),
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), arg)
@@ -75,7 +75,7 @@ func TestUpdateUserName(t *testing.T) {
 	user1 := createRandomUser(t)
 
 	arg := UpdateUserNameParams{
-		Uuid: user1.Uuid,
+		Uuid:     user1.Uuid,
 		FullName: util.RandomString(10),
 	}
 
@@ -93,7 +93,6 @@ func TestUpdateUserName(t *testing.T) {
 	require.WithinDuration(t, user1.PasswordChangedAt, user2.PasswordChangedAt, time.Second)
 	require.WithinDuration(t, user1.CreatedAt, user2.CreatedAt, time.Second)
 }
-
 
 // ESSE TEST FUNCIONA, MAS FICA CRIANDO ARQUIVO EM UMA PASTA UPLOAD NO SQLC
 // func TestUpdateProfileImage(t *testing.T) {

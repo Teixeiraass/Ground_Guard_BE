@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"net/http"
 
-	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -35,7 +34,7 @@ func (server *Server) GetLegalDocument(ctx *gin.Context) {
 		return
 	}
 
-	legalDocument, err := server.store.GetLegalDocument(ctx, legalDocumentUUID)
+	legalDocument, err := server.ContentService.GetLegalDocument(ctx, legalDocumentUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -46,7 +45,7 @@ func (server *Server) GetLegalDocument(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewLegalDocumentResponse(legalDocument))
+	ctx.JSON(http.StatusOK, dto.NewLegalDocumentResponse(*legalDocument))
 }
 
 // ListLegalDocument godoc
@@ -68,19 +67,14 @@ func (server *Server) ListLegalDocument(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.ListLegalDocumentsParams{
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-	}
-
-	legalDocuments, err := server.store.ListLegalDocuments(ctx, arg)
+	legalDocuments, err := server.ContentService.ListLegalDocument(ctx, req.PageSize, (req.PageID-1)*req.PageSize)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	rsp := []dto.LegalDocumentResponse{} 
-	
+	rsp := []dto.LegalDocumentResponse{}
+
 	for _, legalDocument := range legalDocuments {
 		rsp = append(rsp, dto.NewLegalDocumentResponse(legalDocument))
 	}

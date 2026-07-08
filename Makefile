@@ -30,7 +30,7 @@ server:
 
 mock: 
 	mockgen -package mockdb -destination db/mock/store.go github.com/Teixeiraass/ground_guard_be/db/sqlc Store
-	mockgen -package mockmqtt -destination mqtt/mock/client.go github.com/Teixeiraass/ground_guard_be/mqtt Client
+	mockgen -package mockmqtt -destination mqtt/mock/client.go github.com/Teixeiraass/ground_guard_be/mqtt/client Client
 
 db_docs: 
 	dbdocs build docs/db.dbml
