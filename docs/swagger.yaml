@@ -564,6 +564,45 @@ paths:
       summary: Atualizar nome do dispositivo
       tags:
       - devices
+  /devices/uid/{uid}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna as informações de um dispositivo específico cadastrado
+        utilizando o seu UID (Unique Identifier).
+      parameters:
+      - description: UID do Dispositivo
+        in: path
+        name: uid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DeviceResponse'
+        "400":
+          description: Bad Request (UID inválido)
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found (Dispositivo não encontrado)
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obter detalhes de um dispositivo pelo UID
+      tags:
+      - devices
   /devices/unlink/{uuid}:
     put:
       consumes:

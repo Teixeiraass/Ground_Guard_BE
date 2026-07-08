@@ -5,11 +5,11 @@ import (
 	"strings"
 )
 
-const defaultTopicPrefix = "ground-guard"
+const DefaultTopicPrefix = "ground-guard"
 
 func NormalizeTopicPrefix(prefix string) string {
 	if prefix == "" {
-		return defaultTopicPrefix
+		return DefaultTopicPrefix
 	}
 	return strings.Trim(prefix, "/")
 }

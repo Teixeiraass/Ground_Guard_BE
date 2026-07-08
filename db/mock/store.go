@@ -780,6 +780,21 @@ func (mr *MockStoreMockRecorder) UnlinkDeviceFromUser(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkDeviceFromUser", reflect.TypeOf((*MockStore)(nil).UnlinkDeviceFromUser), arg0, arg1)
 }
 
+// UpdateDeviceRegistration mocks base method.
+func (m *MockStore) UpdateDeviceRegistration(arg0 context.Context, arg1 db.UpdateDeviceRegistrationParams) (db.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDeviceRegistration", arg0, arg1)
+	ret0, _ := ret[0].(db.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDeviceRegistration indicates an expected call of UpdateDeviceRegistration.
+func (mr *MockStoreMockRecorder) UpdateDeviceRegistration(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceRegistration", reflect.TypeOf((*MockStore)(nil).UpdateDeviceRegistration), arg0, arg1)
+}
+
 // UpdateDeviceTelemetryByUID mocks base method.
 func (m *MockStore) UpdateDeviceTelemetryByUID(arg0 context.Context, arg1 db.UpdateDeviceTelemetryByUIDParams) (db.Device, error) {
 	m.ctrl.T.Helper()

@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 
 	mockdb "github.com/Teixeiraass/ground_guard_be/db/mock"
@@ -127,25 +128,25 @@ func randomDevice(userID int64) db.Device {
 }
 
 func requireBodyMatchDevice(
-    t *testing.T,
-    body *bytes.Buffer,
-    device db.Device,
+	t *testing.T,
+	body *bytes.Buffer,
+	device db.Device,
 ) {
-    data, err := io.ReadAll(body)
-    require.NoError(t, err)
+	data, err := io.ReadAll(body)
+	require.NoError(t, err)
 
-    var got dto.DeviceResponse
-    err = json.Unmarshal(data, &got)
-    require.NoError(t, err)
+	var got dto.DeviceResponse
+	err = json.Unmarshal(data, &got)
+	require.NoError(t, err)
 
-    require.Equal(t, device.Uuid, got.Uuid)
-    require.Equal(t, device.DeviceUid, got.DeviceUid)
-    require.Equal(t, device.Name, got.Name)
-    require.Equal(t, device.FirmwareVersion, got.FirmwareVersion)
-    require.Equal(t, device.Status, got.Status)
+	require.Equal(t, device.Uuid, got.Uuid)
+	require.Equal(t, device.DeviceUid, got.DeviceUid)
+	require.Equal(t, device.Name, got.Name)
+	require.Equal(t, device.FirmwareVersion, got.FirmwareVersion)
+	require.Equal(t, device.Status, got.Status)
 
-    if device.UserID.Valid {
-        require.NotNil(t, got.User)
-        require.Equal(t, device.UserID.Int64, *got.User)
-    }
+	if device.UserID.Valid {
+		require.NotNil(t, got.User)
+		require.Equal(t, device.UserID.Int64, *got.User)
+	}
 }

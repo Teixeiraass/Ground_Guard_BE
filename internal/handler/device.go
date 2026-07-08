@@ -2,17 +2,13 @@ package handler
 
 import (
 	"database/sql"
-	"errors"
 	"net/http"
 
-	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/Teixeiraass/ground_guard_be/internal/middleware"
 	"github.com/Teixeiraass/ground_guard_be/token"
-	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 // CreateDevice
@@ -36,44 +32,41 @@ func (server *Server) CreateDevice(ctx *gin.Context) {
 		return
 	}
 
-	qrToken, err := util.GenerateQRToken(12)
+	device, err := server.DeviceService.CreateDevice(ctx, req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	qrFileName, err := util.GenerateQRCodeImage(qrToken)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	arg := db.CreateDeviceParams{
-		DeviceUid:       req.DeviceUid,
-		Name:            req.Name,
-		FirmwareVersion: req.FirmwareVersion,
-		FirmwareBuild:   util.ToNullString(req.FirmwareBuild),
-		IpAddress:       util.ToInet(req.IpAddress),
-		WifiSsid:        util.ToNullString(req.WifiSsid),
-		Status:          req.Status,
-		QrToken:         qrToken,
-		QrCodeFile:      util.ToNullString(qrFileName),
-	}
-
-	device, err := server.store.CreateDevice(ctx, arg)
-	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok {
-			switch pqErr.Code.Name() {
-			case "unique_violation":
-				ctx.JSON(http.StatusForbidden, errorResponse(err))
-				return
-			}
+		if err.Error() == "unique_violation" {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, dto.NewDeviceResponse(device))
+	ctx.JSON(http.StatusCreated, dto.NewDeviceResponse(*device))
+}
+
+func (server *Server) RegisterDevice(ctx *gin.Context) {
+	var req dto.CreateDeviceRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	device, err := server.DeviceService.RegisterDevice(ctx, req)
+	if err != nil {
+		if err.Error() == "unique_violation" {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			return
+		}
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(*device))
 }
 
 // GetDevice
@@ -103,10 +96,16 @@ func (server *Server) GetDevice(ctx *gin.Context) {
 		return
 	}
 
-	device, err := server.store.GetDevice(ctx, deviceUUID)
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+
+	device, err := server.DeviceService.GetDevice(ctx, deviceUUID, authPayload.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		if err.Error() == "device doesn't belong to authenticated user" {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
 
@@ -114,14 +113,7 @@ func (server *Server) GetDevice(ctx *gin.Context) {
 		return
 	}
 
-	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
-	if device.UserID.Int64 != authPayload.UserID {
-		err := errors.New("device doesn't belong to authenticated user")
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(device))
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(*device))
 }
 
 // ListDevice
@@ -146,23 +138,14 @@ func (server *Server) ListDevice(ctx *gin.Context) {
 	}
 
 	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
-	arg := db.ListDevicesParams{
-		UserID: sql.NullInt64{
-			Int64: authPayload.UserID,
-			Valid: true,
-		},
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-	}
-
-	devices, err := server.store.ListDevices(ctx, arg)
+	devices, err := server.DeviceService.ListDevices(ctx, authPayload.UserID, req.PageSize, (req.PageID-1)*req.PageSize)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	rsp := []dto.DeviceResponse{} 
-	
+	rsp := []dto.DeviceResponse{}
+
 	for _, device := range devices {
 		rsp = append(rsp, dto.NewDeviceResponse(device))
 	}
@@ -170,6 +153,39 @@ func (server *Server) ListDevice(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, rsp)
 }
 
+// GetDeviceByUID
+// @Summary      Obter detalhes de um dispositivo pelo UID
+// @Description  Retorna as informações de um dispositivo específico cadastrado utilizando o seu UID (Unique Identifier).
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        uid      path      string  true  "UID do Dispositivo"
+// @Success      200      {object}  dto.DeviceResponse
+// @Failure      400      {object}  map[string]interface{} "Bad Request (UID inválido)"
+// @Failure      404      {object}  map[string]interface{} "Not Found (Dispositivo não encontrado)"
+// @Failure      500      {object}  map[string]interface{} "Internal Server Error"
+// @Router       /devices/uid/{uid} [get]
+func (server *Server) GetDeviceByUID(ctx *gin.Context) {
+	var req dto.GetDeviceByUIDRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	device, err := server.DeviceService.GetDeviceByUID(ctx, req.UID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(*device))
+}
 
 // LinkDeviceToUserByQrToken
 // @Summary      Vincular dispositivo ao usuário
@@ -189,15 +205,7 @@ func (server *Server) LinkDeviceToUserByQrToken(ctx *gin.Context) {
 
 	qrToken := ctx.Param("qr_token")
 
-	arg := db.LinkDeviceToUserByQrTokenParams{
-		QrToken: qrToken,
-		UserID: sql.NullInt64{
-			Int64: authPayload.UserID,
-			Valid: true,
-		},
-	}
-
-	device, err := server.store.LinkDeviceToUserByQrToken(ctx, arg)
+	device, err := server.DeviceService.LinkDeviceToUserByQrToken(ctx, qrToken, authPayload.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -207,7 +215,7 @@ func (server *Server) LinkDeviceToUserByQrToken(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(device))
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(*device))
 }
 
 // UnlinkDeviceFromUser
@@ -227,23 +235,15 @@ func (server *Server) LinkDeviceToUserByQrToken(ctx *gin.Context) {
 func (server *Server) UnlinkDeviceFromUser(ctx *gin.Context) {
 	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 
-    uuidStr := ctx.Param("uuid")
-    
-    deviceUUID, err := uuid.Parse(uuidStr)
-    if err != nil {
-        ctx.JSON(http.StatusBadRequest, errorResponse(err))
-        return
-    }
+	uuidStr := ctx.Param("uuid")
 
-	arg := db.UnlinkDeviceFromUserParams{
-		Uuid: deviceUUID,
-		UserID: sql.NullInt64{
-			Int64: authPayload.UserID,
-			Valid: true,
-		},
+	deviceUUID, err := uuid.Parse(uuidStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
 	}
 
-	device, err := server.store.UnlinkDeviceFromUser(ctx, arg)
+	device, err := server.DeviceService.UnlinkDeviceFromUser(ctx, deviceUUID, authPayload.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -253,9 +253,8 @@ func (server *Server) UnlinkDeviceFromUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(device))
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(*device))
 }
-
 
 // UpdateNameDevice
 // @Summary      Atualizar nome do dispositivo
@@ -279,24 +278,19 @@ func (server *Server) UpdateNameDevice(ctx *gin.Context) {
 		return
 	}
 
-    uuidStr := ctx.Param("uuid")
-    
-    deviceUUID, err := uuid.Parse(uuidStr)
-    if err != nil {
-        ctx.JSON(http.StatusBadRequest, errorResponse(err))
-        return
-    }
+	uuidStr := ctx.Param("uuid")
 
-	arg := db.UpdateNameDeviceParams{
-		Uuid: deviceUUID,
-		Name: req.Name,
+	deviceUUID, err := uuid.Parse(uuidStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
 	}
 
-	device, err := server.store.UpdateNameDevice(ctx, arg)
+	device, err := server.DeviceService.UpdateNameDevice(ctx, deviceUUID, req.Name)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(device))
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(*device))
 }

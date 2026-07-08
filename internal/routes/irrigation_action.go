@@ -4,11 +4,11 @@ import "github.com/gin-gonic/gin"
 
 type IrrigationActionHandler interface {
 	CreateIrrigationCommand(c *gin.Context)
-    UpdateIrrigationCommand(c *gin.Context)
-    ListIrrigationHistory(c *gin.Context)
+	UpdateIrrigationCommand(c *gin.Context)
+	ListIrrigationHistory(c *gin.Context)
 	GetIrrigationCommands(c *gin.Context)
-    GetIrrigationHistory(c *gin.Context)
-    GetIrrigationStatus(c *gin.Context)
+	GetIrrigationHistory(c *gin.Context)
+	GetIrrigationStatus(c *gin.Context)
 }
 
 func registerIrrigationActionRoutes(authRoutes gin.IRoutes, h IrrigationActionHandler) {

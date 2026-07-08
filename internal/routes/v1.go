@@ -9,6 +9,7 @@ func registerV1Routes(router *gin.Engine, tokenMaker token.Maker, handlers Handl
 	v1 := router.Group(V1Prefix)
 
 	registerUserRoutes(v1, handlers)
+	registerDeviceRoutes(v1, handlers)
 	registerFaqRoutes(v1, handlers)
 	registerHelpContentRoutes(v1, handlers)
 	registerTutorialRoutes(v1, handlers)
@@ -16,7 +17,7 @@ func registerV1Routes(router *gin.Engine, tokenMaker token.Maker, handlers Handl
 
 	authRoutes := v1.Group("/").Use(authMiddleware(tokenMaker))
 	registerAuthUserRoutes(authRoutes, handlers)
-	registerDeviceRoutes(authRoutes, handlers)
+	registerAuthDeviceRoutes(authRoutes, handlers)
 	registerIrrigationPreferencesRoutes(authRoutes, handlers)
 	registerIrrigationActionRoutes(authRoutes, handlers)
 }

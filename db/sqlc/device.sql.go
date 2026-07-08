@@ -292,6 +292,58 @@ func (q *Queries) UnlinkDeviceFromUser(ctx context.Context, arg UnlinkDeviceFrom
 	return i, err
 }
 
+const updateDeviceRegistration = `-- name: UpdateDeviceRegistration :one
+UPDATE devices
+SET
+    firmware_version = $2,
+    firmware_build = $3,
+    ip_address = $4,
+    wifi_ssid = $5,
+    status = $6,
+    last_seen = NOW()
+WHERE device_uid = $1
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file
+`
+
+type UpdateDeviceRegistrationParams struct {
+	DeviceUid       string         `json:"device_uid"`
+	FirmwareVersion string         `json:"firmware_version"`
+	FirmwareBuild   sql.NullString `json:"firmware_build"`
+	IpAddress       pqtype.Inet    `json:"ip_address"`
+	WifiSsid        sql.NullString `json:"wifi_ssid"`
+	Status          string         `json:"status"`
+}
+
+func (q *Queries) UpdateDeviceRegistration(ctx context.Context, arg UpdateDeviceRegistrationParams) (Device, error) {
+	row := q.db.QueryRowContext(ctx, updateDeviceRegistration,
+		arg.DeviceUid,
+		arg.FirmwareVersion,
+		arg.FirmwareBuild,
+		arg.IpAddress,
+		arg.WifiSsid,
+		arg.Status,
+	)
+	var i Device
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.DeviceUid,
+		&i.Name,
+		&i.FirmwareVersion,
+		&i.FirmwareBuild,
+		&i.LastUpdate,
+		&i.IpAddress,
+		&i.WifiSsid,
+		&i.LastSeen,
+		&i.Status,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
+	)
+	return i, err
+}
+
 const updateDeviceTelemetryByUID = `-- name: UpdateDeviceTelemetryByUID :one
 UPDATE devices
 SET last_seen = $2,

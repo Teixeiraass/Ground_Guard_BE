@@ -14,20 +14,19 @@ func createRandomIrrigationAction(t *testing.T) IrrigationAction {
 	user := createRandomUser(t)
 	device := createRandomDevice(t)
 
-	arg := CreateIrrigationActionParams {
-		DeviceID: device.ID,
-		UserID: user.ID,
+	arg := CreateIrrigationActionParams{
+		DeviceID:    device.ID,
+		UserID:      user.ID,
 		TriggerType: "MANUAL",
 	}
 
-	irrigationAction, err := testQueries.CreateIrrigationAction(context.Background(), arg) 
+	irrigationAction, err := testQueries.CreateIrrigationAction(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, irrigationAction)
 
 	require.Equal(t, arg.DeviceID, irrigationAction.DeviceID)
 	require.Equal(t, arg.UserID, irrigationAction.UserID)
 	require.Equal(t, arg.TriggerType, irrigationAction.TriggerType)
-
 
 	return irrigationAction
 }
@@ -57,13 +56,13 @@ func TestGetIrrigationAction(t *testing.T) {
 	require.WithinDuration(t, irrigationAction1.CreatedAt, irrigationAction2.CreatedAt, time.Second)
 }
 
-func TestUpdateIrrigationAction(t * testing.T) {
+func TestUpdateIrrigationAction(t *testing.T) {
 	irrigationAction1 := createRandomIrrigationAction(t)
 
-	arg := UpdateIrrigationActionParams {
+	arg := UpdateIrrigationActionParams{
 		Uuid: irrigationAction1.Uuid,
 		FinishedAt: sql.NullTime{
-			Time: time.Now(),
+			Time:  time.Now(),
 			Valid: true,
 		},
 		DurationSeconds: sql.NullInt32{
@@ -104,9 +103,9 @@ func TestListIrrigationAction(t *testing.T) {
 		lastIrrigationAction = createRandomIrrigationAction(t)
 	}
 
-	arg := ListIrrigationActionParams {
+	arg := ListIrrigationActionParams{
 		UserID: lastIrrigationAction.UserID,
-		Limit: 5,
+		Limit:  5,
 		Offset: 0,
 	}
 

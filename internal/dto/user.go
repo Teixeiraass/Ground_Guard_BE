@@ -64,7 +64,7 @@ type RenewAccessTokenResponse struct {
 }
 
 type LogoutUserRequest struct {
-    SessionID uuid.UUID `json:"session_id" binding:"required"`
+	SessionID uuid.UUID `json:"session_id" binding:"required"`
 }
 
 type UpdateUserNameRequest struct {

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"net/http"
 
-	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -35,7 +34,7 @@ func (server *Server) GetFaq(ctx *gin.Context) {
 		return
 	}
 
-	faq, err := server.store.GetFaq(ctx, faqUUID)
+	faq, err := server.ContentService.GetFaq(ctx, faqUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -46,9 +45,8 @@ func (server *Server) GetFaq(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewFaqResponse(faq))
+	ctx.JSON(http.StatusOK, dto.NewFaqResponse(*faq))
 }
-
 
 // ListFaq godoc
 // @Summary      Listar FAQs
@@ -69,19 +67,14 @@ func (server *Server) ListFaq(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.ListFaqsParams{
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-	}
-
-	faqs, err := server.store.ListFaqs(ctx, arg)
+	faqs, err := server.ContentService.ListFaq(ctx, req.PageSize, (req.PageID-1)*req.PageSize)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	rsp := []dto.FaqResponse{} 
-	
+	rsp := []dto.FaqResponse{}
+
 	for _, faq := range faqs {
 		rsp = append(rsp, dto.NewFaqResponse(faq))
 	}

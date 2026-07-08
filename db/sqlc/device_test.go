@@ -14,11 +14,11 @@ func createRandomDevice(t *testing.T) Device {
 	qrToken, err := util.GenerateQRToken(8)
 	require.NoError(t, err)
 
-	arg := CreateDeviceParams {
-		DeviceUid: util.RandomString(8),
-		Name: util.RandomString(6),
+	arg := CreateDeviceParams{
+		DeviceUid:       util.RandomString(8),
+		Name:            util.RandomString(6),
 		FirmwareVersion: util.RandomFirwareVersion(),
-		QrToken: qrToken,
+		QrToken:         qrToken,
 	}
 
 	device, err := testQueries.CreateDevice(context.Background(), arg)
@@ -62,15 +62,15 @@ func TestGetDevice(t *testing.T) {
 func TestUpdateDevice(t *testing.T) {
 	device1 := createRandomDevice(t)
 
-	arg := UpdateDevicesParams {
-		Uuid: device1.Uuid,
-		Status: util.RandomStatus(),	
+	arg := UpdateDevicesParams{
+		Uuid:   device1.Uuid,
+		Status: util.RandomStatus(),
 	}
 
 	device2, err := testQueries.UpdateDevices(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, device2)
-	
+
 	require.Equal(t, device1.ID, device2.ID)
 	require.Equal(t, device1.Uuid, device2.Uuid)
 	require.Equal(t, device1.Name, device2.Name)
@@ -91,7 +91,7 @@ func TestUpdateLinkDeviceToUserByQrToken(t *testing.T) {
 	device1 := createRandomDevice(t)
 	user := createRandomUser(t)
 
-	arg := LinkDeviceToUserByQrTokenParams {
+	arg := LinkDeviceToUserByQrTokenParams{
 		QrToken: device1.QrToken,
 		UserID: sql.NullInt64{
 			Int64: user.ID,
@@ -102,7 +102,7 @@ func TestUpdateLinkDeviceToUserByQrToken(t *testing.T) {
 	device2, err := testQueries.LinkDeviceToUserByQrToken(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, device2)
-	
+
 	require.Equal(t, device1.ID, device2.ID)
 	require.Equal(t, device1.Uuid, device2.Uuid)
 	require.Equal(t, device1.Name, device2.Name)
