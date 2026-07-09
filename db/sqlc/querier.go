@@ -62,6 +62,7 @@ type Querier interface {
 	ListTutorialsByCategory(ctx context.Context, arg ListTutorialsByCategoryParams) ([]Tutorial, error)
 	UnlinkDeviceFromUser(ctx context.Context, arg UnlinkDeviceFromUserParams) (Device, error)
 	UpdateDeviceRegistration(ctx context.Context, arg UpdateDeviceRegistrationParams) (Device, error)
+	UpdateDeviceState(ctx context.Context, arg UpdateDeviceStateParams) (Device, error)
 	UpdateDeviceTelemetryByUID(ctx context.Context, arg UpdateDeviceTelemetryByUIDParams) (Device, error)
 	UpdateDevices(ctx context.Context, arg UpdateDevicesParams) (Device, error)
 	UpdateIrrigationAction(ctx context.Context, arg UpdateIrrigationActionParams) (IrrigationAction, error)

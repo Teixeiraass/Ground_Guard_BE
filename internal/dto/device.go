@@ -27,6 +27,8 @@ type DeviceResponse struct {
 	IpAddress       *string    `json:"ip_address,omitempty"`
 	WifiSsid        *string    `json:"wifi_ssid,omitempty"`
 	LastSeen        *time.Time `json:"last_seen"`
+	IsOnline        bool       `json:"is_online"`
+	IsIrrigating    bool       `json:"is_irrigating"`
 	Status          string     `json:"status"`
 	User            *int64     `json:"user,omitempty"`
 }
@@ -68,6 +70,8 @@ func NewDeviceResponse(device db.Device) DeviceResponse {
 		IpAddress:       ipAddress,
 		WifiSsid:        wifiSsid,
 		LastSeen:        lastSeen,
+		IsOnline:        device.IsOnline,
+		IsIrrigating:    device.IsIrrigating,
 		Status:          device.Status,
 		User:            userId,
 	}
