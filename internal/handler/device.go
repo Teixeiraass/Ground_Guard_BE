@@ -45,6 +45,19 @@ func (server *Server) CreateDevice(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, dto.NewDeviceResponse(*device))
 }
 
+// RegisterDevice
+// @Summary      Registrar ou atualizar dispositivo
+// @Description  Verifica a existência do dispositivo pelo UID. Se não existir, realiza o cadastro de um novo dispositivo. Se já existir, atualiza suas informações de rede e sistema (Firmware, IP, Wi-Fi, Status).
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request  body      dto.CreateDeviceRequest  true  "Dados do dispositivo para registro ou atualização"
+// @Success      200      {object}  dto.DeviceResponse
+// @Failure      400      {object}  map[string]interface{} "Bad Request (JSON inválido)"
+// @Failure      403      {object}  map[string]interface{} "Forbidden (Unique Violation)"
+// @Failure      500      {object}  map[string]interface{} "Internal Server Error"
+// @Router       /devices/register [post]
 func (server *Server) RegisterDevice(ctx *gin.Context) {
 	var req dto.CreateDeviceRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

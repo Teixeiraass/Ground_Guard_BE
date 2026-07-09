@@ -1,0 +1,3 @@
+ALTER TABLE "devices"
+ALTER COLUMN is_online DROP NOT NULL,
+ALTER COLUMN is_irrigating DROP NOT NULL;

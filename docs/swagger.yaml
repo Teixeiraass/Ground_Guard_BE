@@ -564,6 +564,47 @@ paths:
       summary: Atualizar nome do dispositivo
       tags:
       - devices
+  /devices/register:
+    post:
+      consumes:
+      - application/json
+      description: Verifica a existência do dispositivo pelo UID. Se não existir,
+        realiza o cadastro de um novo dispositivo. Se já existir, atualiza suas informações
+        de rede e sistema (Firmware, IP, Wi-Fi, Status).
+      parameters:
+      - description: Dados do dispositivo para registro ou atualização
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateDeviceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DeviceResponse'
+        "400":
+          description: Bad Request (JSON inválido)
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden (Unique Violation)
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Registrar ou atualizar dispositivo
+      tags:
+      - devices
   /devices/uid/{uid}:
     get:
       consumes:
