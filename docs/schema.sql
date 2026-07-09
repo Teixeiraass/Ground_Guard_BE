@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml.dbdiagram.io)
 -- Database: PostgreSQL
--- Generated at: 2026-07-01T22:55:50.764Z
+-- Generated at: 2026-07-09T02:10:55.279Z
 
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
@@ -12,18 +12,6 @@ CREATE TABLE "users" (
   "password_changed_at" timestampz NOT NULL DEFAULT '0001-01-01 00:00:00Z',
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "profile_image" varchar(255)
-);
-
-CREATE TABLE "oauth_identities" (
-  "id" bigserial PRIMARY KEY,
-  "uuid" UUID UNIQUE NOT NULL DEFAULT (gen_random_uuid()),
-  "user_id" bigint NOT NULL,
-  "provider" varchar(20) NOT NULL,
-  "provider_subject" varchar(255) NOT NULL,
-  "email" varchar(255) NOT NULL,
-  "email_verified" boolean NOT NULL DEFAULT false,
-  "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "sessions" (
@@ -49,6 +37,8 @@ CREATE TABLE "devices" (
   "qr_token" varchar(64) UNIQUE NOT NULL,
   "qr_code_file" varchar(255),
   "wifi_ssid" varchar(100),
+  "is_online" boolean NOT NULL DEFAULT false,
+  "is_irrigating" boolean NOT NULL DEFAULT false,
   "last_seen" timestamptz,
   "status" varchar(20),
   "user_id" bigint,
@@ -194,12 +184,6 @@ CREATE TABLE "user_accepted_terms" (
   "accepted_at" timestamptz NOT NULL DEFAULT (now())
 );
 
-CREATE UNIQUE INDEX ON "oauth_identities" ("provider", "provider_subject");
-
-CREATE INDEX ON "oauth_identities" ("user_id");
-
-CREATE INDEX ON "oauth_identities" ("email");
-
 CREATE INDEX ON "devices" ("user_id");
 
 CREATE UNIQUE INDEX ON "devices" ("device_uid");
@@ -257,8 +241,6 @@ CREATE UNIQUE INDEX ON "user_accepted_terms" ("uuid");
 CREATE INDEX ON "user_accepted_terms" ("user_id");
 
 CREATE INDEX ON "user_accepted_terms" ("legal_document_id");
-
-ALTER TABLE "oauth_identities" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "sessions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 

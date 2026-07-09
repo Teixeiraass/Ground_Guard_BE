@@ -8,6 +8,7 @@ RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/
 
 # Run stage
 FROM alpine:3.23 
+RUN apk add --no-cache tzdata
 WORKDIR /app
 COPY --from=builder /app/main .
 COPY --from=builder /app/migrate ./migrate

@@ -17,27 +17,6 @@ Table users as U {
   profile_image varchar(255)
 }
 
-Table oauth_identities as OI {
-  id bigserial [pk]
-  uuid UUID [unique, not null, default: `gen_random_uuid()`]
-
-  user_id bigint [not null, ref: > U.id]
-
-  provider varchar(20) [not null]
-  provider_subject varchar(255) [not null]
-  email varchar(255) [not null]
-  email_verified boolean [not null, default: false]
-
-  created_at timestamptz [not null, default: `now()`]
-  updated_at timestamptz [not null, default: `now()`]
-
-  Indexes {
-    (provider, provider_subject) [unique]
-    (user_id)
-    (email)
-  }
-}
-
 Table sessions as S {
   id UUID [pk]
   user_id bigint [ref: > U.id]
@@ -61,6 +40,8 @@ Table devices as D {
   qr_token varchar(64) [unique, not null]
   qr_code_file varchar(255) 
   wifi_ssid varchar(100) 
+  is_online boolean [not null, default: false]
+  is_irrigating boolean [not null, default: false]
   last_seen timestamptz
   status varchar(20)
   user_id bigint [ref: > U.id]
