@@ -28,6 +28,8 @@ type Device struct {
 	CreatedAt       time.Time      `json:"created_at"`
 	QrToken         string         `json:"qr_token"`
 	QrCodeFile      sql.NullString `json:"qr_code_file"`
+	IsOnline        bool           `json:"is_online"`
+	IsIrrigating    bool           `json:"is_irrigating"`
 }
 
 type Faq struct {

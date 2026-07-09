@@ -795,6 +795,21 @@ func (mr *MockStoreMockRecorder) UpdateDeviceRegistration(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceRegistration", reflect.TypeOf((*MockStore)(nil).UpdateDeviceRegistration), arg0, arg1)
 }
 
+// UpdateDeviceState mocks base method.
+func (m *MockStore) UpdateDeviceState(arg0 context.Context, arg1 db.UpdateDeviceStateParams) (db.Device, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDeviceState", arg0, arg1)
+	ret0, _ := ret[0].(db.Device)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDeviceState indicates an expected call of UpdateDeviceState.
+func (mr *MockStoreMockRecorder) UpdateDeviceState(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceState", reflect.TypeOf((*MockStore)(nil).UpdateDeviceState), arg0, arg1)
+}
+
 // UpdateDeviceTelemetryByUID mocks base method.
 func (m *MockStore) UpdateDeviceTelemetryByUID(arg0 context.Context, arg1 db.UpdateDeviceTelemetryByUIDParams) (db.Device, error) {
 	m.ctrl.T.Helper()

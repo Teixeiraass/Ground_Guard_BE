@@ -12,6 +12,7 @@ import (
 	"github.com/Teixeiraass/ground_guard_be/mqtt/subscriber"
 	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/Teixeiraass/ground_guard_be/util"
+	"github.com/Teixeiraass/ground_guard_be/websocket"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,6 +23,8 @@ type Server struct {
 	oauthService      *appoauth.Service
 	mqttClient        client.Client
 	router            *gin.Engine
+	Hub               *websocket.Hub
+	WSHandler         *websocket.Handler
 	DeviceService     service.DeviceService
 	UserService       service.UserService
 	IrrigationService service.IrrigationService
@@ -34,12 +37,18 @@ func NewServer(config util.Config, store db.Store, mqttClient client.Client) (*S
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
 	}
 
+	hub := websocket.NewHub()
+	go hub.Run()
+
 	if config.MQTTEnabled {
-		sub := subscriber.NewTelemetrySubscriber(mqttClient, store)
+		sub := subscriber.NewTelemetrySubscriber(mqttClient, store, hub)
+
 		if err := sub.Start(); err != nil {
-			return nil, fmt.Errorf("cannot start mqtt telemetry subscriber: %w", err)
+			return nil, err
 		}
 	}
+
+	wsHandler := websocket.NewHandler(hub)
 
 	timeoutWorker := worker.NewIrrigationTimeoutWorker(store)
 	timeoutWorker.Start()
@@ -50,6 +59,8 @@ func NewServer(config util.Config, store db.Store, mqttClient client.Client) (*S
 		tokenMaker:        tokenMaker,
 		oauthService:      appoauth.NewService(config),
 		mqttClient:        mqttClient,
+		Hub:               hub,
+		WSHandler: wsHandler,
 		DeviceService:     service.NewDeviceService(store),
 		UserService:       service.NewUserService(store, tokenMaker, config),
 		IrrigationService: service.NewIrrigationService(store, mqttClient),

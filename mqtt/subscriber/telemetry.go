@@ -11,12 +11,14 @@ import (
 	"github.com/Teixeiraass/ground_guard_be/mqtt"
 	"github.com/Teixeiraass/ground_guard_be/mqtt/client"
 	"github.com/Teixeiraass/ground_guard_be/util"
+	"github.com/Teixeiraass/ground_guard_be/websocket"
 	"github.com/google/uuid"
 )
 
 type TelemetrySubscriber struct {
 	client client.Client
 	store  db.Store
+	hub    *websocket.Hub
 }
 
 type IrrigationEventPayload struct {
@@ -31,11 +33,22 @@ const (
 	IrrigationActionFinished = "FINALIZADO"
 )
 
-func NewTelemetrySubscriber(c client.Client, store db.Store) *TelemetrySubscriber {
+func NewTelemetrySubscriber(
+	c client.Client,
+	store db.Store,
+	hub *websocket.Hub,
+) *TelemetrySubscriber {
+
 	return &TelemetrySubscriber{
 		client: c,
 		store:  store,
+		hub:    hub,
 	}
+}
+
+type DeviceStatePayload struct {
+	IsIrrigating bool   `json:"is_irrigating"`
+	IsOnline     bool   `json:"is_online"`
 }
 
 func (s *TelemetrySubscriber) Start() error {
@@ -53,6 +66,13 @@ func (s *TelemetrySubscriber) Start() error {
 		return err
 	}
 
+	if err := s.client.Subscribe(
+		mqtt.DeviceStateWildcard(s.client.TopicPrefix()),
+		s.handleStateMessage,
+	); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -65,6 +85,12 @@ func (s *TelemetrySubscriber) handleTelemetryMessage(topic string, payload []byt
 func (s *TelemetrySubscriber) handleEventMessage(topic string, payload []byte) {
 	if err := s.HandleEvent(context.Background(), topic, payload); err != nil {
 		fmt.Printf("mqtt event error on topic %s: %v\n", topic, err)
+	}
+}
+
+func (s *TelemetrySubscriber) handleStateMessage(topic string, payload []byte) {
+	if err := s.HandleState(context.Background(), topic, payload); err != nil {
+		fmt.Printf("mqtt state error on topic %s: %v\n", topic, err)
 	}
 }
 
@@ -183,6 +209,43 @@ func (s *TelemetrySubscriber) HandleEvent(ctx context.Context, topic string, pay
 			return err
 		}
 	}
+
+	return nil
+}
+
+func (s *TelemetrySubscriber) HandleState(ctx context.Context, topic string, payload []byte) error {
+
+	deviceUID, ok := mqtt.DeviceUIDFromStateTopic(s.client.TopicPrefix(), topic)
+	if !ok {
+		return fmt.Errorf("invalid state topic")
+	}
+
+	var state DeviceStatePayload
+
+	if err := json.Unmarshal(payload, &state); err != nil {
+		return err
+	}
+
+	_, err := s.store.UpdateDeviceState(ctx, db.UpdateDeviceStateParams{
+		DeviceUid:    deviceUID,
+		IsIrrigating: state.IsIrrigating,
+		IsOnline:     state.IsOnline,
+	})
+	if err != nil {
+		return err
+	}
+
+	device, err := s.store.GetDeviceByUID(ctx, deviceUID)
+	if err != nil {
+		return err
+	}
+
+	s.hub.BroadcastToUser(device.UserID.Int64, map[string]any{
+		"type":          "device_state",
+		"device_uid":    deviceUID,
+		"is_irrigating": state.IsIrrigating,
+		"is_online":     state.IsOnline,
+	})
 
 	return nil
 }

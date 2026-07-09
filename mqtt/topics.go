@@ -26,6 +26,14 @@ func DeviceCommandTopic(prefix, deviceUID string) string {
 	return fmt.Sprintf("%s/devices/%s/commands", NormalizeTopicPrefix(prefix), deviceUID)
 }
 
+func DeviceStateTopic(prefix, deviceUID string) string {
+	return fmt.Sprintf("%s/devices/%s/state", NormalizeTopicPrefix(prefix), deviceUID)
+}
+
+func DeviceStateWildcard(prefix string) string {
+	return fmt.Sprintf("%s/devices/+/state", NormalizeTopicPrefix(prefix))
+}
+
 func DeviceUIDFromTelemetryTopic(prefix, topic string) (string, bool) {
 	expectedPrefix := NormalizeTopicPrefix(prefix) + "/devices/"
 	suffix := "/telemetry"
@@ -55,6 +63,25 @@ func DeviceEventWildcard(prefix string) string {
 func DeviceUIDFromEventTopic(prefix, topic string) (string, bool) {
 	expectedPrefix := NormalizeTopicPrefix(prefix) + "/devices/"
 	suffix := "/events"
+
+	if !strings.HasPrefix(topic, expectedPrefix) || !strings.HasSuffix(topic, suffix) {
+		return "", false
+	}
+
+	deviceUID := strings.TrimPrefix(topic, expectedPrefix)
+	deviceUID = strings.TrimSuffix(deviceUID, suffix)
+
+	if deviceUID == "" || strings.Contains(deviceUID, "/") {
+		return "", false
+	}
+
+	return deviceUID, true
+}
+
+
+func DeviceUIDFromStateTopic(prefix, topic string) (string, bool) {
+	expectedPrefix := NormalizeTopicPrefix(prefix) + "/devices/"
+	suffix := "/state"
 
 	if !strings.HasPrefix(topic, expectedPrefix) || !strings.HasSuffix(topic, suffix) {
 		return "", false

@@ -80,3 +80,11 @@ SET
     last_seen = NOW()
 WHERE device_uid = $1
 RETURNING *;
+
+-- name: UpdateDeviceState :one
+UPDATE devices
+SET
+    is_online = $2, 
+    is_irrigating = $3
+WHERE device_uid = $1
+RETURNING *;
