@@ -62,10 +62,12 @@ WHERE device_uid = $1 LIMIT 1;
 
 -- name: UpdateDeviceTelemetryByUID :one
 UPDATE devices
-SET last_seen = $2,
+SET
+    last_seen = $2,
     status = $3,
     ip_address = $4,
-    wifi_ssid = $5
+    wifi_ssid = $5,
+    soil_moisture = $6
 WHERE device_uid = $1
 RETURNING *;
 

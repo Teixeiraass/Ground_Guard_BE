@@ -30,7 +30,7 @@ INSERT INTO devices (
   qr_code_file
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
-) RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating
+) RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
 `
 
 type CreateDeviceParams struct {
@@ -82,12 +82,13 @@ func (q *Queries) CreateDevice(ctx context.Context, arg CreateDeviceParams) (Dev
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
+		&i.SoilMoisture,
 	)
 	return i, err
 }
 
 const getDevice = `-- name: GetDevice :one
-SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating FROM devices
+SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture FROM devices
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -112,12 +113,13 @@ func (q *Queries) GetDevice(ctx context.Context, argUuid uuid.UUID) (Device, err
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
+		&i.SoilMoisture,
 	)
 	return i, err
 }
 
 const getDeviceByUID = `-- name: GetDeviceByUID :one
-SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating FROM devices
+SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture FROM devices
 WHERE device_uid = $1 LIMIT 1
 `
 
@@ -142,12 +144,13 @@ func (q *Queries) GetDeviceByUID(ctx context.Context, deviceUid string) (Device,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
+		&i.SoilMoisture,
 	)
 	return i, err
 }
 
 const getDeviceForUpdate = `-- name: GetDeviceForUpdate :one
-SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating FROM devices
+SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture FROM devices
 WHERE uuid = $1 LIMIT 1
 FOR NO KEY UPDATE
 `
@@ -173,6 +176,7 @@ func (q *Queries) GetDeviceForUpdate(ctx context.Context, argUuid uuid.UUID) (De
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
+		&i.SoilMoisture,
 	)
 	return i, err
 }
@@ -181,7 +185,7 @@ const linkDeviceToUserByQrToken = `-- name: LinkDeviceToUserByQrToken :one
 UPDATE devices
 SET user_id = $2
 WHERE qr_token = $1 AND user_id IS NULL
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
 `
 
 type LinkDeviceToUserByQrTokenParams struct {
@@ -210,12 +214,13 @@ func (q *Queries) LinkDeviceToUserByQrToken(ctx context.Context, arg LinkDeviceT
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
+		&i.SoilMoisture,
 	)
 	return i, err
 }
 
 const listDevices = `-- name: ListDevices :many
-SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating FROM devices
+SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture FROM devices
 WHERE user_id = $1
 ORDER BY id
 LIMIT $2
@@ -255,6 +260,7 @@ func (q *Queries) ListDevices(ctx context.Context, arg ListDevicesParams) ([]Dev
 			&i.QrCodeFile,
 			&i.IsOnline,
 			&i.IsIrrigating,
+			&i.SoilMoisture,
 		); err != nil {
 			return nil, err
 		}
@@ -273,7 +279,7 @@ const unlinkDeviceFromUser = `-- name: UnlinkDeviceFromUser :one
 UPDATE devices
 SET user_id = NULL
 WHERE uuid = $1 AND user_id = $2
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
 `
 
 type UnlinkDeviceFromUserParams struct {
@@ -302,6 +308,7 @@ func (q *Queries) UnlinkDeviceFromUser(ctx context.Context, arg UnlinkDeviceFrom
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
+		&i.SoilMoisture,
 	)
 	return i, err
 }
@@ -316,7 +323,7 @@ SET
     status = $6,
     last_seen = NOW()
 WHERE device_uid = $1
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
 `
 
 type UpdateDeviceRegistrationParams struct {
@@ -356,6 +363,7 @@ func (q *Queries) UpdateDeviceRegistration(ctx context.Context, arg UpdateDevice
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
+		&i.SoilMoisture,
 	)
 	return i, err
 }
@@ -366,7 +374,7 @@ SET
     is_online = $2, 
     is_irrigating = $3
 WHERE device_uid = $1
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
 `
 
 type UpdateDeviceStateParams struct {
@@ -396,26 +404,30 @@ func (q *Queries) UpdateDeviceState(ctx context.Context, arg UpdateDeviceStatePa
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
+		&i.SoilMoisture,
 	)
 	return i, err
 }
 
 const updateDeviceTelemetryByUID = `-- name: UpdateDeviceTelemetryByUID :one
 UPDATE devices
-SET last_seen = $2,
+SET
+    last_seen = $2,
     status = $3,
     ip_address = $4,
-    wifi_ssid = $5
+    wifi_ssid = $5,
+    soil_moisture = $6
 WHERE device_uid = $1
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
 `
 
 type UpdateDeviceTelemetryByUIDParams struct {
-	DeviceUid string         `json:"device_uid"`
-	LastSeen  sql.NullTime   `json:"last_seen"`
-	Status    string         `json:"status"`
-	IpAddress pqtype.Inet    `json:"ip_address"`
-	WifiSsid  sql.NullString `json:"wifi_ssid"`
+	DeviceUid    string         `json:"device_uid"`
+	LastSeen     sql.NullTime   `json:"last_seen"`
+	Status       string         `json:"status"`
+	IpAddress    pqtype.Inet    `json:"ip_address"`
+	WifiSsid     sql.NullString `json:"wifi_ssid"`
+	SoilMoisture sql.NullInt32  `json:"soil_moisture"`
 }
 
 func (q *Queries) UpdateDeviceTelemetryByUID(ctx context.Context, arg UpdateDeviceTelemetryByUIDParams) (Device, error) {
@@ -425,6 +437,7 @@ func (q *Queries) UpdateDeviceTelemetryByUID(ctx context.Context, arg UpdateDevi
 		arg.Status,
 		arg.IpAddress,
 		arg.WifiSsid,
+		arg.SoilMoisture,
 	)
 	var i Device
 	err := row.Scan(
@@ -445,6 +458,7 @@ func (q *Queries) UpdateDeviceTelemetryByUID(ctx context.Context, arg UpdateDevi
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
+		&i.SoilMoisture,
 	)
 	return i, err
 }
@@ -453,7 +467,7 @@ const updateDevices = `-- name: UpdateDevices :one
 UPDATE devices
 set status = $2
 WHERE uuid = $1
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
 `
 
 type UpdateDevicesParams struct {
@@ -482,6 +496,7 @@ func (q *Queries) UpdateDevices(ctx context.Context, arg UpdateDevicesParams) (D
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
+		&i.SoilMoisture,
 	)
 	return i, err
 }
@@ -490,7 +505,7 @@ const updateNameDevice = `-- name: UpdateNameDevice :one
 UPDATE devices
 set name = $2
 WHERE uuid = $1
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating
+RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
 `
 
 type UpdateNameDeviceParams struct {
@@ -519,6 +534,7 @@ func (q *Queries) UpdateNameDevice(ctx context.Context, arg UpdateNameDevicePara
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
+		&i.SoilMoisture,
 	)
 	return i, err
 }

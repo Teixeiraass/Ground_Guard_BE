@@ -49,8 +49,10 @@ func TestHandleTelemetry(t *testing.T) {
 						require.True(t, arg.LastSeen.Valid)
 						require.True(t, arg.IpAddress.Valid)
 						require.Equal(t, "GroundGuard-WiFi", arg.WifiSsid.String)
-						return db.Device{}, nil
+						return db.Device{ID: 1}, nil
 					})
+				store.EXPECT().GetLatestDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, sql.ErrNoRows)
+				store.EXPECT().CreateDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, nil)
 			},
 		},
 		{
@@ -81,8 +83,10 @@ func TestHandleTelemetry(t *testing.T) {
 					Times(1).
 					DoAndReturn(func(_ context.Context, arg db.UpdateDeviceTelemetryByUIDParams) (db.Device, error) {
 						require.Equal(t, "ATIVO", arg.Status)
-						return db.Device{}, nil
+						return db.Device{ID: 1}, nil
 					})
+				store.EXPECT().GetLatestDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, sql.ErrNoRows)
+				store.EXPECT().CreateDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, nil)
 			},
 		},
 		{

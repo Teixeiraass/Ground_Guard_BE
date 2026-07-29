@@ -65,6 +65,21 @@ func (mr *MockStoreMockRecorder) CreateDevice(arg0, arg1 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDevice", reflect.TypeOf((*MockStore)(nil).CreateDevice), arg0, arg1)
 }
 
+// CreateDeviceSensorHistory mocks base method.
+func (m *MockStore) CreateDeviceSensorHistory(arg0 context.Context, arg1 db.CreateDeviceSensorHistoryParams) (db.DeviceSensorHistory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDeviceSensorHistory", arg0, arg1)
+	ret0, _ := ret[0].(db.DeviceSensorHistory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateDeviceSensorHistory indicates an expected call of CreateDeviceSensorHistory.
+func (mr *MockStoreMockRecorder) CreateDeviceSensorHistory(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeviceSensorHistory", reflect.TypeOf((*MockStore)(nil).CreateDeviceSensorHistory), arg0, arg1)
+}
+
 // CreateIrrigationAction mocks base method.
 func (m *MockStore) CreateIrrigationAction(arg0 context.Context, arg1 db.CreateIrrigationActionParams) (db.IrrigationAction, error) {
 	m.ctrl.T.Helper()
@@ -435,6 +450,21 @@ func (mr *MockStoreMockRecorder) GetIrrigationPreferenceByDevice(arg0, arg1 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIrrigationPreferenceByDevice", reflect.TypeOf((*MockStore)(nil).GetIrrigationPreferenceByDevice), arg0, arg1)
 }
 
+// GetLatestDeviceSensorHistory mocks base method.
+func (m *MockStore) GetLatestDeviceSensorHistory(arg0 context.Context, arg1 int64) (db.DeviceSensorHistory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestDeviceSensorHistory", arg0, arg1)
+	ret0, _ := ret[0].(db.DeviceSensorHistory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestDeviceSensorHistory indicates an expected call of GetLatestDeviceSensorHistory.
+func (mr *MockStoreMockRecorder) GetLatestDeviceSensorHistory(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestDeviceSensorHistory", reflect.TypeOf((*MockStore)(nil).GetLatestDeviceSensorHistory), arg0, arg1)
+}
+
 // GetLegalDocument mocks base method.
 func (m *MockStore) GetLegalDocument(arg0 context.Context, arg1 uuid.UUID) (db.LegalDocument, error) {
 	m.ctrl.T.Helper()
@@ -613,6 +643,21 @@ func (m *MockStore) LinkIrrigationCommandAction(arg0 context.Context, arg1 db.Li
 func (mr *MockStoreMockRecorder) LinkIrrigationCommandAction(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkIrrigationCommandAction", reflect.TypeOf((*MockStore)(nil).LinkIrrigationCommandAction), arg0, arg1)
+}
+
+// ListDeviceSensorHistory mocks base method.
+func (m *MockStore) ListDeviceSensorHistory(arg0 context.Context, arg1 db.ListDeviceSensorHistoryParams) ([]db.DeviceSensorHistory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListDeviceSensorHistory", arg0, arg1)
+	ret0, _ := ret[0].([]db.DeviceSensorHistory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListDeviceSensorHistory indicates an expected call of ListDeviceSensorHistory.
+func (mr *MockStoreMockRecorder) ListDeviceSensorHistory(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDeviceSensorHistory", reflect.TypeOf((*MockStore)(nil).ListDeviceSensorHistory), arg0, arg1)
 }
 
 // ListDevices mocks base method.

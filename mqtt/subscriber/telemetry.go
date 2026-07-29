@@ -266,15 +266,53 @@ func (s *TelemetrySubscriber) HandleTelemetry(ctx context.Context, topic string,
 		status = mqtt.DeviceStatusOnline
 	}
 
-	_, err := s.store.UpdateDeviceTelemetryByUID(ctx, db.UpdateDeviceTelemetryByUIDParams{
+	device, err := s.store.UpdateDeviceTelemetryByUID(ctx, db.UpdateDeviceTelemetryByUIDParams{
 		DeviceUid: deviceUID,
 		LastSeen:  util.ToNullTime(time.Now()),
 		Status:    status,
 		IpAddress: util.ToInet(telemetry.IPAddress),
 		WifiSsid:  util.ToNullString(telemetry.WifiSSID),
+		SoilMoisture: sql.NullInt32{
+			Int32: telemetry.SoilMoisture,
+			Valid: true,
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("update device telemetry: %w", err)
+	}
+
+	latestHistory, err := s.store.GetLatestDeviceSensorHistory(ctx, device.ID)
+	shouldInsertHistory := false
+	if err != nil {
+		if err == sql.ErrNoRows {
+			shouldInsertHistory = true
+		} else {
+			return fmt.Errorf("failed to get latest sensor history: %w", err)
+		}
+	} else {
+		if time.Since(latestHistory.CreatedAt) >= 5*time.Minute {
+			shouldInsertHistory = true
+		}
+	}
+
+	if shouldInsertHistory {
+		_, err = s.store.CreateDeviceSensorHistory(ctx, db.CreateDeviceSensorHistoryParams{
+			DeviceID:     device.ID,
+			SoilMoisture: telemetry.SoilMoisture,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create sensor history: %w", err)
+		}
+	}
+
+	if device.UserID.Valid {
+		s.hub.BroadcastToUser(device.UserID.Int64, map[string]any{
+			"type":          "device_telemetry",
+			"device_uid":    deviceUID,
+			"soil_moisture": telemetry.SoilMoisture,
+			"wifi_ssid":     telemetry.WifiSSID,
+			"ip_address":    telemetry.IPAddress,
+		})
 	}
 
 	return nil

@@ -30,6 +30,16 @@ type Device struct {
 	QrCodeFile      sql.NullString `json:"qr_code_file"`
 	IsOnline        bool           `json:"is_online"`
 	IsIrrigating    bool           `json:"is_irrigating"`
+	SoilMoisture    sql.NullInt32  `json:"soil_moisture"`
+}
+
+type DeviceSensorHistory struct {
+	ID           int64           `json:"id"`
+	DeviceID     int64           `json:"device_id"`
+	SoilMoisture int32           `json:"soil_moisture"`
+	Temperature  sql.NullFloat64 `json:"temperature"`
+	Battery      sql.NullInt32   `json:"battery"`
+	CreatedAt    time.Time       `json:"created_at"`
 }
 
 type Faq struct {
