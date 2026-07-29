@@ -22,7 +22,7 @@ func TestHandleTelemetry(t *testing.T) {
 	topic := mqtt.DeviceTelemetryTopic("ground-guard", deviceUID)
 
 	payload, err := json.Marshal(mqtt.TelemetryPayload{
-		Status:    "online",
+		Status:    "ATIVO",
 		IPAddress: "192.168.0.50",
 		WifiSSID:  "GroundGuard-WiFi",
 	})
@@ -45,7 +45,7 @@ func TestHandleTelemetry(t *testing.T) {
 					Times(1).
 					DoAndReturn(func(_ context.Context, arg db.UpdateDeviceTelemetryByUIDParams) (db.Device, error) {
 						require.Equal(t, deviceUID, arg.DeviceUid)
-						require.Equal(t, "online", arg.Status)
+						require.Equal(t, "ATIVO", arg.Status)
 						require.True(t, arg.LastSeen.Valid)
 						require.True(t, arg.IpAddress.Valid)
 						require.Equal(t, "GroundGuard-WiFi", arg.WifiSsid.String)
@@ -80,7 +80,7 @@ func TestHandleTelemetry(t *testing.T) {
 					UpdateDeviceTelemetryByUID(gomock.Any(), gomock.Any()).
 					Times(1).
 					DoAndReturn(func(_ context.Context, arg db.UpdateDeviceTelemetryByUIDParams) (db.Device, error) {
-						require.Equal(t, "online", arg.Status)
+						require.Equal(t, "ATIVO", arg.Status)
 						return db.Device{}, nil
 					})
 			},
@@ -109,7 +109,7 @@ func TestHandleTelemetry(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			sub := subscriber.NewTelemetrySubscriber(client.NewNoopClient(), store)
+			sub := subscriber.NewTelemetrySubscriber(client.NewNoopClient(), store, nil)
 			err := sub.HandleTelemetry(context.Background(), tc.topic, tc.payload)
 
 			if tc.wantErr {
@@ -127,7 +127,7 @@ func TestTelemetrySubscriberStart(t *testing.T) {
 	defer ctrl.Finish()
 
 	store := mockdb.NewMockStore(ctrl)
-	sub := subscriber.NewTelemetrySubscriber(client.NewNoopClient(), store)
+	sub := subscriber.NewTelemetrySubscriber(client.NewNoopClient(), store, nil)
 
 	require.NoError(t, sub.Start())
 }
