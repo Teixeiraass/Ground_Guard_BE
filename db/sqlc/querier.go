@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	BlockSession(ctx context.Context, id uuid.UUID) error
 	CreateDevice(ctx context.Context, arg CreateDeviceParams) (Device, error)
+	CreateDeviceSensorHistory(ctx context.Context, arg CreateDeviceSensorHistoryParams) (DeviceSensorHistory, error)
 	CreateIrrigationAction(ctx context.Context, arg CreateIrrigationActionParams) (IrrigationAction, error)
 	CreateIrrigationCommand(ctx context.Context, arg CreateIrrigationCommandParams) (IrrigationCommand, error)
 	CreateIrrigationPreferenceHistory(ctx context.Context, arg CreateIrrigationPreferenceHistoryParams) (IrrigationPreferencesHistory, error)
@@ -38,6 +39,7 @@ type Querier interface {
 	GetIrrigationCommand(ctx context.Context, argUuid uuid.UUID) (IrrigationCommand, error)
 	GetIrrigationPreference(ctx context.Context, argUuid uuid.UUID) (IrrigationPreference, error)
 	GetIrrigationPreferenceByDevice(ctx context.Context, deviceID int64) (IrrigationPreference, error)
+	GetLatestDeviceSensorHistory(ctx context.Context, deviceID int64) (DeviceSensorHistory, error)
 	GetLegalDocument(ctx context.Context, argUuid uuid.UUID) (LegalDocument, error)
 	GetOAuthIdentityByProviderAndSubject(ctx context.Context, arg GetOAuthIdentityByProviderAndSubjectParams) (OauthIdentity, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
@@ -50,6 +52,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	LinkDeviceToUserByQrToken(ctx context.Context, arg LinkDeviceToUserByQrTokenParams) (Device, error)
 	LinkIrrigationCommandAction(ctx context.Context, arg LinkIrrigationCommandActionParams) (IrrigationCommand, error)
+	ListDeviceSensorHistory(ctx context.Context, arg ListDeviceSensorHistoryParams) ([]DeviceSensorHistory, error)
 	ListDevices(ctx context.Context, arg ListDevicesParams) ([]Device, error)
 	ListFaqs(ctx context.Context, arg ListFaqsParams) ([]Faq, error)
 	ListHelpContents(ctx context.Context, arg ListHelpContentsParams) ([]HelpContent, error)
