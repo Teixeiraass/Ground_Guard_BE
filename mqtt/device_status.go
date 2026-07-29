@@ -1,5 +1,5 @@
 package mqtt
 
 const (
-	DeviceStatusOnline = "online"
+	DeviceStatusOnline = "ATIVO"
 )

@@ -1,6 +1,9 @@
 postgres:
 	docker run --name postgres16 -p 5433:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:16.13-alpine
 
+mosquitto: 
+	docker run --name mosquitto -p 1883:1883 -p 9001:9001 -d eclipse-mosquitto:2
+
 createdb: 
 	docker exec -it postgres16 createdb --username=root --owner=root ground_guard
 
@@ -41,4 +44,4 @@ db_schema:
 swag:
 	swag init -g cmd/server/main.go
 
-.PHONY: postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc test server mock db_docs db_schema swag
+.PHONY: postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc test server mock db_docs db_schema swag mosquitto
