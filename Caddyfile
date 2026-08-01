@@ -1,0 +1,9 @@
+# Caddyfile para o ambiente de desenvolvimento na AWS
+# Este arquivo configura o proxy reverso e gerencia automaticamente os certificados SSL (HTTPS)
+
+api-dev.ground-guard.com, api-dev.ground-guard.com.br {
+    # Altere o domínio acima para o seu domínio real
+    
+    # Redireciona o tráfego para o container da API na porta 8080
+    reverse_proxy api:8080
+}

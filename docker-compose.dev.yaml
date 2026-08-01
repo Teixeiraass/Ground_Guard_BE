@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16.13-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    # The actual password and DB name will come from .env in the server, e.g.:
+    # POSTGRES_USER=root
+    # POSTGRES_PASSWORD=secret
+    # POSTGRES_DB=ground_guard
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "1883:1883" # Keep MQTT open for IoT devices
+    volumes:
+      - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    # DB_SOURCE, MQTT_BROKER_URL, Google OAuth, etc., should be configured in the .env file on the server.
+    # Ex: DB_SOURCE=postgresql://root:secret@postgres:5432/ground_guard?sslmode=disable
+    # Ex: MQTT_BROKER_URL=tcp://mosquitto:1883
+    depends_on:
+      - postgres
+      - mosquitto
+    entrypoint: ["/app/wait-for.sh", "postgres:5432", "--", "/app/start.sh"]
+    command: [ "/app/main" ]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:
+  caddy_data:
+  caddy_config:
