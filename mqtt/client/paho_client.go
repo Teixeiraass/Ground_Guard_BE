@@ -1,18 +1,19 @@
-package mqtt
+package client
 
 import (
 	"fmt"
 	"time"
 
+	"github.com/Teixeiraass/ground_guard_be/mqtt"
 	"github.com/Teixeiraass/ground_guard_be/util"
-	pahomqtt "github.com/eclipse/paho.mqtt.golang"
+	mqttgo "github.com/eclipse/paho.mqtt.golang"
 )
 
 const mqttPublishWaitTimeout = 5 * time.Second
 
 // PahoClient implements Client using Eclipse Mosquitto via paho.mqtt.golang.
 type PahoClient struct {
-	client      pahomqtt.Client
+	client      mqttgo.Client
 	topicPrefix string
 }
 
@@ -30,9 +31,9 @@ func NewPahoClient(config util.Config) (Client, error) {
 		clientID = "ground-guard-api"
 	}
 
-	topicPrefix := NormalizeTopicPrefix(config.MQTTTopicPrefix)
+	topicPrefix := mqtt.NormalizeTopicPrefix(config.MQTTTopicPrefix)
 
-	opts := pahomqtt.NewClientOptions()
+	opts := mqttgo.NewClientOptions()
 	opts.AddBroker(config.MQTTBrokerURL)
 	opts.SetClientID(clientID)
 	opts.SetAutoReconnect(true)
@@ -46,7 +47,7 @@ func NewPahoClient(config util.Config) (Client, error) {
 		opts.SetPassword(config.MQTTPassword)
 	}
 
-	client := pahomqtt.NewClient(opts)
+	client := mqttgo.NewClient(opts)
 	token := client.Connect()
 	if token.Wait() && token.Error() != nil {
 		return nil, fmt.Errorf("cannot connect to mqtt broker: %w", token.Error())
@@ -67,7 +68,7 @@ func (c *PahoClient) Publish(topic string, payload []byte) error {
 }
 
 func (c *PahoClient) Subscribe(topic string, handler MessageHandler) error {
-	token := c.client.Subscribe(topic, 1, func(_ pahomqtt.Client, msg pahomqtt.Message) {
+	token := c.client.Subscribe(topic, 1, func(_ mqttgo.Client, msg mqttgo.Message) {
 		handler(msg.Topic(), msg.Payload())
 	})
 	token.Wait()
@@ -81,5 +82,5 @@ func (c *PahoClient) Close() {
 }
 
 func (c *PahoClient) TopicPrefix() string {
-	return c.topicPrefix
+	return mqtt.NormalizeTopicPrefix(c.topicPrefix)
 }

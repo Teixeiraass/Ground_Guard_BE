@@ -564,6 +564,86 @@ paths:
       summary: Atualizar nome do dispositivo
       tags:
       - devices
+  /devices/register:
+    post:
+      consumes:
+      - application/json
+      description: Verifica a existência do dispositivo pelo UID. Se não existir,
+        realiza o cadastro de um novo dispositivo. Se já existir, atualiza suas informações
+        de rede e sistema (Firmware, IP, Wi-Fi, Status).
+      parameters:
+      - description: Dados do dispositivo para registro ou atualização
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateDeviceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DeviceResponse'
+        "400":
+          description: Bad Request (JSON inválido)
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden (Unique Violation)
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Registrar ou atualizar dispositivo
+      tags:
+      - devices
+  /devices/uid/{uid}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna as informações de um dispositivo específico cadastrado
+        utilizando o seu UID (Unique Identifier).
+      parameters:
+      - description: UID do Dispositivo
+        in: path
+        name: uid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DeviceResponse'
+        "400":
+          description: Bad Request (UID inválido)
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found (Dispositivo não encontrado)
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obter detalhes de um dispositivo pelo UID
+      tags:
+      - devices
   /devices/unlink/{uuid}:
     put:
       consumes:
@@ -834,6 +914,50 @@ paths:
       summary: Get an irrigation preference by ID
       tags:
       - Irrigation Preferences
+  /irrigation/command/{uuid}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna os detalhes de um comando de irrigação específico através
+        do seu UUID.
+      parameters:
+      - description: UUID do comando de irrigação
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CreateIrrigationCommandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obter comando de irrigação
+      tags:
+      - irrigation
   /irrigation/commands:
     post:
       consumes:

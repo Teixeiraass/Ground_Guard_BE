@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml.dbdiagram.io)
 -- Database: PostgreSQL
--- Generated at: 2026-07-01T13:48:46.699Z
+-- Generated at: 2026-07-09T02:10:55.279Z
 
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
@@ -37,6 +37,8 @@ CREATE TABLE "devices" (
   "qr_token" varchar(64) UNIQUE NOT NULL,
   "qr_code_file" varchar(255),
   "wifi_ssid" varchar(100),
+  "is_online" boolean NOT NULL DEFAULT false,
+  "is_irrigating" boolean NOT NULL DEFAULT false,
   "last_seen" timestamptz,
   "status" varchar(20),
   "user_id" bigint,

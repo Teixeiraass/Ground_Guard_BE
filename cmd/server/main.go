@@ -6,13 +6,23 @@ import (
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/handler"
-	"github.com/Teixeiraass/ground_guard_be/mqtt"
+	"github.com/Teixeiraass/ground_guard_be/mqtt/client"
 	"github.com/Teixeiraass/ground_guard_be/util"
+
+	"time"
+	_ "time/tzdata"
 
 	_ "github.com/lib/pq"
 
 	_ "github.com/Teixeiraass/ground_guard_be/docs"
 )
+
+func init() {
+	loc, err := time.LoadLocation("America/Sao_Paulo")
+	if err == nil {
+		time.Local = loc
+	}
+}
 
 // @title           Ground Guard API
 // @version         1.0.0
@@ -42,7 +52,7 @@ func main() {
 
 	store := db.NewStore(conn)
 
-	mqttClient, err := mqtt.NewPahoClient(config)
+	mqttClient, err := client.NewPahoClient(config)
 	if err != nil {
 		log.Fatal("cannot connect to mqtt broker:", err)
 	}

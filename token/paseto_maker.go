@@ -11,18 +11,18 @@ import (
 
 // PasetoMaker is a PASETO token maker
 type PasetoMaker struct {
-	paseto *paseto.V2
+	paseto       *paseto.V2
 	symmetricKey []byte
 }
 
 // NewPasetoMaker creates a new PasetoMaker
 func NewPasetoMaker(symmetricKey string) (Maker, error) {
-	if len(symmetricKey) != chacha20poly1305.KeySize{
+	if len(symmetricKey) != chacha20poly1305.KeySize {
 		return nil, fmt.Errorf("invalid key size: must be exactly %d characters", chacha20poly1305.KeySize)
 	}
 
 	maker := &PasetoMaker{
-		paseto: paseto.NewV2(),
+		paseto:       paseto.NewV2(),
 		symmetricKey: []byte(symmetricKey),
 	}
 
@@ -30,7 +30,7 @@ func NewPasetoMaker(symmetricKey string) (Maker, error) {
 }
 
 func (maker *PasetoMaker) CreateToken(username string, userID int64, userUUID uuid.UUID, duration time.Duration) (string, *Payload, error) {
-	payload, err := NewPayload(username, userID, userUUID,duration)
+	payload, err := NewPayload(username, userID, userUUID, duration)
 	if err != nil {
 		return "", payload, err
 	}

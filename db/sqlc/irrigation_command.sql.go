@@ -24,7 +24,7 @@ INSERT INTO irrigation_commands (
     $3,
     $4
 )
-RETURNING id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at
+RETURNING id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id
 `
 
 type CreateIrrigationCommandParams struct {
@@ -54,6 +54,7 @@ func (q *Queries) CreateIrrigationCommand(ctx context.Context, arg CreateIrrigat
 		&i.RequestedAt,
 		&i.ProcessedAt,
 		&i.CreatedAt,
+		&i.IrrigationActionID,
 	)
 	return i, err
 }
@@ -69,8 +70,40 @@ func (q *Queries) DeleteIrrigationCommand(ctx context.Context, argUuid uuid.UUID
 	return err
 }
 
+const existsPendingIrrigationCommand = `-- name: ExistsPendingIrrigationCommand :one
+SELECT EXISTS (
+    SELECT 1
+    FROM irrigation_commands
+    WHERE device_id = $1
+      AND status = 'PENDING'
+)
+`
+
+func (q *Queries) ExistsPendingIrrigationCommand(ctx context.Context, deviceID int64) (bool, error) {
+	row := q.db.QueryRowContext(ctx, existsPendingIrrigationCommand, deviceID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const failTimedOutCommands = `-- name: FailTimedOutCommands :exec
+UPDATE irrigation_commands
+SET
+    status = 'TIMEOUT',
+    processed_at = now(),
+    error_message = 'Device timeout'
+WHERE
+    status = 'PENDING'
+    AND requested_at <= now() - interval '10 seconds'
+`
+
+func (q *Queries) FailTimedOutCommands(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, failTimedOutCommands)
+	return err
+}
+
 const getIrrigationCommand = `-- name: GetIrrigationCommand :one
-SELECT id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at
+SELECT id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id
 FROM irrigation_commands
 WHERE uuid = $1
 LIMIT 1
@@ -91,12 +124,45 @@ func (q *Queries) GetIrrigationCommand(ctx context.Context, argUuid uuid.UUID) (
 		&i.RequestedAt,
 		&i.ProcessedAt,
 		&i.CreatedAt,
+		&i.IrrigationActionID,
+	)
+	return i, err
+}
+
+const linkIrrigationCommandAction = `-- name: LinkIrrigationCommandAction :one
+UPDATE irrigation_commands
+SET irrigation_action_id = $2
+WHERE id = $1
+RETURNING id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id
+`
+
+type LinkIrrigationCommandActionParams struct {
+	ID                 int64         `json:"id"`
+	IrrigationActionID sql.NullInt64 `json:"irrigation_action_id"`
+}
+
+func (q *Queries) LinkIrrigationCommandAction(ctx context.Context, arg LinkIrrigationCommandActionParams) (IrrigationCommand, error) {
+	row := q.db.QueryRowContext(ctx, linkIrrigationCommandAction, arg.ID, arg.IrrigationActionID)
+	var i IrrigationCommand
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.DeviceID,
+		&i.UserID,
+		&i.Action,
+		&i.DurationSeconds,
+		&i.Status,
+		&i.ErrorMessage,
+		&i.RequestedAt,
+		&i.ProcessedAt,
+		&i.CreatedAt,
+		&i.IrrigationActionID,
 	)
 	return i, err
 }
 
 const listIrrigationCommands = `-- name: ListIrrigationCommands :many
-SELECT id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at
+SELECT id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id
 FROM irrigation_commands
 ORDER BY created_at DESC
 LIMIT $1
@@ -129,6 +195,7 @@ func (q *Queries) ListIrrigationCommands(ctx context.Context, arg ListIrrigation
 			&i.RequestedAt,
 			&i.ProcessedAt,
 			&i.CreatedAt,
+			&i.IrrigationActionID,
 		); err != nil {
 			return nil, err
 		}
@@ -143,29 +210,14 @@ func (q *Queries) ListIrrigationCommands(ctx context.Context, arg ListIrrigation
 	return items, nil
 }
 
-const markTimedOutCommands = `-- name: MarkTimedOutCommands :exec
-UPDATE irrigation_commands
-SET
-    status = 'TIMEOUT',
-    processed_at = now()
-WHERE
-    status = 'PENDING'
-    AND requested_at < now() - interval '30 seconds'
-`
-
-func (q *Queries) MarkTimedOutCommands(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, markTimedOutCommands)
-	return err
-}
-
 const updateIrrigationCommandStatus = `-- name: UpdateIrrigationCommandStatus :one
 UPDATE irrigation_commands
 SET
     status = $2,
     error_message = $3,
     processed_at = now()
-WHERE uuid = $1
-RETURNING id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at
+WHERE uuid = $1 AND status = 'PENDING'
+RETURNING id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id
 `
 
 type UpdateIrrigationCommandStatusParams struct {
@@ -189,6 +241,7 @@ func (q *Queries) UpdateIrrigationCommandStatus(ctx context.Context, arg UpdateI
 		&i.RequestedAt,
 		&i.ProcessedAt,
 		&i.CreatedAt,
+		&i.IrrigationActionID,
 	)
 	return i, err
 }

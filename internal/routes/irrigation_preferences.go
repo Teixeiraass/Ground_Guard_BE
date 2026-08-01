@@ -5,7 +5,7 @@ import "github.com/gin-gonic/gin"
 type IrrigationHandler interface {
 	CreateIrrigationPreference(c *gin.Context)
 	GetIrrigationPreference(c *gin.Context)
-	GetIrrigationPreferenceByDevice(c *gin.Context) 
+	GetIrrigationPreferenceByDevice(c *gin.Context)
 }
 
 func registerIrrigationPreferencesRoutes(authRoutes gin.IRoutes, h IrrigationHandler) {

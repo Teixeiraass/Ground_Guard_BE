@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomIrrigationCommand(t *testing.T, user User, device Device) IrrigationCommand{	
+func createRandomIrrigationCommand(t *testing.T, user User, device Device) IrrigationCommand {
 	arg := CreateIrrigationCommandParams{
 		DeviceID: device.ID,
-		UserID: user.ID,
-		Action: "START",
+		UserID:   user.ID,
+		Action:   "START",
 	}
 
 	irrigationCommand, err := testQueries.CreateIrrigationCommand(context.Background(), arg)
@@ -45,7 +45,7 @@ func TestGetIrrigationCommand(t *testing.T) {
 	require.Equal(t, irrigationCommand1.Action, irrigationCommand2.Action)
 	require.Equal(t, irrigationCommand1.Status, irrigationCommand2.Status)
 	require.WithinDuration(t, irrigationCommand1.CreatedAt, irrigationCommand2.CreatedAt, time.Second)
-}	
+}
 
 func TestListIrrigationCommands(t *testing.T) {
 	// Create 10 irrigation commands
@@ -74,7 +74,7 @@ func TestUpdateIrrigationCommand(t *testing.T) {
 
 	arg := UpdateIrrigationCommandStatusParams{
 		Uuid:   irrigationCommand1.Uuid,
-		Status: "COMPLETED",
+		Status: "SUCCESS",
 	}
 
 	irrigationCommand2, err := testQueries.UpdateIrrigationCommandStatus(context.Background(), arg)
@@ -100,4 +100,4 @@ func TestDeleteIrrigationCommand(t *testing.T) {
 	require.Error(t, err)
 	require.EqualError(t, err, "sql: no rows in result set")
 	require.Empty(t, irrigationCommand2)
-} 
+}

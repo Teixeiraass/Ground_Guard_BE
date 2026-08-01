@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"net/http"
 
-	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -35,7 +34,7 @@ func (server *Server) GetHelpContent(ctx *gin.Context) {
 		return
 	}
 
-	helpContent, err := server.store.GetHelpContent(ctx, helpContentUUID)
+	helpContent, err := server.ContentService.GetHelpContent(ctx, helpContentUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -46,7 +45,7 @@ func (server *Server) GetHelpContent(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewHelpContentResponse(helpContent))
+	ctx.JSON(http.StatusOK, dto.NewHelpContentResponse(*helpContent))
 }
 
 // ListHelpContent godoc
@@ -68,19 +67,14 @@ func (server *Server) ListHelpContent(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.ListHelpContentsParams{
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-	}
-
-	helpContents, err := server.store.ListHelpContents(ctx, arg)
+	helpContents, err := server.ContentService.ListHelpContent(ctx, req.PageSize, (req.PageID-1)*req.PageSize)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	rsp := []dto.HelpContentResponse{} 
-	
+	rsp := []dto.HelpContentResponse{}
+
 	for _, helpContent := range helpContents {
 		rsp = append(rsp, dto.NewHelpContentResponse(helpContent))
 	}

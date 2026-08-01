@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	BlockSession(ctx context.Context, id uuid.UUID) error
 	CreateDevice(ctx context.Context, arg CreateDeviceParams) (Device, error)
+	CreateDeviceSensorHistory(ctx context.Context, arg CreateDeviceSensorHistoryParams) (DeviceSensorHistory, error)
 	CreateIrrigationAction(ctx context.Context, arg CreateIrrigationActionParams) (IrrigationAction, error)
 	CreateIrrigationCommand(ctx context.Context, arg CreateIrrigationCommandParams) (IrrigationCommand, error)
 	CreateIrrigationPreferenceHistory(ctx context.Context, arg CreateIrrigationPreferenceHistoryParams) (IrrigationPreferencesHistory, error)
@@ -25,6 +26,10 @@ type Querier interface {
 	DeleteIrrigationCommand(ctx context.Context, argUuid uuid.UUID) error
 	DeleteIrrigationPreference(ctx context.Context, argUuid uuid.UUID) error
 	DeleteIrrigationPreferenceByDeviceId(ctx context.Context, deviceID int64) error
+	ExistsActiveIrrigationAction(ctx context.Context, deviceID int64) (bool, error)
+	ExistsPendingIrrigationCommand(ctx context.Context, deviceID int64) (bool, error)
+	FailTimedOutCommands(ctx context.Context) error
+	GetActiveIrrigationActionByDevice(ctx context.Context, deviceID int64) (IrrigationAction, error)
 	GetDevice(ctx context.Context, argUuid uuid.UUID) (Device, error)
 	GetDeviceByUID(ctx context.Context, deviceUid string) (Device, error)
 	GetDeviceForUpdate(ctx context.Context, argUuid uuid.UUID) (Device, error)
@@ -34,6 +39,7 @@ type Querier interface {
 	GetIrrigationCommand(ctx context.Context, argUuid uuid.UUID) (IrrigationCommand, error)
 	GetIrrigationPreference(ctx context.Context, argUuid uuid.UUID) (IrrigationPreference, error)
 	GetIrrigationPreferenceByDevice(ctx context.Context, deviceID int64) (IrrigationPreference, error)
+	GetLatestDeviceSensorHistory(ctx context.Context, deviceID int64) (DeviceSensorHistory, error)
 	GetLegalDocument(ctx context.Context, argUuid uuid.UUID) (LegalDocument, error)
 	GetOAuthIdentityByProviderAndSubject(ctx context.Context, arg GetOAuthIdentityByProviderAndSubjectParams) (OauthIdentity, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
@@ -45,6 +51,8 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	LinkDeviceToUserByQrToken(ctx context.Context, arg LinkDeviceToUserByQrTokenParams) (Device, error)
+	LinkIrrigationCommandAction(ctx context.Context, arg LinkIrrigationCommandActionParams) (IrrigationCommand, error)
+	ListDeviceSensorHistory(ctx context.Context, arg ListDeviceSensorHistoryParams) ([]DeviceSensorHistory, error)
 	ListDevices(ctx context.Context, arg ListDevicesParams) ([]Device, error)
 	ListFaqs(ctx context.Context, arg ListFaqsParams) ([]Faq, error)
 	ListHelpContents(ctx context.Context, arg ListHelpContentsParams) ([]HelpContent, error)
@@ -55,8 +63,9 @@ type Querier interface {
 	ListLegalDocuments(ctx context.Context, arg ListLegalDocumentsParams) ([]LegalDocument, error)
 	ListTutorials(ctx context.Context, arg ListTutorialsParams) ([]Tutorial, error)
 	ListTutorialsByCategory(ctx context.Context, arg ListTutorialsByCategoryParams) ([]Tutorial, error)
-	MarkTimedOutCommands(ctx context.Context) error
 	UnlinkDeviceFromUser(ctx context.Context, arg UnlinkDeviceFromUserParams) (Device, error)
+	UpdateDeviceRegistration(ctx context.Context, arg UpdateDeviceRegistrationParams) (Device, error)
+	UpdateDeviceState(ctx context.Context, arg UpdateDeviceStateParams) (Device, error)
 	UpdateDeviceTelemetryByUID(ctx context.Context, arg UpdateDeviceTelemetryByUIDParams) (Device, error)
 	UpdateDevices(ctx context.Context, arg UpdateDevicesParams) (Device, error)
 	UpdateIrrigationAction(ctx context.Context, arg UpdateIrrigationActionParams) (IrrigationAction, error)

@@ -18,17 +18,17 @@ func createRandomIrrigationPreferences(t *testing.T) IrrigationPreference {
 	endHour := time.Date(0, 1, 1, 18, 0, 0, 0, time.UTC)
 
 	arg := CreateIrrigationPreferencesParams{
-		DeviceID: device.ID,
-		IrrigationMode: util.RandomIrrigationMode(),
-		MoistureThreshold: int32(util.RandomInt(1, 100)),
-		DryTimeMinutes: int32(util.RandomInt(1, 120)),
+		DeviceID:             device.ID,
+		IrrigationMode:       util.RandomIrrigationMode(),
+		MoistureThreshold:    int32(util.RandomInt(1, 100)),
+		DryTimeMinutes:       int32(util.RandomInt(1, 120)),
 		MaxIrrigationsPerDay: int32(util.RandomInt(1, 5)),
 		StartHour: sql.NullTime{
-			Time: startHour,
+			Time:  startHour,
 			Valid: true,
 		},
 		EndHour: sql.NullTime{
-			Time: endHour,
+			Time:  endHour,
 			Valid: true,
 		},
 	}
@@ -100,7 +100,7 @@ func TestListIrrigationPreferences(t *testing.T) {
 	}
 
 	args := ListIrrigationPreferencesParams{
-		Limit: 5,
+		Limit:  5,
 		Offset: 0,
 	}
 

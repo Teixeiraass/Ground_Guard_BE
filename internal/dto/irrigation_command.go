@@ -22,3 +22,7 @@ func NewIrrigationCommandResponse(command db.IrrigationCommand) CreateIrrigation
 		Status:    command.Status,
 	}
 }
+
+type GetIrrigationCommandRequest struct {
+	UUID string `uri:"uuid" binding:"required"`
+}

@@ -15,21 +15,21 @@ type ListLegalDocumentRequest struct {
 }
 
 type LegalDocumentResponse struct {
-	Uuid        uuid.UUID `json:"uuid"`
-	Type        string    `json:"type"`
-	Version     string    `json:"version"`
-	Title       string    `json:"title"`
-	Content     string    `json:"content"`
-	Active      bool      `json:"active"`
+	Uuid    uuid.UUID `json:"uuid"`
+	Type    string    `json:"type"`
+	Version string    `json:"version"`
+	Title   string    `json:"title"`
+	Content string    `json:"content"`
+	Active  bool      `json:"active"`
 }
 
 func NewLegalDocumentResponse(legalDocument db.LegalDocument) LegalDocumentResponse {
 	return LegalDocumentResponse{
-		Uuid: legalDocument.Uuid,
-		Type: legalDocument.Type,
+		Uuid:    legalDocument.Uuid,
+		Type:    legalDocument.Type,
 		Version: legalDocument.Version,
-		Title: legalDocument.Title,
+		Title:   legalDocument.Title,
 		Content: legalDocument.Content,
-		Active: legalDocument.Active,
+		Active:  legalDocument.Active,
 	}
 }

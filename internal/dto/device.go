@@ -18,17 +18,19 @@ type CreateDeviceRequest struct {
 }
 
 type DeviceResponse struct {
-	Uuid            uuid.UUID    `json:"uuid"`
-	DeviceUid       string       `json:"device_uid"`
-	Name            string       `json:"name"`
-	FirmwareVersion string       `json:"firmware_version"`
-	FirmwareBuild   *string      `json:"firmware_build,omitempty"`
-	LastUpdate      time.Time    `json:"last_update,omitempty"`
-	IpAddress       *string      `json:"ip_address,omitempty"`
-	WifiSsid        *string      `json:"wifi_ssid,omitempty"`
-	LastSeen        *time.Time   `json:"last_seen"`
-	Status          string       `json:"status"`
-	User            *int64 		 `json:"user,omitempty"`
+	Uuid            uuid.UUID  `json:"uuid"`
+	DeviceUid       string     `json:"device_uid"`
+	Name            string     `json:"name"`
+	FirmwareVersion string     `json:"firmware_version"`
+	FirmwareBuild   *string    `json:"firmware_build,omitempty"`
+	LastUpdate      time.Time  `json:"last_update,omitempty"`
+	IpAddress       *string    `json:"ip_address,omitempty"`
+	WifiSsid        *string    `json:"wifi_ssid,omitempty"`
+	LastSeen        *time.Time `json:"last_seen"`
+	IsOnline        bool       `json:"is_online"`
+	IsIrrigating    bool       `json:"is_irrigating"`
+	Status          string     `json:"status"`
+	User            *int64     `json:"user,omitempty"`
 }
 
 func NewDeviceResponse(device db.Device) DeviceResponse {
@@ -68,13 +70,19 @@ func NewDeviceResponse(device db.Device) DeviceResponse {
 		IpAddress:       ipAddress,
 		WifiSsid:        wifiSsid,
 		LastSeen:        lastSeen,
+		IsOnline:        device.IsOnline,
+		IsIrrigating:    device.IsIrrigating,
 		Status:          device.Status,
-		User: 			 userId,
+		User:            userId,
 	}
 }
 
 type GetDeviceRequest struct {
 	UUID string `uri:"uuid" binding:"required"`
+}
+
+type GetDeviceByUIDRequest struct {
+	UID string `uri:"uid" binding:"required"`
 }
 
 type ListDeviceRequest struct {

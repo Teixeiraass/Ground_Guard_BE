@@ -1,17 +1,11 @@
 package handler
 
 import (
-	"context"
 	"database/sql"
-	"encoding/json"
-	"errors"
 	"net/http"
-	"strings"
 
-	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/Teixeiraass/ground_guard_be/internal/middleware"
-	"github.com/Teixeiraass/ground_guard_be/mqtt"
 	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -42,13 +36,65 @@ func (server *Server) CreateIrrigationCommand(ctx *gin.Context) {
 
 	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 
-	deviceUUID, err := uuid.Parse(req.DeviceID)
+	command, err := server.IrrigationService.CreateIrrigationCommand(ctx, req, authPayload.UserID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		if err.Error() == "device doesn't belong to authenticated user" {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			return
+		}
+		if err.Error() == "device is inactive, cannot send command" ||
+			err.Error() == "device already has a pending command" ||
+			err.Error() == "device is already irrigating" ||
+			err.Error() == "device is not irrigating" {
+			ctx.JSON(http.StatusConflict, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, dto.NewIrrigationCommandResponse(*command))
+}
+
+func (server *Server) UpdateIrrigationCommand(ctx *gin.Context) {
+
+}
+
+func (server *Server) ListIrrigationHistory(ctx *gin.Context) {}
+
+// GetIrrigationCommands
+// @Summary      Obter comando de irrigação
+// @Description  Retorna os detalhes de um comando de irrigação específico através do seu UUID.
+// @Tags         irrigation
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        uuid  path      string  true  "UUID do comando de irrigação"
+// @Success      200   {object}  dto.CreateIrrigationCommandResponse
+// @Failure      400   {object}  map[string]interface{} "Bad Request"
+// @Failure      401   {object}  map[string]interface{} "Unauthorized"
+// @Failure      404   {object}  map[string]interface{} "Not Found"
+// @Failure      500   {object}  map[string]interface{} "Internal Server Error"
+// @Router       /irrigation/command/{uuid} [get]
+func (server *Server) GetIrrigationCommands(ctx *gin.Context) {
+	var req dto.GetIrrigationCommandRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	irrigationCommandUUID, err := uuid.Parse(req.UUID)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	device, err := server.store.GetDevice(ctx, deviceUUID)
+	irrigationCommand, err := server.IrrigationService.GetIrrigationCommand(ctx, irrigationCommandUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -59,72 +105,8 @@ func (server *Server) CreateIrrigationCommand(ctx *gin.Context) {
 		return
 	}
 
-	if !device.UserID.Valid || device.UserID.Int64 != authPayload.UserID {
-		err := errors.New("device doesn't belong to authenticated user")
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
-		return
-	}
-
-	if !strings.EqualFold(strings.TrimSpace(device.Status), "ativo") {
-		err := errors.New("device is inactive, cannot send command")
-		ctx.JSON(http.StatusConflict, errorResponse(err))
-		return
-	}
-
-	var durationSeconds sql.NullInt32
-	if req.Duration != nil {
-		durationSeconds = sql.NullInt32{Int32: *req.Duration, Valid: true}
-	}
-
-	command, err := server.store.CreateIrrigationCommand(ctx, db.CreateIrrigationCommandParams{
-		DeviceID:        device.ID,
-		UserID:          authPayload.UserID,
-		Action:          req.Action,
-		DurationSeconds: durationSeconds,
-	})
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	payload := dto.IrrigationCommandPayload{
-		CommandID: command.Uuid.String(),
-		Action:    command.Action,
-	}
-	if durationSeconds.Valid {
-		payload.DurationSeconds = &durationSeconds.Int32
-	}
-
-	data, err := json.Marshal(payload)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	if err := mqtt.PublishCommand(server.mqttClient, device.DeviceUid, data); err != nil {
-		_, updateErr := server.store.UpdateIrrigationCommandStatus(context.Background(), db.UpdateIrrigationCommandStatusParams{
-			Uuid:   command.Uuid,
-			Status: "FAILED",
-			ErrorMessage: sql.NullString{
-				String: err.Error(),
-				Valid:  true,
-			},
-		})
-		if updateErr != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(updateErr))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, dto.NewIrrigationCommandResponse(command))
+	ctx.JSON(http.StatusOK, dto.NewIrrigationCommandResponse(*irrigationCommand))
 }
-
-func (server *Server) UpdateIrrigationCommand(ctx *gin.Context) {}
-
-func (server *Server) ListIrrigationHistory(ctx *gin.Context) {}
 
 func (server *Server) GetIrrigationHistory(ctx *gin.Context) {}
 

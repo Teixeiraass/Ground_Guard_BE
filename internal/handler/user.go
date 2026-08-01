@@ -2,19 +2,14 @@ package handler
 
 import (
 	"database/sql"
-	"fmt"
 	"io"
 	"net/http"
-	"time"
 
-	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/Teixeiraass/ground_guard_be/internal/middleware"
 	"github.com/Teixeiraass/ground_guard_be/token"
-	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 // CreateUser
@@ -36,33 +31,17 @@ func (server *Server) CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	hashPassword, err := util.HashPassword(req.Password)
+	user, err := server.UserService.CreateUser(ctx, req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	arg := db.CreateUserParams{
-		Username:       req.Username,
-		HashedPassword: hashPassword,
-		FullName:       req.FullName,
-		Email:          req.Email,
-	}
-
-	user, err := server.store.CreateUser(ctx, arg)
-	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok {
-			switch pqErr.Code.Name() {
-			case "unique_violation":
-				ctx.JSON(http.StatusForbidden, errorResponse(err))
-				return
-			}
+		if err.Error() == "unique_violation" {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, dto.NewUserResponse(user))
+	ctx.JSON(http.StatusCreated, dto.NewUserResponse(*user))
 }
 
 // GetUser
@@ -79,7 +58,7 @@ func (server *Server) CreateUser(ctx *gin.Context) {
 func (server *Server) GetUser(ctx *gin.Context) {
 	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 
-	user, err := server.store.GetUser(ctx, payload.UserUUID)
+	user, err := server.UserService.GetUser(ctx, payload.UserUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -90,7 +69,7 @@ func (server *Server) GetUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewUserResponse(user))
+	ctx.JSON(http.StatusOK, dto.NewUserResponse(*user))
 }
 
 // LoginUser
@@ -112,10 +91,14 @@ func (server *Server) LoginUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 	}
 
-	user, err := server.store.GetUserByEmail(ctx, req.Email)
+	rsp, err := server.UserService.LoginUser(ctx, req, ctx.Request.UserAgent(), ctx.ClientIP())
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		if err.Error() == "unauthorized" {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
 
@@ -123,56 +106,6 @@ func (server *Server) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	err = util.CheckPassword(req.Password, user.HashedPassword)
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
-	}
-
-	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
-		user.Username,
-		user.ID,
-		user.Uuid,
-		server.config.AccessTokenDuration,
-	)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(
-		user.Username,
-		user.ID,
-		user.Uuid,
-		server.config.RefreshTokenDuration,
-	)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	session, err := server.store.CreateSession(ctx, db.CreateSessionParams{
-		ID:           refreshPayload.ID,
-		UserID:       user.ID,
-		RefreshToken: refreshToken,
-		UserAgent:    ctx.Request.UserAgent(), // TODO: fill it
-		ClientIp:     ctx.ClientIP(),
-		IsBlocked:    false,
-		ExpiresAt:    refreshPayload.ExpiredAt,
-	})
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	rsp := dto.LoginUserResponse{
-		SessionID:             session.ID,
-		AccessToken:           accessToken,
-		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
-		RefreshToken:          refreshToken,
-		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
-		User:                 dto.NewUserResponse(user),
-	}
 	ctx.JSON(http.StatusOK, rsp)
 }
 
@@ -195,17 +128,14 @@ func (server *Server) RenewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	refreshPayload, err := server.tokenMaker.VerifyToken(req.RefreshToken)
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
-	}
-
-
-	session, err := server.store.GetSession(ctx, refreshPayload.ID)
+	rsp, err := server.UserService.RenewAccessToken(ctx, req)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		if err.Error() == "unauthorized" || err.Error() == "blocked session" || err.Error() == "incorrect session user" || err.Error() == "mismatched session token" || err.Error() == "expired session" {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
 
@@ -213,45 +143,7 @@ func (server *Server) RenewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	if session.IsBlocked {
-		err := fmt.Errorf("blocked session")
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
-	}
-
-	if session.UserID != refreshPayload.UserID {
-		err := fmt.Errorf("incorrect session user")
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
-	}
-
-	if session.RefreshToken != req.RefreshToken {
-		err := fmt.Errorf("mismatched session token")
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
-	}
-
-	if time.Now().After(session.ExpiresAt) {
-		err := fmt.Errorf("expired session")
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
-	}
-
-	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
-		refreshPayload.Username,
-		refreshPayload.UserID,
-		refreshPayload.UserUUID,
-		server.config.AccessTokenDuration,
-	)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, dto.RenewAccessTokenResponse{
-		AccessToken: accessToken,
-		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
-	})
+	ctx.JSON(http.StatusOK, rsp)
 }
 
 // LogoutUser godoc
@@ -269,30 +161,26 @@ func (server *Server) RenewAccessToken(ctx *gin.Context) {
 // @Router       /users/logout [post]
 func (server *Server) LogoutUser(ctx *gin.Context) {
 	var req dto.LogoutUserRequest
-    if err := ctx.ShouldBindJSON(&req); err != nil {
-        ctx.JSON(http.StatusBadRequest, errorResponse(err))
-        return
-    }
-
-	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
-
-	session, err := server.store.GetSession(ctx, req.SessionID)
-	
-	if session.UserID != payload.UserID {
-		err := fmt.Errorf("invalid session")
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-    err = server.store.BlockSession(ctx, req.SessionID)
-    if err != nil {
-        ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-        return
-    }
+	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 
-    ctx.JSON(http.StatusOK, gin.H{
-        "message": "logout successful",
-    })
+	err := server.UserService.LogoutUser(ctx, req.SessionID, payload.UserID)
+	if err != nil {
+		if err.Error() == "invalid session" {
+			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "logout successful",
+	})
 }
 
 // UpdateUserName
@@ -322,18 +210,13 @@ func (server *Server) UpdateUserName(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.UpdateUserNameParams{
-		Uuid:     userUUID,
-		FullName: req.FullName,
-	}
-
-	user, err := server.store.UpdateUserName(ctx, arg)
+	user, err := server.UserService.UpdateUserName(ctx, userUUID, req.FullName)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewUserResponse(user))
+	ctx.JSON(http.StatusOK, dto.NewUserResponse(*user))
 }
 
 // UpdateProfileImage
@@ -371,25 +254,11 @@ func (server *Server) UpdateProfileImage(ctx *gin.Context) {
 		return
 	}
 
-	imagePath, err := util.SaveUserImage(imageData, payload.Username)
+	user, err := server.UserService.UpdateProfileImage(ctx, payload.UserUUID, imageData, payload.Username)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	arg := db.UpdateUserProfileImageParams{
-		Uuid: payload.UserUUID,
-		ProfileImage: sql.NullString{
-			String: imagePath,
-			Valid:  true,
-		},
-	}
-
-	user, err := server.store.UpdateUserProfileImage(ctx, arg)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, dto.NewUserResponse(user))
+	ctx.JSON(http.StatusOK, dto.NewUserResponse(*user))
 }

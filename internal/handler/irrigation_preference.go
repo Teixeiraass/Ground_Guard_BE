@@ -4,9 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
-	"time"
 
-	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -31,69 +29,18 @@ func (server *Server) CreateIrrigationPreference(ctx *gin.Context) {
 		return
 	}
 
-	deviceUUID, err := uuid.Parse(req.DeviceUUID)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	device, err := server.store.GetDevice(ctx, deviceUUID)
+	irrigationPreference, err := server.IrrigationService.CreateIrrigationPreference(ctx, req)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	var startHour sql.NullTime
-	if req.StartHour != nil {
-		t, err := time.Parse("15:04", *req.StartHour)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, errorResponse(err))
-			return
-		}
-
-		startHour = sql.NullTime{
-			Time:  t,
-			Valid: true,
-		}
-	}
-
-	var endHour sql.NullTime
-	if req.EndHour != nil {
-		t, err := time.Parse("15:04", *req.EndHour)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, errorResponse(err))
-			return
-		}
-
-		endHour = sql.NullTime{
-			Time:  t,
-			Valid: true,
-		}
-	}
-
-	arg := db.CreateIrrigationPreferencesParams{
-		DeviceID:             device.ID,
-		IrrigationMode:       req.IrrigationMode,
-		MoistureThreshold:    req.MoistureThreshold,
-		DryTimeMinutes:       req.DryTimeMinutes,
-		MaxIrrigationsPerDay: req.MaxIrrigationsPerDay,
-		StartHour:            startHour,
-		EndHour:              endHour,
-	}
-
-	irrigationPreference, err := server.store.CreateIrrigationPreferences(ctx, arg)
-	if err != nil {
 		log.Printf("erro ao criar irrigation preference: %v", err)
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, dto.NewIrrigationPreferenceResponse(irrigationPreference))
+	ctx.JSON(http.StatusCreated, dto.NewIrrigationPreferenceResponse(*irrigationPreference))
 }
 
 // GetIrrigationPreference godoc
@@ -121,7 +68,7 @@ func (server *Server) GetIrrigationPreference(ctx *gin.Context) {
 		return
 	}
 
-	irrigationPreference, err := server.store.GetIrrigationPreference(ctx, irrigationPreferenceUUID)
+	irrigationPreference, err := server.IrrigationService.GetIrrigationPreference(ctx, irrigationPreferenceUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -132,7 +79,7 @@ func (server *Server) GetIrrigationPreference(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, dto.NewIrrigationPreferenceResponse(irrigationPreference))
+	ctx.JSON(http.StatusOK, dto.NewIrrigationPreferenceResponse(*irrigationPreference))
 }
 
 // ListDeviceIrrigationPreferences godoc
@@ -160,7 +107,7 @@ func (server *Server) GetIrrigationPreferenceByDevice(ctx *gin.Context) {
 		return
 	}
 
-	device, err := server.store.GetDevice(ctx, deviceUUID)
+	irrigationPreference, err := server.IrrigationService.GetIrrigationPreferenceByDevice(ctx, deviceUUID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -171,16 +118,5 @@ func (server *Server) GetIrrigationPreferenceByDevice(ctx *gin.Context) {
 		return
 	}
 
-	irrigationPreference, err := server.store.GetIrrigationPreferenceByDevice(ctx, device.ID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return
-		}
-
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, dto.NewIrrigationPreferenceResponse(irrigationPreference))
+	ctx.JSON(http.StatusOK, dto.NewIrrigationPreferenceResponse(*irrigationPreference))
 }

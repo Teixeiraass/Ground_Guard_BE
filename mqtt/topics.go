@@ -5,11 +5,11 @@ import (
 	"strings"
 )
 
-const defaultTopicPrefix = "ground-guard"
+const DefaultTopicPrefix = "ground-guard"
 
 func NormalizeTopicPrefix(prefix string) string {
 	if prefix == "" {
-		return defaultTopicPrefix
+		return DefaultTopicPrefix
 	}
 	return strings.Trim(prefix, "/")
 }
@@ -26,9 +26,62 @@ func DeviceCommandTopic(prefix, deviceUID string) string {
 	return fmt.Sprintf("%s/devices/%s/commands", NormalizeTopicPrefix(prefix), deviceUID)
 }
 
+func DeviceStateTopic(prefix, deviceUID string) string {
+	return fmt.Sprintf("%s/devices/%s/state", NormalizeTopicPrefix(prefix), deviceUID)
+}
+
+func DeviceStateWildcard(prefix string) string {
+	return fmt.Sprintf("%s/devices/+/state", NormalizeTopicPrefix(prefix))
+}
+
 func DeviceUIDFromTelemetryTopic(prefix, topic string) (string, bool) {
 	expectedPrefix := NormalizeTopicPrefix(prefix) + "/devices/"
 	suffix := "/telemetry"
+
+	if !strings.HasPrefix(topic, expectedPrefix) || !strings.HasSuffix(topic, suffix) {
+		return "", false
+	}
+
+	deviceUID := strings.TrimPrefix(topic, expectedPrefix)
+	deviceUID = strings.TrimSuffix(deviceUID, suffix)
+
+	if deviceUID == "" || strings.Contains(deviceUID, "/") {
+		return "", false
+	}
+
+	return deviceUID, true
+}
+
+func DeviceEventTopic(prefix, deviceUID string) string {
+	return fmt.Sprintf("%s/devices/%s/events", NormalizeTopicPrefix(prefix), deviceUID)
+}
+
+func DeviceEventWildcard(prefix string) string {
+	return fmt.Sprintf("%s/devices/+/events", NormalizeTopicPrefix(prefix))
+}
+
+func DeviceUIDFromEventTopic(prefix, topic string) (string, bool) {
+	expectedPrefix := NormalizeTopicPrefix(prefix) + "/devices/"
+	suffix := "/events"
+
+	if !strings.HasPrefix(topic, expectedPrefix) || !strings.HasSuffix(topic, suffix) {
+		return "", false
+	}
+
+	deviceUID := strings.TrimPrefix(topic, expectedPrefix)
+	deviceUID = strings.TrimSuffix(deviceUID, suffix)
+
+	if deviceUID == "" || strings.Contains(deviceUID, "/") {
+		return "", false
+	}
+
+	return deviceUID, true
+}
+
+
+func DeviceUIDFromStateTopic(prefix, topic string) (string, bool) {
+	expectedPrefix := NormalizeTopicPrefix(prefix) + "/devices/"
+	suffix := "/state"
 
 	if !strings.HasPrefix(topic, expectedPrefix) || !strings.HasSuffix(topic, suffix) {
 		return "", false
