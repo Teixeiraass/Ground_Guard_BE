@@ -25,6 +25,7 @@ type Identity struct {
 	FullName      string
 	Username      string
 	EmailVerified bool
+	Picture       string
 }
 
 type Service struct {
@@ -100,6 +101,7 @@ func (s *Service) verifyIDToken(ctx context.Context, providerName, issuer, clien
 		FullName:      fullName,
 		Username:      usernameFromEmail(claims.Email, claims.Subject),
 		EmailVerified: emailVerified,
+		Picture:       claims.Picture,
 	}, nil
 }
 
@@ -107,6 +109,7 @@ type oauthClaims struct {
 	Subject       string `json:"sub"`
 	Email         string `json:"email"`
 	Name          string `json:"name"`
+	Picture       string `json:"picture"`
 	EmailVerified any    `json:"email_verified"`
 }
 

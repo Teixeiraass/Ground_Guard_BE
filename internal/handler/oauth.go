@@ -49,6 +49,7 @@ func (server *Server) OAuthLogin(ctx *gin.Context) {
 		FullName:      identity.FullName,
 		Username:      identity.Username,
 		EmailVerified: identity.EmailVerified,
+		Picture:       identity.Picture,
 	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

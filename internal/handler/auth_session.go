@@ -84,6 +84,10 @@ func (server *Server) createOAuthUser(ctx *gin.Context, identity oauthIdentity) 
 			HashedPassword: hashedPassword,
 			FullName:       identity.FullName,
 			Email:          identity.Email,
+			ProfileImage: sql.NullString{
+				String: identity.Picture,
+				Valid:  identity.Picture != "",
+			},
 		})
 		if err != nil {
 			if pqErr, ok := err.(*pq.Error); ok && pqErr.Code.Name() == "unique_violation" {
@@ -134,4 +138,5 @@ type oauthIdentity struct {
 	FullName      string
 	Username      string
 	EmailVerified bool
+	Picture       string
 }

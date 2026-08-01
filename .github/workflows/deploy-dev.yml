@@ -1,0 +1,33 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Ir para o diretório do projeto
+            cd ~/ground_guard_project/ground_guard_be_golang
+            
+            # Baixar as últimas atualizações da branch develop
+            git fetch origin
+            git checkout develop
+            git pull origin develop
+            
+            # Rebuildar a imagem da API e subir os containers (com downtime mínimo)
+            docker compose -f docker-compose.dev.yaml build
+            docker compose -f docker-compose.dev.yaml up -d
+            
+            # Limpar imagens antigas para não lotar o disco da EC2
+            docker image prune -f
