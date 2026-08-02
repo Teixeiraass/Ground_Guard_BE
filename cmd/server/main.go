@@ -33,9 +33,9 @@ func init() {
 // @contact.name    Guilherme Teixeira
 // @contact.email   contato@groundguard.com
 // @license.name    MIT
-// @host            localhost:8080
+// @host            api-dev.ground-guard.com.br
 // @BasePath        /api/v1
-// @schemes         http https
+// @schemes         https
 // @securityDefinitions.apikey BearerAuth
 // @in              header
 // @name            Authorization

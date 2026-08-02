@@ -290,7 +290,7 @@ definitions:
       username:
         type: string
     type: object
-host: localhost:8080
+host: api-dev.ground-guard.com.br
 info:
   contact:
     email: contato@groundguard.com
@@ -765,6 +765,22 @@ paths:
       summary: Obter um FAQ
       tags:
       - faqs
+  /helper:
+    get:
+      consumes:
+      - application/json
+      description: Endpoint simples para confirmar que a API está respondendo.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sucesso
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Verificar disponibilidade da API
+      tags:
+      - helper
   /help-contents:
     get:
       consumes:
@@ -1475,7 +1491,6 @@ paths:
       tags:
       - users
 schemes:
-- http
 - https
 securityDefinitions:
   BearerAuth:
