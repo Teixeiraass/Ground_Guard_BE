@@ -702,6 +702,30 @@ const docTemplate = `{
                 }
             }
         },
+        "/helper": {
+            "get": {
+                "description": "Endpoint simples para confirmar que a API está respondendo.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "helper"
+                ],
+                "summary": "Verificar disponibilidade da API",
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/help-contents": {
             "get": {
                 "description": "Retorna uma lista paginada de conteúdos de ajuda",
@@ -2193,9 +2217,9 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0.0",
-	Host:             "localhost:8080",
+	Host:             "api-dev.ground-guard.com.br",
 	BasePath:         "/api/v1",
-	Schemes:          []string{"http", "https"},
+	Schemes:          []string{"https"},
 	Title:            "Ground Guard API",
 	Description:      "API REST do Ground Guard, uma plataforma IoT para monitoramento e automação de jardins e plantas.\nPermite gerenciamento de dispositivos, preferências de irrigação, monitoramento ambiental e acionamento remoto de irrigação.\nDesenvolvido como TCC e preparado para evolução comercial.",
 	InfoInstanceName: "swagger",

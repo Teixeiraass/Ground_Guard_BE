@@ -8,6 +8,7 @@ import (
 func registerV1Routes(router *gin.Engine, tokenMaker token.Maker, handlers Handlers) {
 	v1 := router.Group(V1Prefix)
 
+	registerHelperRoutes(v1, handlers)
 	registerUserRoutes(v1, handlers)
 	registerDeviceRoutes(v1, handlers)
 	registerFaqRoutes(v1, handlers)

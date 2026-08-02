@@ -1,6 +1,5 @@
 {
     "schemes": [
-        "http",
         "https"
     ],
     "swagger": "2.0",
@@ -17,7 +16,7 @@
         },
         "version": "1.0.0"
     },
-    "host": "localhost:8080",
+    "host": "api-dev.ground-guard.com.br",
     "basePath": "/api/v1",
     "paths": {
         "/devices": {
@@ -692,6 +691,30 @@
                     },
                     "500": {
                         "description": "Erro interno do servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/helper": {
+            "get": {
+                "description": "Endpoint simples para confirmar que a API está respondendo.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "helper"
+                ],
+                "summary": "Verificar disponibilidade da API",
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
