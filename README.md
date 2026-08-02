@@ -194,6 +194,7 @@ Base path: `/api/v1`
 | GET | `/irrigation_preference/device/:uuid` | Preferência por dispositivo |
 
 Arquivos estáticos de perfil: `/uploads/profile/`
+Arquivos estáticos de QR Code: `/uploads/qrcodes/`
 
 ---
 

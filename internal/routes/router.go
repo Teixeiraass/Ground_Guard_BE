@@ -11,6 +11,7 @@ func Setup(tokenMaker token.Maker, handlers Handlers) *gin.Engine {
 	router := gin.Default()
 
 	router.Static("/uploads/profile", "./uploads/profile")
+	router.Static("/uploads/qrcodes", "./uploads/qrcodes")
 
 	registerSwaggerRoutes(router)
 	registerV1Routes(router, tokenMaker, handlers)
