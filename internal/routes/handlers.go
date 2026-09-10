@@ -10,5 +10,6 @@ type Handlers interface {
 	TutorialHandler
 	LegalDocumentHandler
 	IrrigationActionHandler
+	StatisticsHandler
 	WebSocketHandler
 }

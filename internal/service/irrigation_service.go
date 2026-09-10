@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -18,6 +21,9 @@ import (
 type IrrigationService interface {
 	CreateIrrigationCommand(ctx context.Context, req dto.CreateIrrigationCommandRequest, userID int64) (*db.IrrigationCommand, error)
 	GetIrrigationCommand(ctx context.Context, commandUUID uuid.UUID) (*db.IrrigationCommand, error)
+	ListIrrigationHistory(ctx context.Context, userID int64, date time.Time, deviceUUID *uuid.UUID) ([]db.IrrigationAction, error)
+	GetIrrigationHistory(ctx context.Context, actionUUID uuid.UUID) (*db.IrrigationAction, error)
+	GetWaterConsumption(ctx context.Context, userID int64, period string, deviceUUID *uuid.UUID) (dto.WaterConsumptionResponse, error)
 	CreateIrrigationPreference(ctx context.Context, req dto.CreateIrrigationPreferenceRequest) (*db.IrrigationPreference, error)
 	GetIrrigationPreference(ctx context.Context, preferenceUUID uuid.UUID) (*db.IrrigationPreference, error)
 	GetIrrigationPreferenceByDevice(ctx context.Context, deviceUUID uuid.UUID) (*db.IrrigationPreference, error)
@@ -133,6 +139,129 @@ func (s *irrigationService) GetIrrigationCommand(ctx context.Context, commandUUI
 	return &command, nil
 }
 
+func (s *irrigationService) ListIrrigationHistory(ctx context.Context, userID int64, date time.Time, deviceUUID *uuid.UUID) ([]db.IrrigationAction, error) {
+	deviceID, err := s.resolveDeviceID(ctx, userID, deviceUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	if date.IsZero() {
+		date = time.Now().In(time.Local)
+	}
+	dayStart := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	dayEnd := dayStart.Add(24 * time.Hour)
+
+	actions, err := s.loadAllIrrigationActions(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	filtered := make([]db.IrrigationAction, 0, len(actions))
+	for _, action := range actions {
+		if deviceID != nil && action.DeviceID != *deviceID {
+			continue
+		}
+
+		startedAt := action.StartedAt.In(dayStart.Location())
+		if startedAt.Before(dayStart) || !startedAt.Before(dayEnd) {
+			continue
+		}
+
+		filtered = append(filtered, action)
+	}
+
+	sort.SliceStable(filtered, func(i, j int) bool {
+		if filtered[i].StartedAt.Equal(filtered[j].StartedAt) {
+			return filtered[i].ID > filtered[j].ID
+		}
+		return filtered[i].StartedAt.After(filtered[j].StartedAt)
+	})
+
+	return filtered, nil
+}
+
+func (s *irrigationService) GetIrrigationHistory(ctx context.Context, actionUUID uuid.UUID) (*db.IrrigationAction, error) {
+	action, err := s.store.GetIrrigationAction(ctx, actionUUID)
+	if err != nil {
+		return nil, err
+	}
+	return &action, nil
+}
+
+func (s *irrigationService) GetWaterConsumption(ctx context.Context, userID int64, period string, deviceUUID *uuid.UUID) (dto.WaterConsumptionResponse, error) {
+	normalizedPeriod := strings.ToLower(strings.TrimSpace(period))
+	if normalizedPeriod == "" {
+		normalizedPeriod = "week"
+	}
+
+	deviceID, err := s.resolveDeviceID(ctx, userID, deviceUUID)
+	if err != nil {
+		return dto.WaterConsumptionResponse{}, err
+	}
+
+	window, err := buildConsumptionWindow(time.Now().In(time.Local), normalizedPeriod)
+	if err != nil {
+		return dto.WaterConsumptionResponse{}, err
+	}
+
+	actions, err := s.loadAllIrrigationActions(ctx, userID)
+	if err != nil {
+		return dto.WaterConsumptionResponse{}, err
+	}
+
+	points := make([]dto.WaterConsumptionPoint, len(window.buckets))
+	for i, bucket := range window.buckets {
+		points[i] = dto.WaterConsumptionPoint{Label: bucket.label}
+	}
+
+	var currentTotal int64
+	var previousTotal int64
+
+	for _, action := range actions {
+		if deviceID != nil && action.DeviceID != *deviceID {
+			continue
+		}
+
+		if !action.WaterVolumeMl.Valid || !strings.EqualFold(action.Status, irrigationActionFinished) {
+			continue
+		}
+
+		volume := int64(action.WaterVolumeMl.Int32)
+		startedAt := action.StartedAt.In(window.currentStart.Location())
+
+		if startedAt.Before(window.currentStart) == false && startedAt.Before(window.currentEnd) {
+			currentTotal += volume
+			bucketIndex := int(startedAt.Sub(window.currentStart) / window.bucketDuration)
+			if bucketIndex >= 0 && bucketIndex < len(points) {
+				points[bucketIndex].WaterVolumeMl += volume
+			}
+			continue
+		}
+
+		if !startedAt.Before(window.previousStart) && startedAt.Before(window.previousEnd) {
+			previousTotal += volume
+		}
+	}
+
+	difference := currentTotal - previousTotal
+	changePercent := 0.0
+	if previousTotal != 0 {
+		changePercent = (float64(difference) / float64(previousTotal)) * 100
+		changePercent = math.Round(changePercent*100) / 100
+	}
+
+	return dto.WaterConsumptionResponse{
+		Period:             normalizedPeriod,
+		CurrentPeriodStart: window.currentStart,
+		CurrentPeriodEnd:   window.currentEnd,
+		CurrentTotalMl:     currentTotal,
+		PreviousTotalMl:    previousTotal,
+		DifferenceMl:       difference,
+		ChangePercent:      changePercent,
+		Points:             points,
+	}, nil
+}
+
 func (s *irrigationService) CreateIrrigationPreference(ctx context.Context, req dto.CreateIrrigationPreferenceRequest) (*db.IrrigationPreference, error) {
 	deviceUUID, err := uuid.Parse(req.DeviceUUID)
 	if err != nil {
@@ -199,4 +328,145 @@ func (s *irrigationService) GetIrrigationPreferenceByDevice(ctx context.Context,
 		return nil, err
 	}
 	return &preference, nil
+}
+
+const irrigationActionFinished = "FINALIZADO"
+
+type consumptionBucket struct {
+	label string
+}
+
+type consumptionWindow struct {
+	currentStart   time.Time
+	currentEnd     time.Time
+	previousStart  time.Time
+	previousEnd    time.Time
+	bucketDuration time.Duration
+	buckets        []consumptionBucket
+}
+
+func (s *irrigationService) loadAllIrrigationActions(ctx context.Context, userID int64) ([]db.IrrigationAction, error) {
+	const pageSize int32 = 100
+
+	var allActions []db.IrrigationAction
+	var offset int32
+
+	for {
+		actions, err := s.store.ListIrrigationAction(ctx, db.ListIrrigationActionParams{
+			UserID: userID,
+			Limit:  pageSize,
+			Offset: offset,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		allActions = append(allActions, actions...)
+		if int32(len(actions)) < pageSize {
+			break
+		}
+
+		offset += pageSize
+	}
+
+	return allActions, nil
+}
+
+func (s *irrigationService) resolveDeviceID(ctx context.Context, userID int64, deviceUUID *uuid.UUID) (*int64, error) {
+	if deviceUUID == nil {
+		return nil, nil
+	}
+
+	device, err := s.store.GetDevice(ctx, *deviceUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !device.UserID.Valid || device.UserID.Int64 != userID {
+		return nil, errors.New("device doesn't belong to authenticated user")
+	}
+
+	return &device.ID, nil
+}
+
+func buildConsumptionWindow(now time.Time, period string) (consumptionWindow, error) {
+	switch period {
+	case "day":
+		currentStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		currentEnd := currentStart.Add(24 * time.Hour)
+		return consumptionWindow{
+			currentStart:   currentStart,
+			currentEnd:     currentEnd,
+			previousStart:  currentStart.Add(-24 * time.Hour),
+			previousEnd:    currentStart,
+			bucketDuration: time.Hour,
+			buckets:        buildHourlyBuckets(currentStart, 24),
+		}, nil
+	case "week":
+		currentStart := startOfISOWeek(now)
+		currentEnd := currentStart.Add(7 * 24 * time.Hour)
+		return consumptionWindow{
+			currentStart:   currentStart,
+			currentEnd:     currentEnd,
+			previousStart:  currentStart.Add(-7 * 24 * time.Hour),
+			previousEnd:    currentStart,
+			bucketDuration: 24 * time.Hour,
+			buckets:        buildDailyBuckets(currentStart, 7),
+		}, nil
+	case "month":
+		currentStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+		currentEnd := currentStart.AddDate(0, 1, 0)
+		bucketCount := int(currentEnd.Sub(currentStart) / (24 * time.Hour))
+		return consumptionWindow{
+			currentStart:   currentStart,
+			currentEnd:     currentEnd,
+			previousStart:  currentStart.AddDate(0, -1, 0),
+			previousEnd:    currentStart,
+			bucketDuration: 24 * time.Hour,
+			buckets:        buildDailyBuckets(currentStart, bucketCount),
+		}, nil
+	default:
+		return consumptionWindow{}, fmt.Errorf("invalid period: %s", period)
+	}
+}
+
+func startOfISOWeek(now time.Time) time.Time {
+	weekday := int(now.Weekday())
+	if weekday == 0 {
+		weekday = 7
+	}
+	start := now.AddDate(0, 0, -(weekday - 1))
+	return time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, now.Location())
+}
+
+func buildHourlyBuckets(start time.Time, count int) []consumptionBucket {
+	buckets := make([]consumptionBucket, 0, count)
+	for i := 0; i < count; i++ {
+		bucketStart := start.Add(time.Duration(i) * time.Hour)
+		buckets = append(buckets, consumptionBucket{label: bucketStart.Format("15h")})
+	}
+	return buckets
+}
+
+func buildDailyBuckets(start time.Time, count int) []consumptionBucket {
+	weekdayLabels := map[time.Weekday]string{
+		time.Monday:    "Seg",
+		time.Tuesday:   "Ter",
+		time.Wednesday: "Qua",
+		time.Thursday:  "Qui",
+		time.Friday:    "Sex",
+		time.Saturday:  "Sab",
+		time.Sunday:    "Dom",
+	}
+
+	buckets := make([]consumptionBucket, 0, count)
+	for i := 0; i < count; i++ {
+		bucketStart := start.AddDate(0, 0, i)
+		label := bucketStart.Format("02")
+		if count == 7 {
+			label = weekdayLabels[bucketStart.Weekday()]
+		}
+		buckets = append(buckets, consumptionBucket{label: label})
+	}
+	return buckets
 }

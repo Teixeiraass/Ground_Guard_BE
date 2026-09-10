@@ -1,8 +1,8 @@
 # Ground Guard — Backend API
 
-API REST do **Ground Guard**, uma plataforma IoT para monitoramento e automação de jardins e plantas. Permite gerenciar dispositivos, preferências de irrigação, vinculação via QR Code e conteúdos de suporte ao usuário.
+API REST do **Ground Guard**, uma plataforma IoT para monitoramento, automação e operação de jardins e plantas.
 
-Desenvolvido como TCC e preparado para evolução comercial.
+O backend foi estruturado como um produto comercial. Ele concentra autenticação, cadastro e vínculo de dispositivos, preferências e histórico de irrigação, comandos remotos, relatórios de consumo de água, telemetria e conteúdos de suporte.
 
 ---
 
@@ -13,10 +13,20 @@ O Ground Guard conecta sensores e atuadores em campo (umidade do solo, temperatu
 - Autentica usuários e gerencia sessões com tokens PASETO
 - Registra e vincula dispositivos IoT a contas de usuário
 - Armazena preferências de irrigação e histórico de ações
+- Expõe histórico de irrigação e consumo de água para dashboards e gráficos
 - Expõe conteúdos públicos (FAQ, tutoriais, ajuda e documentos legais)
 - Serve imagens de perfil e QR Codes gerados para pareamento de dispositivos
 
 A documentação interativa da API está disponível via **Swagger UI**.
+
+### Conceitos principais
+
+- `users`: contas autenticadas e sessões
+- `devices`: dispositivos físicos vinculados ao usuário
+- `irrigation_commands`: comandos enviados ao device
+- `irrigation_actions`: execuções concluídas com duração e volume irrigado
+- `device_sensor_history`: telemetria ambiental recebida do campo
+- `help/faqs/tutorials/legal-documents`: conteúdos públicos para suporte e onboarding
 
 ---
 
@@ -148,6 +158,8 @@ Com o servidor rodando, acesse:
 http://localhost:8080/swagger/index.html
 ```
 
+A interface do Swagger está com tema escuro para leitura mais confortável e usa as anotações dos handlers como fonte da verdade.
+
 Para regenerar a documentação após alterar anotações nos handlers:
 
 ```bash
@@ -192,6 +204,14 @@ Base path: `/api/v1`
 | POST | `/irrigation_preference` | Criar preferência de irrigação |
 | GET | `/irrigation_preference/:uuid` | Obter preferência |
 | GET | `/irrigation_preference/device/:uuid` | Preferência por dispositivo |
+| POST | `/irrigation/commands` | Criar comando de irrigação |
+| PUT | `/irrigation/commands/:uuid` | Atualizar comando de irrigação |
+| GET | `/irrigation/command/:uuid` | Obter comando de irrigação |
+| GET | `/irrigation/history` | Histórico de irrigação por data e device_uuid opcional |
+| GET | `/irrigation/history/:uuid` | Obter um evento específico de irrigação |
+| GET | `/irrigation/consumption` | Consumo de água por day, week ou month com filtro opcional por device_uuid |
+| GET | `/irrigation/status` | Obter status atual de irrigação |
+| GET | `/statistics` | Resumo operacional com histórico, consumo e métricas de dispositivos |
 
 Arquivos estáticos de perfil: `/uploads/profile/`
 Arquivos estáticos de QR Code: `/uploads/qrcodes/`
@@ -226,6 +246,14 @@ make test
 
 O CI do GitHub Actions executa migrations e testes automaticamente em cada push/PR para a branch `main`.
 
+## Guia rápido para novos desenvolvedores
+
+1. Comece por [cmd/server/main.go](cmd/server/main.go) para ver a configuração da API e o ponto de entrada.
+2. Leia [internal/routes/router.go](internal/routes/router.go) e [internal/routes/v1.go](internal/routes/v1.go) para entender como os endpoints são expostos.
+3. Use [internal/handler/](internal/handler/) para ver o contrato HTTP e [internal/service/](internal/service/) para a regra de negócio.
+4. Consulte [db/query/](db/query/) e [db/sqlc/](db/sqlc/) para mapear como os dados persistem.
+5. Abra o Swagger em `/swagger/index.html` para validar payloads, auth e exemplos.
+
 ---
 
 ## CI/CD
@@ -241,7 +269,7 @@ O workflow em `.github/workflows/ci.yml` executa:
 
 ## Licença
 
-MIT — veja detalhes no cabeçalho Swagger em `cmd/server/main.go`.
+MIT.
 
 ---
 

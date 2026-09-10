@@ -101,6 +101,10 @@ definitions:
         type: string
       ip_address:
         type: string
+      is_irrigating:
+        type: boolean
+      is_online:
+        type: boolean
       last_seen:
         type: string
       last_update:
@@ -115,6 +119,13 @@ definitions:
         type: string
       wifi_ssid:
         type: string
+    type: object
+  dto.DeviceStatisticsResponse:
+    properties:
+      online:
+        type: integer
+      total:
+        type: integer
     type: object
   dto.FaqResponse:
     properties:
@@ -147,6 +158,27 @@ definitions:
         type: string
       uuid:
         type: string
+    type: object
+  dto.IrrigationHistoryResponse:
+    properties:
+      created_at:
+        type: string
+      duration_seconds:
+        type: integer
+      error_message:
+        type: string
+      finished_at:
+        type: string
+      started_at:
+        type: string
+      status:
+        type: string
+      trigger_type:
+        type: string
+      uuid:
+        type: string
+      water_volume_ml:
+        type: integer
     type: object
   dto.IrrigationPreferenceResponse:
     properties:
@@ -240,6 +272,25 @@ definitions:
       access_token:
         type: string
     type: object
+  dto.StatisticsResponse:
+    properties:
+      date:
+        type: string
+      device_statistics:
+        $ref: '#/definitions/dto.DeviceStatisticsResponse'
+      device_uuid:
+        type: string
+      generated_at:
+        type: string
+      irrigation_history:
+        items:
+          $ref: '#/definitions/dto.IrrigationHistoryResponse'
+        type: array
+      period:
+        type: string
+      water_consumption:
+        $ref: '#/definitions/dto.WaterConsumptionResponse'
+    type: object
   dto.TutorialResponse:
     properties:
       category:
@@ -290,15 +341,43 @@ definitions:
       username:
         type: string
     type: object
+  dto.WaterConsumptionPoint:
+    properties:
+      label:
+        type: string
+      water_volume_ml:
+        type: integer
+    type: object
+  dto.WaterConsumptionResponse:
+    properties:
+      change_percent:
+        type: number
+      current_period_end:
+        type: string
+      current_period_start:
+        type: string
+      current_total_ml:
+        type: integer
+      difference_ml:
+        type: integer
+      period:
+        type: string
+      points:
+        items:
+          $ref: '#/definitions/dto.WaterConsumptionPoint'
+        type: array
+      previous_total_ml:
+        type: integer
+    type: object
 host: api-dev.ground-guard.com.br
 info:
   contact:
     email: contato@groundguard.com
     name: Guilherme Teixeira
   description: |-
-    API REST do Ground Guard, uma plataforma IoT para monitoramento e automação de jardins e plantas.
-    Permite gerenciamento de dispositivos, preferências de irrigação, monitoramento ambiental e acionamento remoto de irrigação.
-    Desenvolvido como TCC e preparado para evolução comercial.
+    API REST do Ground Guard, uma plataforma IoT para monitoramento, automação e operação de jardins e plantas.
+    O backend centraliza autenticação, vínculo de dispositivos, preferências e histórico de irrigação, comandos remotos, telemetria, conteúdos de suporte e relatórios operacionais.
+    O projeto foi estruturado como produto comercial: pensado para onboarding rápido de novos desenvolvedores, expansão por módulos e manutenção contínua em ambiente de produção.
   license:
     name: MIT
   termsOfService: https://groundguard.com/terms
@@ -765,22 +844,6 @@ paths:
       summary: Obter um FAQ
       tags:
       - faqs
-  /helper:
-    get:
-      consumes:
-      - application/json
-      description: Endpoint simples para confirmar que a API está respondendo.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Sucesso
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Verificar disponibilidade da API
-      tags:
-      - helper
   /help-contents:
     get:
       consumes:
@@ -860,6 +923,23 @@ paths:
       summary: Obter um conteúdo de ajuda
       tags:
       - help-contents
+  /helper:
+    get:
+      consumes:
+      - application/json
+      description: Endpoint simples para confirmar que a API está respondendo.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sucesso
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verificar disponibilidade da API
+      tags:
+      - helper
   /irrigation-preferences:
     post:
       consumes:
@@ -1028,6 +1108,130 @@ paths:
       summary: Criar comando de irrigação
       tags:
       - irrigation
+  /irrigation/consumption:
+    get:
+      consumes:
+      - application/json
+      description: Retorna o consumo de água do usuário autenticado com comparação
+        com o período anterior e filtro opcional por dispositivo.
+      parameters:
+      - description: Período de análise (day, week ou month)
+        in: query
+        name: period
+        type: string
+      - description: UUID do dispositivo
+        in: query
+        name: device_uuid
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WaterConsumptionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obter consumo de água
+      tags:
+      - consumption
+  /irrigation/history:
+    get:
+      consumes:
+      - application/json
+      description: Retorna o histórico de irrigação do usuário autenticado filtrado
+        por data e opcionalmente por dispositivo.
+      parameters:
+      - description: Data no formato YYYY-MM-DD
+        in: query
+        name: date
+        type: string
+      - description: UUID do dispositivo
+        in: query
+        name: device_uuid
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.IrrigationHistoryResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Listar histórico de irrigação
+      tags:
+      - irrigation
+  /irrigation/history/{uuid}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna os detalhes de uma irrigação específica através do UUID.
+      parameters:
+      - description: UUID da irrigação
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.IrrigationHistoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obter histórico de irrigação
+      tags:
+      - irrigation
   /legal-document/{uuid}:
     get:
       consumes:
@@ -1107,6 +1311,57 @@ paths:
       summary: Listar documentos legais
       tags:
       - legal-documents
+  /statistics:
+    get:
+      consumes:
+      - application/json
+      description: Retorna um resumo operacional com histórico de irrigação, consumo
+        de água e métricas de dispositivos.
+      parameters:
+      - description: Data no formato YYYY-MM-DD
+        in: query
+        name: date
+        type: string
+      - description: Período de consumo (day, week ou month)
+        in: query
+        name: period
+        type: string
+      - description: UUID do dispositivo
+        in: query
+        name: device_uuid
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StatisticsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obter estatísticas do produto
+      tags:
+      - statistics
   /tokens/refresh:
     post:
       consumes:
