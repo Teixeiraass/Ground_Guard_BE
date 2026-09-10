@@ -702,30 +702,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/helper": {
-            "get": {
-                "description": "Endpoint simples para confirmar que a API está respondendo.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "helper"
-                ],
-                "summary": "Verificar disponibilidade da API",
-                "responses": {
-                    "200": {
-                        "description": "Sucesso",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/help-contents": {
             "get": {
                 "description": "Retorna uma lista paginada de conteúdos de ajuda",
@@ -834,6 +810,32 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/helper": {
+            "get": {
+                "description": "Endpoint simples para confirmar que a API está respondendo.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "helper"
+                ],
+                "summary": "Verificar disponibilidade da API",
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -1088,6 +1090,193 @@ const docTemplate = `{
                 }
             }
         },
+        "/irrigation/consumption": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna o consumo de água do usuário autenticado com comparação com o período anterior e filtro opcional por dispositivo.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "consumption"
+                ],
+                "summary": "Obter consumo de água",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Período de análise (day, week ou month)",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID do dispositivo",
+                        "name": "device_uuid",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.WaterConsumptionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/irrigation/history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna o histórico de irrigação do usuário autenticado filtrado por data e opcionalmente por dispositivo.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "irrigation"
+                ],
+                "summary": "Listar histórico de irrigação",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Data no formato YYYY-MM-DD",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID do dispositivo",
+                        "name": "device_uuid",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.IrrigationHistoryResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/irrigation/history/{uuid}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna os detalhes de uma irrigação específica através do UUID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "irrigation"
+                ],
+                "summary": "Obter histórico de irrigação",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID da irrigação",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IrrigationHistoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/legal-document/{uuid}": {
             "get": {
                 "description": "Retorna os detalhes de um documento legal específico baseado no seu UUID",
@@ -1193,6 +1382,82 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Erro interno do servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna um resumo operacional com histórico de irrigação, consumo de água e métricas de dispositivos.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "statistics"
+                ],
+                "summary": "Obter estatísticas do produto",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Data no formato YYYY-MM-DD",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Período de consumo (day, week ou month)",
+                        "name": "period",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID do dispositivo",
+                        "name": "device_uuid",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StatisticsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1913,6 +2178,12 @@ const docTemplate = `{
                 "ip_address": {
                     "type": "string"
                 },
+                "is_irrigating": {
+                    "type": "boolean"
+                },
+                "is_online": {
+                    "type": "boolean"
+                },
                 "last_seen": {
                     "type": "string"
                 },
@@ -1933,6 +2204,17 @@ const docTemplate = `{
                 },
                 "wifi_ssid": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.DeviceStatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "online": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -1982,6 +2264,38 @@ const docTemplate = `{
                 },
                 "uuid": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.IrrigationHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "duration_seconds": {
+                    "type": "integer"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "finished_at": {
+                    "type": "string"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "trigger_type": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                },
+                "water_volume_ml": {
+                    "type": "integer"
                 }
             }
         },
@@ -2126,6 +2440,35 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.StatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "device_statistics": {
+                    "$ref": "#/definitions/dto.DeviceStatisticsResponse"
+                },
+                "device_uuid": {
+                    "type": "string"
+                },
+                "generated_at": {
+                    "type": "string"
+                },
+                "irrigation_history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.IrrigationHistoryResponse"
+                    }
+                },
+                "period": {
+                    "type": "string"
+                },
+                "water_consumption": {
+                    "$ref": "#/definitions/dto.WaterConsumptionResponse"
+                }
+            }
+        },
         "dto.TutorialResponse": {
             "type": "object",
             "properties": {
@@ -2202,6 +2545,49 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "dto.WaterConsumptionPoint": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "water_volume_ml": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.WaterConsumptionResponse": {
+            "type": "object",
+            "properties": {
+                "change_percent": {
+                    "type": "number"
+                },
+                "current_period_end": {
+                    "type": "string"
+                },
+                "current_period_start": {
+                    "type": "string"
+                },
+                "current_total_ml": {
+                    "type": "integer"
+                },
+                "difference_ml": {
+                    "type": "integer"
+                },
+                "period": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.WaterConsumptionPoint"
+                    }
+                },
+                "previous_total_ml": {
+                    "type": "integer"
+                }
+            }
         }
     },
     "securityDefinitions": {
@@ -2221,7 +2607,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api/v1",
 	Schemes:          []string{"https"},
 	Title:            "Ground Guard API",
-	Description:      "API REST do Ground Guard, uma plataforma IoT para monitoramento e automação de jardins e plantas.\nPermite gerenciamento de dispositivos, preferências de irrigação, monitoramento ambiental e acionamento remoto de irrigação.\nDesenvolvido como TCC e preparado para evolução comercial.",
+	Description:      "API REST do Ground Guard, uma plataforma IoT para monitoramento, automação e operação de jardins e plantas.\nO backend centraliza autenticação, vínculo de dispositivos, preferências e histórico de irrigação, comandos remotos, telemetria, conteúdos de suporte e relatórios operacionais.\nO projeto foi estruturado como produto comercial: pensado para onboarding rápido de novos desenvolvedores, expansão por módulos e manutenção contínua em ambiente de produção.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

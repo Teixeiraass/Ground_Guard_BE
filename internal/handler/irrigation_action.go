@@ -65,7 +65,61 @@ func (server *Server) UpdateIrrigationCommand(ctx *gin.Context) {
 
 }
 
-func (server *Server) ListIrrigationHistory(ctx *gin.Context) {}
+// ListIrrigationHistory
+// @Summary      Listar histórico de irrigação
+// @Description  Retorna o histórico de irrigação do usuário autenticado filtrado por data e opcionalmente por dispositivo.
+// @Tags         irrigation
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        date        query     string  false  "Data no formato YYYY-MM-DD"
+// @Param        device_uuid query     string  false  "UUID do dispositivo"
+// @Success      200        {array}   dto.IrrigationHistoryResponse
+// @Failure      400        {object}  map[string]interface{} "Bad Request"
+// @Failure      401        {object}  map[string]interface{} "Unauthorized"
+// @Failure      500        {object}  map[string]interface{} "Internal Server Error"
+// @Router       /irrigation/history [get]
+func (server *Server) ListIrrigationHistory(ctx *gin.Context) {
+	var req dto.ListIrrigationHistoryRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	date, err := parseDateQuery(req.Date)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	deviceUUID, err := parseUUIDQuery(req.DeviceUUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+	actions, err := server.IrrigationService.ListIrrigationHistory(ctx, authPayload.UserID, date, deviceUUID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		if err.Error() == "device doesn't belong to authenticated user" {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	rsp := make([]dto.IrrigationHistoryResponse, 0, len(actions))
+	for _, action := range actions {
+		rsp = append(rsp, dto.NewIrrigationHistoryResponse(action))
+	}
+
+	ctx.JSON(http.StatusOK, rsp)
+}
 
 // GetIrrigationCommands
 // @Summary      Obter comando de irrigação
@@ -108,6 +162,89 @@ func (server *Server) GetIrrigationCommands(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, dto.NewIrrigationCommandResponse(*irrigationCommand))
 }
 
-func (server *Server) GetIrrigationHistory(ctx *gin.Context) {}
+// GetIrrigationHistory
+// @Summary      Obter histórico de irrigação
+// @Description  Retorna os detalhes de uma irrigação específica através do UUID.
+// @Tags         irrigation
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        uuid  path      string  true  "UUID da irrigação"
+// @Success      200   {object}  dto.IrrigationHistoryResponse
+// @Failure      400   {object}  map[string]interface{} "Bad Request"
+// @Failure      404   {object}  map[string]interface{} "Not Found"
+// @Failure      500   {object}  map[string]interface{} "Internal Server Error"
+// @Router       /irrigation/history/{uuid} [get]
+func (server *Server) GetIrrigationHistory(ctx *gin.Context) {
+	var req dto.GetIrrigationHistoryRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	actionUUID, err := uuid.Parse(req.UUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	action, err := server.IrrigationService.GetIrrigationHistory(ctx, actionUUID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.NewIrrigationHistoryResponse(*action))
+}
+
+// GetWaterConsumption
+// @Summary      Obter consumo de água
+// @Description  Retorna o consumo de água do usuário autenticado com comparação com o período anterior e filtro opcional por dispositivo.
+// @Tags         consumption
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        period      query     string  false  "Período de análise (day, week ou month)"
+// @Param        device_uuid query     string  false  "UUID do dispositivo"
+// @Success      200     {object}  dto.WaterConsumptionResponse
+// @Failure      400     {object}  map[string]interface{} "Bad Request"
+// @Failure      401     {object}  map[string]interface{} "Unauthorized"
+// @Failure      500     {object}  map[string]interface{} "Internal Server Error"
+// @Router       /irrigation/consumption [get]
+func (server *Server) GetWaterConsumption(ctx *gin.Context) {
+	var req dto.GetWaterConsumptionRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	deviceUUID, err := parseUUIDQuery(req.DeviceUUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+	consumption, err := server.IrrigationService.GetWaterConsumption(ctx, authPayload.UserID, req.Period, deviceUUID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		if err.Error() == "device doesn't belong to authenticated user" {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, consumption)
+}
 
 func (server *Server) GetIrrigationStatus(ctx *gin.Context) {}

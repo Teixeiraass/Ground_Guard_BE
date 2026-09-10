@@ -26,9 +26,9 @@ func init() {
 
 // @title           Ground Guard API
 // @version         1.0.0
-// @description     API REST do Ground Guard, uma plataforma IoT para monitoramento e automação de jardins e plantas.
-// @description     Permite gerenciamento de dispositivos, preferências de irrigação, monitoramento ambiental e acionamento remoto de irrigação.
-// @description     Desenvolvido como TCC e preparado para evolução comercial.
+// @description     API REST do Ground Guard, uma plataforma IoT para monitoramento, automação e operação de jardins e plantas.
+// @description     O backend centraliza autenticação, vínculo de dispositivos, preferências e histórico de irrigação, comandos remotos, telemetria, conteúdos de suporte e relatórios operacionais.
+// @description     O projeto foi estruturado como produto comercial: pensado para onboarding rápido de novos desenvolvedores, expansão por módulos e manutenção contínua em ambiente de produção.
 // @termsOfService  https://groundguard.com/terms
 // @contact.name    Guilherme Teixeira
 // @contact.email   contato@groundguard.com
