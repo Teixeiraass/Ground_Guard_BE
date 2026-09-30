@@ -27,6 +27,11 @@ type IrrigationService interface {
 	CreateIrrigationPreference(ctx context.Context, req dto.CreateIrrigationPreferenceRequest) (*db.IrrigationPreference, error)
 	GetIrrigationPreference(ctx context.Context, preferenceUUID uuid.UUID) (*db.IrrigationPreference, error)
 	GetIrrigationPreferenceByDevice(ctx context.Context, deviceUUID uuid.UUID) (*db.IrrigationPreference, error)
+	CreateIrrigationSchedule(ctx context.Context, req dto.CreateIrrigationScheduleRequest, userID int64) (*db.IrrigationSchedule, error)
+	ListIrrigationSchedules(ctx context.Context, userID int64) ([]db.IrrigationSchedule, error)
+	GetIrrigationSchedule(ctx context.Context, scheduleUUID uuid.UUID, userID int64) (*db.IrrigationSchedule, error)
+	UpdateIrrigationSchedule(ctx context.Context, scheduleUUID uuid.UUID, req dto.UpdateIrrigationScheduleRequest, userID int64) (*db.IrrigationSchedule, error)
+	DeleteIrrigationSchedule(ctx context.Context, scheduleUUID uuid.UUID, userID int64) error
 }
 
 type irrigationService struct {
@@ -387,6 +392,106 @@ func (s *irrigationService) resolveDeviceID(ctx context.Context, userID int64, d
 	}
 
 	return &device.ID, nil
+}
+
+func (s *irrigationService) CreateIrrigationSchedule(ctx context.Context, req dto.CreateIrrigationScheduleRequest, userID int64) (*db.IrrigationSchedule, error) {
+	deviceUUID, err := uuid.Parse(req.DeviceUUID)
+	if err != nil {
+		return nil, err
+	}
+	device, err := s.store.GetDevice(ctx, deviceUUID)
+	if err != nil {
+		return nil, err
+	}
+	if !device.UserID.Valid || device.UserID.Int64 != userID {
+		return nil, errors.New("device doesn't belong to authenticated user")
+	}
+
+	startTime, err := dto.ScheduleTime(req.StartTime)
+	if err != nil {
+		return nil, errors.New("start_time must use HH:MM format")
+	}
+	if err := validateScheduleDays(req.DaysOfWeek); err != nil {
+		return nil, err
+	}
+	enabled := true
+	if req.Enabled != nil {
+		enabled = *req.Enabled
+	}
+
+	schedule, err := s.store.CreateIrrigationSchedule(ctx, db.CreateIrrigationScheduleParams{
+		DeviceID:        device.ID,
+		UserID:          userID,
+		Name:            dto.ScheduleName(req.Name),
+		Enabled:         enabled,
+		StartTime:       startTime,
+		DurationSeconds: req.DurationSeconds,
+		DaysOfWeek:      req.DaysOfWeek,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &schedule, nil
+}
+
+func (s *irrigationService) ListIrrigationSchedules(ctx context.Context, userID int64) ([]db.IrrigationSchedule, error) {
+	return s.store.ListIrrigationSchedules(ctx, userID)
+}
+
+func (s *irrigationService) GetIrrigationSchedule(ctx context.Context, scheduleUUID uuid.UUID, userID int64) (*db.IrrigationSchedule, error) {
+	schedule, err := s.store.GetIrrigationSchedule(ctx, db.GetIrrigationScheduleParams{Uuid: scheduleUUID, UserID: userID})
+	if err != nil {
+		return nil, err
+	}
+	return &schedule, nil
+}
+
+func (s *irrigationService) UpdateIrrigationSchedule(ctx context.Context, scheduleUUID uuid.UUID, req dto.UpdateIrrigationScheduleRequest, userID int64) (*db.IrrigationSchedule, error) {
+	startTime, err := dto.ScheduleTime(req.StartTime)
+	if err != nil {
+		return nil, errors.New("start_time must use HH:MM format")
+	}
+	if err := validateScheduleDays(req.DaysOfWeek); err != nil {
+		return nil, err
+	}
+
+	schedule, err := s.store.UpdateIrrigationSchedule(ctx, db.UpdateIrrigationScheduleParams{
+		Uuid:            scheduleUUID,
+		UserID:          userID,
+		Name:            dto.ScheduleName(req.Name),
+		Enabled:         req.Enabled,
+		StartTime:       startTime,
+		DurationSeconds: req.DurationSeconds,
+		DaysOfWeek:      req.DaysOfWeek,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &schedule, nil
+}
+
+func (s *irrigationService) DeleteIrrigationSchedule(ctx context.Context, scheduleUUID uuid.UUID, userID int64) error {
+	_, err := s.store.DeleteIrrigationSchedule(ctx, db.DeleteIrrigationScheduleParams{Uuid: scheduleUUID, UserID: userID})
+	return err
+}
+
+func validateScheduleDays(value string) error {
+	parts := strings.Split(value, ",")
+	if len(parts) == 0 || len(parts) > 7 {
+		return errors.New("days_of_week must contain between 1 and 7 unique days from 0 to 6")
+	}
+	seen := make(map[string]struct{}, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if len(part) != 1 || part[0] < '0' || part[0] > '6' {
+			return errors.New("days_of_week must contain days from 0 to 6 separated by commas")
+		}
+		if _, ok := seen[part]; ok {
+			return errors.New("days_of_week cannot contain duplicate days")
+		}
+		seen[part] = struct{}{}
+	}
+	return nil
 }
 
 func buildConsumptionWindow(now time.Time, period string) (consumptionWindow, error) {

@@ -4,7 +4,6 @@ Project ground_guard {
     # Ground Guard Database
   '''
 }
-
 Table users as U {
   id bigserial [pk]
   uuid UUID [unique, default: `gen_random_uuid()`]
@@ -19,7 +18,7 @@ Table users as U {
 
 Table sessions as S {
   id UUID [pk]
-  user_id bigint [ref: > U.id]
+  user_id bigint [not null, ref: > U.id]
   refresh_token varchar [not null]
   user_agent varchar [not null]
   client_ip varchar [not null]
@@ -28,10 +27,10 @@ Table sessions as S {
   created_at timestamptz [not null, default: `now()`]
 }
 
-Table devices as D {
+Table controllerDevices as CD {
   id bigserial [pk]
   uuid UUID [unique, default: `gen_random_uuid()`]
-  device_uid varchar(100) [unique]
+  controller_device_uid varchar(100) [unique]
   name varchar(100)
   firmware_version varchar(50)
   firmware_build varchar(50)
@@ -41,23 +40,44 @@ Table devices as D {
   qr_code_file varchar(255) 
   wifi_ssid varchar(100) 
   is_online boolean [not null, default: false]
-  is_irrigating boolean [not null, default: false]
   last_seen timestamptz
-  status varchar(20)
   user_id bigint [ref: > U.id]
   created_at timestamptz [not null, default: `now()`]
 
   Indexes {
     (user_id)
-    (device_uid) [unique]
+    (controller_device_uid) [unique]
     (uuid) [unique]
   }
+}
+
+Table devices as D {
+  id bigserial [pk]
+  uuid UUID [unique, default: `gen_random_uuid()`]
+  name varchar(100)
+  last_update timestamptz
+  qr_token varchar(64) [unique, not null]
+  qr_code_file varchar(255) 
+  is_online boolean [not null, default: false]
+  is_irrigating boolean [not null, default: false]
+  last_seen timestamptz
+  soil_moisture int
+  status varchar(20)
+  controller_device_id bigint [ref: > CD.id]
+  created_at timestamptz [not null, default: `now()`]
+
+  Indexes {
+    (controller_device_id)
+    (name)
+    (uuid) [unique]
+  } 
 }
 
 Table irrigation_actions as IA {
   id bigserial [pk]
   uuid UUID [unique, not null, default: `gen_random_uuid()`]
 
+  controller_device_id bigint [not null, ref: > CD.id]
   device_id bigint [not null, ref: > D.id]
   user_id bigint [not null, ref: > U.id]
 
@@ -89,6 +109,7 @@ Table irrigation_commands as IC {
   id bigserial [pk]
   uuid UUID [unique, not null, default: `gen_random_uuid()`]
 
+  controller_device_id bigint [not null, ref: > CD.id]
   device_id bigint [not null, ref: > D.id]
   user_id bigint [not null, ref: > U.id]
 
@@ -117,6 +138,7 @@ Table irrigation_schedules as IS {
   id bigserial [pk]
   uuid UUID [unique, not null, default: `gen_random_uuid()`]
 
+  controller_device_id bigint [not null, ref: > CD.id]
   device_id bigint [not null, ref: > D.id]
   user_id bigint [not null, ref: > U.id]
 
@@ -160,6 +182,7 @@ Table irrigation_preferences as IP {
   id bigserial [pk]
   uuid UUID [unique, not null, default: `gen_random_uuid()`]
 
+  controller_device_id bigint [not null, ref: > CD.id]
   device_id bigint [not null, unique, ref: > D.id]
 
   enabled boolean [not null, default: true]

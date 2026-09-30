@@ -21,6 +21,7 @@ func registerV1Routes(router *gin.Engine, tokenMaker token.Maker, handlers Handl
 	registerAuthDeviceRoutes(authRoutes, handlers)
 	registerIrrigationPreferencesRoutes(authRoutes, handlers)
 	registerIrrigationActionRoutes(authRoutes, handlers)
+	registerIrrigationScheduleRoutes(authRoutes, handlers)
 	registerStatisticsRoutes(authRoutes, handlers)
 	registerAuthWsRoutes(authRoutes, handlers)
 }

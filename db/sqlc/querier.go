@@ -18,6 +18,7 @@ type Querier interface {
 	CreateIrrigationCommand(ctx context.Context, arg CreateIrrigationCommandParams) (IrrigationCommand, error)
 	CreateIrrigationPreferenceHistory(ctx context.Context, arg CreateIrrigationPreferenceHistoryParams) (IrrigationPreferencesHistory, error)
 	CreateIrrigationPreferences(ctx context.Context, arg CreateIrrigationPreferencesParams) (IrrigationPreference, error)
+	CreateIrrigationSchedule(ctx context.Context, arg CreateIrrigationScheduleParams) (IrrigationSchedule, error)
 	CreateOAuthIdentity(ctx context.Context, arg CreateOAuthIdentityParams) (OauthIdentity, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
@@ -26,6 +27,7 @@ type Querier interface {
 	DeleteIrrigationCommand(ctx context.Context, argUuid uuid.UUID) error
 	DeleteIrrigationPreference(ctx context.Context, argUuid uuid.UUID) error
 	DeleteIrrigationPreferenceByDeviceId(ctx context.Context, deviceID int64) error
+	DeleteIrrigationSchedule(ctx context.Context, arg DeleteIrrigationScheduleParams) (uuid.UUID, error)
 	ExistsActiveIrrigationAction(ctx context.Context, deviceID int64) (bool, error)
 	ExistsPendingIrrigationCommand(ctx context.Context, deviceID int64) (bool, error)
 	FailTimedOutCommands(ctx context.Context) error
@@ -39,6 +41,7 @@ type Querier interface {
 	GetIrrigationCommand(ctx context.Context, argUuid uuid.UUID) (IrrigationCommand, error)
 	GetIrrigationPreference(ctx context.Context, argUuid uuid.UUID) (IrrigationPreference, error)
 	GetIrrigationPreferenceByDevice(ctx context.Context, deviceID int64) (IrrigationPreference, error)
+	GetIrrigationSchedule(ctx context.Context, arg GetIrrigationScheduleParams) (IrrigationSchedule, error)
 	GetLatestDeviceSensorHistory(ctx context.Context, deviceID int64) (DeviceSensorHistory, error)
 	GetLegalDocument(ctx context.Context, argUuid uuid.UUID) (LegalDocument, error)
 	GetOAuthIdentityByProviderAndSubject(ctx context.Context, arg GetOAuthIdentityByProviderAndSubjectParams) (OauthIdentity, error)
@@ -60,6 +63,7 @@ type Querier interface {
 	ListIrrigationAction(ctx context.Context, arg ListIrrigationActionParams) ([]IrrigationAction, error)
 	ListIrrigationCommands(ctx context.Context, arg ListIrrigationCommandsParams) ([]IrrigationCommand, error)
 	ListIrrigationPreferences(ctx context.Context, arg ListIrrigationPreferencesParams) ([]IrrigationPreference, error)
+	ListIrrigationSchedules(ctx context.Context, userID int64) ([]IrrigationSchedule, error)
 	ListLegalDocuments(ctx context.Context, arg ListLegalDocumentsParams) ([]LegalDocument, error)
 	ListTutorials(ctx context.Context, arg ListTutorialsParams) ([]Tutorial, error)
 	ListTutorialsByCategory(ctx context.Context, arg ListTutorialsByCategoryParams) ([]Tutorial, error)
@@ -71,6 +75,7 @@ type Querier interface {
 	UpdateIrrigationAction(ctx context.Context, arg UpdateIrrigationActionParams) (IrrigationAction, error)
 	UpdateIrrigationCommandStatus(ctx context.Context, arg UpdateIrrigationCommandStatusParams) (IrrigationCommand, error)
 	UpdateIrrigationPreference(ctx context.Context, arg UpdateIrrigationPreferenceParams) (IrrigationPreference, error)
+	UpdateIrrigationSchedule(ctx context.Context, arg UpdateIrrigationScheduleParams) (IrrigationSchedule, error)
 	UpdateNameDevice(ctx context.Context, arg UpdateNameDeviceParams) (Device, error)
 	UpdateUserName(ctx context.Context, arg UpdateUserNameParams) (User, error)
 	UpdateUserProfileImage(ctx context.Context, arg UpdateUserProfileImageParams) (User, error)
