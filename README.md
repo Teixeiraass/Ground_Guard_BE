@@ -211,7 +211,16 @@ Base path: `/api/v1`
 | GET | `/irrigation/history/:uuid` | Obter um evento específico de irrigação |
 | GET | `/irrigation/consumption` | Consumo de água por day, week ou month com filtro opcional por device_uuid |
 | GET | `/irrigation/status` | Obter status atual de irrigação |
+| POST | `/irrigation/schedules` | Criar agendamento de irrigação |
+| GET | `/irrigation/schedules` | Listar agendamentos do usuário |
+| GET | `/irrigation/schedules/:uuid` | Obter agendamento |
+| PUT | `/irrigation/schedules/:uuid` | Atualizar agendamento |
+| DELETE | `/irrigation/schedules/:uuid` | Excluir agendamento |
 | GET | `/statistics` | Resumo operacional com histórico, consumo e métricas de dispositivos |
+
+Agendamentos usam `start_time` no formato `HH:MM` e `days_of_week` como dias
+numéricos separados por vírgula (`0` domingo até `6` sábado), sem repetição.
+`duration_seconds` aceita valores entre 1 e 86400 segundos.
 
 Arquivos estáticos de perfil: `/uploads/profile/`
 Arquivos estáticos de QR Code: `/uploads/qrcodes/`

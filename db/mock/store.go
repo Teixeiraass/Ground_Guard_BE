@@ -140,6 +140,21 @@ func (mr *MockStoreMockRecorder) CreateIrrigationPreferences(arg0, arg1 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIrrigationPreferences", reflect.TypeOf((*MockStore)(nil).CreateIrrigationPreferences), arg0, arg1)
 }
 
+// CreateIrrigationSchedule mocks base method.
+func (m *MockStore) CreateIrrigationSchedule(arg0 context.Context, arg1 db.CreateIrrigationScheduleParams) (db.IrrigationSchedule, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIrrigationSchedule", arg0, arg1)
+	ret0, _ := ret[0].(db.IrrigationSchedule)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateIrrigationSchedule indicates an expected call of CreateIrrigationSchedule.
+func (mr *MockStoreMockRecorder) CreateIrrigationSchedule(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIrrigationSchedule", reflect.TypeOf((*MockStore)(nil).CreateIrrigationSchedule), arg0, arg1)
+}
+
 // CreateOAuthIdentity mocks base method.
 func (m *MockStore) CreateOAuthIdentity(arg0 context.Context, arg1 db.CreateOAuthIdentityParams) (db.OauthIdentity, error) {
 	m.ctrl.T.Helper()
@@ -254,6 +269,21 @@ func (m *MockStore) DeleteIrrigationPreferenceByDeviceId(arg0 context.Context, a
 func (mr *MockStoreMockRecorder) DeleteIrrigationPreferenceByDeviceId(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIrrigationPreferenceByDeviceId", reflect.TypeOf((*MockStore)(nil).DeleteIrrigationPreferenceByDeviceId), arg0, arg1)
+}
+
+// DeleteIrrigationSchedule mocks base method.
+func (m *MockStore) DeleteIrrigationSchedule(arg0 context.Context, arg1 db.DeleteIrrigationScheduleParams) (uuid.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIrrigationSchedule", arg0, arg1)
+	ret0, _ := ret[0].(uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteIrrigationSchedule indicates an expected call of DeleteIrrigationSchedule.
+func (mr *MockStoreMockRecorder) DeleteIrrigationSchedule(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIrrigationSchedule", reflect.TypeOf((*MockStore)(nil).DeleteIrrigationSchedule), arg0, arg1)
 }
 
 // ExistsActiveIrrigationAction mocks base method.
@@ -448,6 +478,21 @@ func (m *MockStore) GetIrrigationPreferenceByDevice(arg0 context.Context, arg1 i
 func (mr *MockStoreMockRecorder) GetIrrigationPreferenceByDevice(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIrrigationPreferenceByDevice", reflect.TypeOf((*MockStore)(nil).GetIrrigationPreferenceByDevice), arg0, arg1)
+}
+
+// GetIrrigationSchedule mocks base method.
+func (m *MockStore) GetIrrigationSchedule(arg0 context.Context, arg1 db.GetIrrigationScheduleParams) (db.IrrigationSchedule, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIrrigationSchedule", arg0, arg1)
+	ret0, _ := ret[0].(db.IrrigationSchedule)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIrrigationSchedule indicates an expected call of GetIrrigationSchedule.
+func (mr *MockStoreMockRecorder) GetIrrigationSchedule(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIrrigationSchedule", reflect.TypeOf((*MockStore)(nil).GetIrrigationSchedule), arg0, arg1)
 }
 
 // GetLatestDeviceSensorHistory mocks base method.
@@ -765,6 +810,21 @@ func (mr *MockStoreMockRecorder) ListIrrigationPreferences(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIrrigationPreferences", reflect.TypeOf((*MockStore)(nil).ListIrrigationPreferences), arg0, arg1)
 }
 
+// ListIrrigationSchedules mocks base method.
+func (m *MockStore) ListIrrigationSchedules(arg0 context.Context, arg1 int64) ([]db.IrrigationSchedule, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListIrrigationSchedules", arg0, arg1)
+	ret0, _ := ret[0].([]db.IrrigationSchedule)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListIrrigationSchedules indicates an expected call of ListIrrigationSchedules.
+func (mr *MockStoreMockRecorder) ListIrrigationSchedules(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIrrigationSchedules", reflect.TypeOf((*MockStore)(nil).ListIrrigationSchedules), arg0, arg1)
+}
+
 // ListLegalDocuments mocks base method.
 func (m *MockStore) ListLegalDocuments(arg0 context.Context, arg1 db.ListLegalDocumentsParams) ([]db.LegalDocument, error) {
 	m.ctrl.T.Helper()
@@ -928,6 +988,21 @@ func (m *MockStore) UpdateIrrigationPreference(arg0 context.Context, arg1 db.Upd
 func (mr *MockStoreMockRecorder) UpdateIrrigationPreference(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIrrigationPreference", reflect.TypeOf((*MockStore)(nil).UpdateIrrigationPreference), arg0, arg1)
+}
+
+// UpdateIrrigationSchedule mocks base method.
+func (m *MockStore) UpdateIrrigationSchedule(arg0 context.Context, arg1 db.UpdateIrrigationScheduleParams) (db.IrrigationSchedule, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateIrrigationSchedule", arg0, arg1)
+	ret0, _ := ret[0].(db.IrrigationSchedule)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateIrrigationSchedule indicates an expected call of UpdateIrrigationSchedule.
+func (mr *MockStoreMockRecorder) UpdateIrrigationSchedule(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIrrigationSchedule", reflect.TypeOf((*MockStore)(nil).UpdateIrrigationSchedule), arg0, arg1)
 }
 
 // UpdateNameDevice mocks base method.
