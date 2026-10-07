@@ -23,7 +23,7 @@ INSERT INTO irrigation_schedules (
     duration_seconds,
     days_of_week
 ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at
+RETURNING id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id
 `
 
 type CreateIrrigationScheduleParams struct {
@@ -59,6 +59,7 @@ func (q *Queries) CreateIrrigationSchedule(ctx context.Context, arg CreateIrriga
 		&i.DaysOfWeek,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
@@ -82,7 +83,7 @@ func (q *Queries) DeleteIrrigationSchedule(ctx context.Context, arg DeleteIrriga
 }
 
 const getIrrigationSchedule = `-- name: GetIrrigationSchedule :one
-SELECT id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at
+SELECT id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id
 FROM irrigation_schedules
 WHERE uuid = $1 AND user_id = $2
 LIMIT 1
@@ -108,12 +109,13 @@ func (q *Queries) GetIrrigationSchedule(ctx context.Context, arg GetIrrigationSc
 		&i.DaysOfWeek,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
 
 const listIrrigationSchedules = `-- name: ListIrrigationSchedules :many
-SELECT id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at
+SELECT id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id
 FROM irrigation_schedules
 WHERE user_id = $1
 ORDER BY start_time, id
@@ -140,6 +142,7 @@ func (q *Queries) ListIrrigationSchedules(ctx context.Context, userID int64) ([]
 			&i.DaysOfWeek,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ControllerDeviceID,
 		); err != nil {
 			return nil, err
 		}
@@ -163,7 +166,7 @@ SET name = $3,
     days_of_week = $7,
     updated_at = now()
 WHERE uuid = $1 AND user_id = $2
-RETURNING id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at
+RETURNING id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id
 `
 
 type UpdateIrrigationScheduleParams struct {
@@ -199,6 +202,7 @@ func (q *Queries) UpdateIrrigationSchedule(ctx context.Context, arg UpdateIrriga
 		&i.DaysOfWeek,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }

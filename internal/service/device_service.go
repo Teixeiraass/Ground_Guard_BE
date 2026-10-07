@@ -18,9 +18,10 @@ type DeviceService interface {
 	RegisterDevice(ctx context.Context, req dto.CreateDeviceRequest) (*db.Device, error)
 	GetDevice(ctx context.Context, deviceUUID uuid.UUID, userID int64) (*db.Device, error)
 	ListDevices(ctx context.Context, userID int64, limit int32, offset int32) ([]db.Device, error)
+	ListDevicesByController(ctx context.Context, controllerUUID uuid.UUID, userID int64, limit int32, offset int32) ([]db.Device, error)
 	GetDeviceByUID(ctx context.Context, uid string) (*db.Device, error)
-	LinkDeviceToUserByQrToken(ctx context.Context, qrToken string, userID int64) (*db.Device, error)
-	UnlinkDeviceFromUser(ctx context.Context, deviceUUID uuid.UUID, userID int64) (*db.Device, error)
+	LinkDeviceToControllerDeviceByQrToken(ctx context.Context, qrToken string, controllerDeviceUUID uuid.UUID, userID int64) (*db.Device, error)
+	UnlinkDeviceFromControllerDevice(ctx context.Context, deviceUUID uuid.UUID, userID int64) (*db.Device, error)
 	UpdateNameDevice(ctx context.Context, deviceUUID uuid.UUID, name string) (*db.Device, error)
 }
 
@@ -33,7 +34,7 @@ func NewDeviceService(store db.Store) DeviceService {
 }
 
 func (s *deviceService) createDevice(ctx context.Context, req dto.CreateDeviceRequest) (*db.Device, error) {
-	qrToken, err :=util.GenerateQRToken(12)
+	qrToken, err := util.GenerateQRToken(12)
 	if err != nil {
 		return nil, err
 	}
@@ -44,19 +45,15 @@ func (s *deviceService) createDevice(ctx context.Context, req dto.CreateDeviceRe
 	}
 
 	arg := db.CreateDeviceParams{
-		DeviceUid:       req.DeviceUid,
-		Name:            req.Name,
-		FirmwareVersion: req.FirmwareVersion,
-		FirmwareBuild:   util.ToNullString(req.FirmwareBuild),
-		IpAddress:       util.ToInet(req.IpAddress),
-		WifiSsid:        util.ToNullString(req.WifiSsid),
-		Status:          req.Status,
+		DeviceUid: req.DeviceUid,
+		Name:      req.Name,
+		Status:    req.Status,
 		LastSeen: sql.NullTime{
 			Time:  time.Now(),
 			Valid: true,
 		},
-		QrToken:     qrToken,
-		QrCodeFile:  util.ToNullString(qrFileName),
+		QrToken:    qrToken,
+		QrCodeFile: util.ToNullString(qrFileName),
 	}
 
 	device, err := s.store.CreateDevice(ctx, arg)
@@ -86,12 +83,8 @@ func (s *deviceService) RegisterDevice(ctx context.Context, req dto.CreateDevice
 	}
 
 	device, err := s.store.UpdateDeviceRegistration(ctx, db.UpdateDeviceRegistrationParams{
-		DeviceUid:       req.DeviceUid,
-		FirmwareVersion: req.FirmwareVersion,
-		FirmwareBuild:   util.ToNullString(req.FirmwareBuild),
-		IpAddress:       util.ToInet(req.IpAddress),
-		WifiSsid:        util.ToNullString(req.WifiSsid),
-		Status:          req.Status,
+		DeviceUid: req.DeviceUid,
+		Status:    req.Status,
 	})
 
 	if err != nil {
@@ -107,24 +100,29 @@ func (s *deviceService) GetDevice(ctx context.Context, deviceUUID uuid.UUID, use
 		return nil, err
 	}
 
-	if device.UserID.Int64 != userID {
-		return nil, errors.New("device doesn't belong to authenticated user")
+	deviceUserID, err := s.store.GetDeviceUserID(ctx, deviceUUID)
+	if err != nil || !deviceUserID.Valid || deviceUserID.Int64 != userID {
+		return nil, errors.New("device doesn't belong to controller device")
 	}
 
 	return &device, nil
 }
 
 func (s *deviceService) ListDevices(ctx context.Context, userID int64, limit int32, offset int32) ([]db.Device, error) {
-	arg := db.ListDevicesParams{
-		UserID: sql.NullInt64{
-			Int64: userID,
-			Valid: true,
-		},
+	return s.store.ListDevicesByUserID(ctx, db.ListDevicesByUserIDParams{
+		UserID: sql.NullInt64{Int64: userID, Valid: true},
 		Limit:  limit,
 		Offset: offset,
-	}
+	})
+}
 
-	return s.store.ListDevices(ctx, arg)
+func (s *deviceService) ListDevicesByController(ctx context.Context, controllerUUID uuid.UUID, userID int64, limit int32, offset int32) ([]db.Device, error) {
+	return s.store.ListDevicesByControllerUUIDAndUserID(ctx, db.ListDevicesByControllerUUIDAndUserIDParams{
+		ControllerUuid: controllerUUID,
+		UserID:         sql.NullInt64{Int64: userID, Valid: true},
+		PageLimit:      limit,
+		PageOffset:     offset,
+	})
 }
 
 func (s *deviceService) GetDeviceByUID(ctx context.Context, uid string) (*db.Device, error) {
@@ -135,16 +133,14 @@ func (s *deviceService) GetDeviceByUID(ctx context.Context, uid string) (*db.Dev
 	return &device, nil
 }
 
-func (s *deviceService) LinkDeviceToUserByQrToken(ctx context.Context, qrToken string, userID int64) (*db.Device, error) {
-	arg := db.LinkDeviceToUserByQrTokenParams{
+func (s *deviceService) LinkDeviceToControllerDeviceByQrToken(ctx context.Context, qrToken string, controllerDeviceUUID uuid.UUID, userID int64) (*db.Device, error) {
+	arg := db.LinkDeviceToUserControllerByQrTokenParams{
 		QrToken: qrToken,
-		UserID: sql.NullInt64{
-			Int64: userID,
-			Valid: true,
-		},
+		Uuid:    controllerDeviceUUID,
+		UserID:  sql.NullInt64{Int64: userID, Valid: true},
 	}
 
-	device, err := s.store.LinkDeviceToUserByQrToken(ctx, arg)
+	device, err := s.store.LinkDeviceToUserControllerByQrToken(ctx, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -152,16 +148,13 @@ func (s *deviceService) LinkDeviceToUserByQrToken(ctx context.Context, qrToken s
 	return &device, nil
 }
 
-func (s *deviceService) UnlinkDeviceFromUser(ctx context.Context, deviceUUID uuid.UUID, userID int64) (*db.Device, error) {
-	arg := db.UnlinkDeviceFromUserParams{
-		Uuid: deviceUUID,
-		UserID: sql.NullInt64{
-			Int64: userID,
-			Valid: true,
-		},
+func (s *deviceService) UnlinkDeviceFromControllerDevice(ctx context.Context, deviceUUID uuid.UUID, userID int64) (*db.Device, error) {
+	arg := db.UnlinkDeviceFromUserControllerParams{
+		Uuid:   deviceUUID,
+		UserID: sql.NullInt64{Int64: userID, Valid: true},
 	}
 
-	device, err := s.store.UnlinkDeviceFromUser(ctx, arg)
+	device, err := s.store.UnlinkDeviceFromUserController(ctx, arg)
 	if err != nil {
 		return nil, err
 	}

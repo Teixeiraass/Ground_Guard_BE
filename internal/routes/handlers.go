@@ -3,6 +3,7 @@ package routes
 type Handlers interface {
 	UserHandler
 	DeviceHandler
+	ControllerDeviceHandler
 	IrrigationHandler
 	HelperHandler
 	FaqHandler

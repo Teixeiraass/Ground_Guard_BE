@@ -24,7 +24,7 @@ INSERT INTO irrigation_commands (
     $3,
     $4
 )
-RETURNING id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id
+RETURNING id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id, controller_device_id
 `
 
 type CreateIrrigationCommandParams struct {
@@ -55,6 +55,7 @@ func (q *Queries) CreateIrrigationCommand(ctx context.Context, arg CreateIrrigat
 		&i.ProcessedAt,
 		&i.CreatedAt,
 		&i.IrrigationActionID,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
@@ -103,7 +104,7 @@ func (q *Queries) FailTimedOutCommands(ctx context.Context) error {
 }
 
 const getIrrigationCommand = `-- name: GetIrrigationCommand :one
-SELECT id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id
+SELECT id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id, controller_device_id
 FROM irrigation_commands
 WHERE uuid = $1
 LIMIT 1
@@ -125,6 +126,7 @@ func (q *Queries) GetIrrigationCommand(ctx context.Context, argUuid uuid.UUID) (
 		&i.ProcessedAt,
 		&i.CreatedAt,
 		&i.IrrigationActionID,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
@@ -133,7 +135,7 @@ const linkIrrigationCommandAction = `-- name: LinkIrrigationCommandAction :one
 UPDATE irrigation_commands
 SET irrigation_action_id = $2
 WHERE id = $1
-RETURNING id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id
+RETURNING id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id, controller_device_id
 `
 
 type LinkIrrigationCommandActionParams struct {
@@ -157,12 +159,13 @@ func (q *Queries) LinkIrrigationCommandAction(ctx context.Context, arg LinkIrrig
 		&i.ProcessedAt,
 		&i.CreatedAt,
 		&i.IrrigationActionID,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
 
 const listIrrigationCommands = `-- name: ListIrrigationCommands :many
-SELECT id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id
+SELECT id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id, controller_device_id
 FROM irrigation_commands
 ORDER BY created_at DESC
 LIMIT $1
@@ -196,6 +199,7 @@ func (q *Queries) ListIrrigationCommands(ctx context.Context, arg ListIrrigation
 			&i.ProcessedAt,
 			&i.CreatedAt,
 			&i.IrrigationActionID,
+			&i.ControllerDeviceID,
 		); err != nil {
 			return nil, err
 		}
@@ -217,7 +221,7 @@ SET
     error_message = $3,
     processed_at = now()
 WHERE uuid = $1 AND status = 'PENDING'
-RETURNING id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id
+RETURNING id, uuid, device_id, user_id, action, duration_seconds, status, error_message, requested_at, processed_at, created_at, irrigation_action_id, controller_device_id
 `
 
 type UpdateIrrigationCommandStatusParams struct {
@@ -242,6 +246,7 @@ func (q *Queries) UpdateIrrigationCommandStatus(ctx context.Context, arg UpdateI
 		&i.ProcessedAt,
 		&i.CreatedAt,
 		&i.IrrigationActionID,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }

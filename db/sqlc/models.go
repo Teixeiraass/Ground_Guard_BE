@@ -12,25 +12,53 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+type ControllerDevice struct {
+	ID                  int64          `json:"id"`
+	Uuid                uuid.UUID      `json:"uuid"`
+	ControllerDeviceUid string         `json:"controller_device_uid"`
+	Name                string         `json:"name"`
+	FirmwareVersion     string         `json:"firmware_version"`
+	FirmwareBuild       sql.NullString `json:"firmware_build"`
+	LastUpdate          sql.NullTime   `json:"last_update"`
+	IpAddress           pqtype.Inet    `json:"ip_address"`
+	WifiSsid            sql.NullString `json:"wifi_ssid"`
+	IsOnline            bool           `json:"is_online"`
+	LastSeen            sql.NullTime   `json:"last_seen"`
+	UserID              sql.NullInt64  `json:"user_id"`
+	CreatedAt           time.Time      `json:"created_at"`
+}
+
+type ControllerDeviceConfigurationCommand struct {
+	ID                 int64          `json:"id"`
+	Uuid               uuid.UUID      `json:"uuid"`
+	ControllerDeviceID int64          `json:"controller_device_id"`
+	Action             string         `json:"action"`
+	Timezone           string         `json:"timezone"`
+	Status             string         `json:"status"`
+	Attempts           int32          `json:"attempts"`
+	LastAttemptAt      sql.NullTime   `json:"last_attempt_at"`
+	NextAttemptAt      sql.NullTime   `json:"next_attempt_at"`
+	ErrorMessage       sql.NullString `json:"error_message"`
+	CreatedAt          time.Time      `json:"created_at"`
+	UpdatedAt          time.Time      `json:"updated_at"`
+	AcknowledgedAt     sql.NullTime   `json:"acknowledged_at"`
+}
+
 type Device struct {
-	ID              int64          `json:"id"`
-	Uuid            uuid.UUID      `json:"uuid"`
-	DeviceUid       string         `json:"device_uid"`
-	Name            string         `json:"name"`
-	FirmwareVersion string         `json:"firmware_version"`
-	FirmwareBuild   sql.NullString `json:"firmware_build"`
-	LastUpdate      time.Time      `json:"last_update"`
-	IpAddress       pqtype.Inet    `json:"ip_address"`
-	WifiSsid        sql.NullString `json:"wifi_ssid"`
-	LastSeen        sql.NullTime   `json:"last_seen"`
-	Status          string         `json:"status"`
-	UserID          sql.NullInt64  `json:"user_id"`
-	CreatedAt       time.Time      `json:"created_at"`
-	QrToken         string         `json:"qr_token"`
-	QrCodeFile      sql.NullString `json:"qr_code_file"`
-	IsOnline        bool           `json:"is_online"`
-	IsIrrigating    bool           `json:"is_irrigating"`
-	SoilMoisture    sql.NullInt32  `json:"soil_moisture"`
+	ID                 int64          `json:"id"`
+	Uuid               uuid.UUID      `json:"uuid"`
+	DeviceUid          string         `json:"device_uid"`
+	Name               string         `json:"name"`
+	LastUpdate         time.Time      `json:"last_update"`
+	LastSeen           sql.NullTime   `json:"last_seen"`
+	Status             string         `json:"status"`
+	CreatedAt          time.Time      `json:"created_at"`
+	QrToken            string         `json:"qr_token"`
+	QrCodeFile         sql.NullString `json:"qr_code_file"`
+	IsOnline           bool           `json:"is_online"`
+	IsIrrigating       bool           `json:"is_irrigating"`
+	SoilMoisture       sql.NullInt32  `json:"soil_moisture"`
+	ControllerDeviceID sql.NullInt64  `json:"controller_device_id"`
 }
 
 type DeviceSensorHistory struct {
@@ -68,18 +96,19 @@ type HelpContent struct {
 }
 
 type IrrigationAction struct {
-	ID              int64          `json:"id"`
-	Uuid            uuid.UUID      `json:"uuid"`
-	DeviceID        int64          `json:"device_id"`
-	UserID          int64          `json:"user_id"`
-	StartedAt       time.Time      `json:"started_at"`
-	FinishedAt      sql.NullTime   `json:"finished_at"`
-	DurationSeconds sql.NullInt32  `json:"duration_seconds"`
-	Status          string         `json:"status"`
-	TriggerType     string         `json:"trigger_type"`
-	WaterVolumeMl   sql.NullInt32  `json:"water_volume_ml"`
-	ErrorMessage    sql.NullString `json:"error_message"`
-	CreatedAt       time.Time      `json:"created_at"`
+	ID                 int64          `json:"id"`
+	Uuid               uuid.UUID      `json:"uuid"`
+	DeviceID           int64          `json:"device_id"`
+	UserID             int64          `json:"user_id"`
+	StartedAt          time.Time      `json:"started_at"`
+	FinishedAt         sql.NullTime   `json:"finished_at"`
+	DurationSeconds    sql.NullInt32  `json:"duration_seconds"`
+	Status             string         `json:"status"`
+	TriggerType        string         `json:"trigger_type"`
+	WaterVolumeMl      sql.NullInt32  `json:"water_volume_ml"`
+	ErrorMessage       sql.NullString `json:"error_message"`
+	CreatedAt          time.Time      `json:"created_at"`
+	ControllerDeviceID sql.NullInt64  `json:"controller_device_id"`
 }
 
 type IrrigationCommand struct {
@@ -95,6 +124,7 @@ type IrrigationCommand struct {
 	ProcessedAt        sql.NullTime   `json:"processed_at"`
 	CreatedAt          time.Time      `json:"created_at"`
 	IrrigationActionID sql.NullInt64  `json:"irrigation_action_id"`
+	ControllerDeviceID sql.NullInt64  `json:"controller_device_id"`
 }
 
 type IrrigationPreference struct {
@@ -123,17 +153,18 @@ type IrrigationPreferencesHistory struct {
 }
 
 type IrrigationSchedule struct {
-	ID              int64          `json:"id"`
-	Uuid            uuid.UUID      `json:"uuid"`
-	DeviceID        int64          `json:"device_id"`
-	UserID          int64          `json:"user_id"`
-	Name            sql.NullString `json:"name"`
-	Enabled         bool           `json:"enabled"`
-	StartTime       time.Time      `json:"start_time"`
-	DurationSeconds int32          `json:"duration_seconds"`
-	DaysOfWeek      string         `json:"days_of_week"`
-	CreatedAt       time.Time      `json:"created_at"`
-	UpdatedAt       time.Time      `json:"updated_at"`
+	ID                 int64          `json:"id"`
+	Uuid               uuid.UUID      `json:"uuid"`
+	DeviceID           int64          `json:"device_id"`
+	UserID             int64          `json:"user_id"`
+	Name               sql.NullString `json:"name"`
+	Enabled            bool           `json:"enabled"`
+	StartTime          time.Time      `json:"start_time"`
+	DurationSeconds    int32          `json:"duration_seconds"`
+	DaysOfWeek         string         `json:"days_of_week"`
+	CreatedAt          time.Time      `json:"created_at"`
+	UpdatedAt          time.Time      `json:"updated_at"`
+	ControllerDeviceID sql.NullInt64  `json:"controller_device_id"`
 }
 
 type IrrigationScheduleHistory struct {

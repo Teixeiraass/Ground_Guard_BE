@@ -40,6 +40,7 @@ func TestHandleTelemetry(t *testing.T) {
 			topic:   topic,
 			payload: payload,
 			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetControllerDeviceByUID(gomock.Any(), deviceUID).Return(db.ControllerDevice{}, sql.ErrNoRows)
 				store.EXPECT().
 					UpdateDeviceTelemetryByUID(gomock.Any(), gomock.Any()).
 					Times(1).
@@ -47,10 +48,9 @@ func TestHandleTelemetry(t *testing.T) {
 						require.Equal(t, deviceUID, arg.DeviceUid)
 						require.Equal(t, "ATIVO", arg.Status)
 						require.True(t, arg.LastSeen.Valid)
-						require.True(t, arg.IpAddress.Valid)
-						require.Equal(t, "GroundGuard-WiFi", arg.WifiSsid.String)
 						return db.Device{ID: 1}, nil
 					})
+				store.EXPECT().GetDeviceUserIDByUID(gomock.Any(), deviceUID).Return(sql.NullInt64{}, nil)
 				store.EXPECT().GetLatestDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, sql.ErrNoRows)
 				store.EXPECT().CreateDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, nil)
 			},
@@ -85,6 +85,8 @@ func TestHandleTelemetry(t *testing.T) {
 						require.Equal(t, "ATIVO", arg.Status)
 						return db.Device{ID: 1}, nil
 					})
+				store.EXPECT().GetControllerDeviceByUID(gomock.Any(), deviceUID).Return(db.ControllerDevice{}, sql.ErrNoRows)
+				store.EXPECT().GetDeviceUserIDByUID(gomock.Any(), deviceUID).Return(sql.NullInt64{}, nil)
 				store.EXPECT().GetLatestDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, sql.ErrNoRows)
 				store.EXPECT().CreateDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, nil)
 			},
@@ -94,6 +96,7 @@ func TestHandleTelemetry(t *testing.T) {
 			topic:   topic,
 			payload: payload,
 			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetControllerDeviceByUID(gomock.Any(), deviceUID).Return(db.ControllerDevice{}, sql.ErrNoRows)
 				store.EXPECT().
 					UpdateDeviceTelemetryByUID(gomock.Any(), gomock.Any()).
 					Times(1).
@@ -150,4 +153,59 @@ func TestTelemetryPayloadRoundTrip(t *testing.T) {
 	require.NoError(t, json.Unmarshal(data, &decoded))
 	require.Equal(t, original, decoded)
 	require.WithinDuration(t, time.Now(), time.Now(), time.Second)
+}
+
+func TestHandleControllerTelemetry(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	store := mockdb.NewMockStore(ctrl)
+	deviceUID := "246F28F074DC"
+	controller := db.ControllerDevice{
+		ID:                  10,
+		Uuid:                util.RandomUuid(),
+		ControllerDeviceUid: deviceUID,
+		UserID:              sql.NullInt64{Int64: 42, Valid: true},
+	}
+	store.EXPECT().GetControllerDeviceByUID(gomock.Any(), deviceUID).Return(controller, nil).Times(2)
+	store.EXPECT().UpdateControllerDeviceTelemetryByUID(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, arg db.UpdateControllerDeviceTelemetryByUIDParams) (db.ControllerDevice, error) {
+			require.Equal(t, deviceUID, arg.ControllerDeviceUid)
+			require.Equal(t, "192.168.15.5", arg.IpAddress.IPNet.IP.String())
+			require.Equal(t, "GroundGuard-WiFi", arg.WifiSsid.String)
+			return controller, nil
+		},
+	)
+	store.EXPECT().GetLatestControllerDeviceConfigurationCommand(gomock.Any(), int64(10)).Return(db.ControllerDeviceConfigurationCommand{}, sql.ErrNoRows)
+
+	sub := subscriber.NewTelemetrySubscriber(client.NewNoopClient(), store, nil)
+	err := sub.HandleTelemetry(
+		context.Background(),
+		mqtt.DeviceTelemetryTopic("ground-guard", deviceUID),
+		[]byte(`{"status":"ONLINE","ip_address":"192.168.15.5","wifi_ssid":"GroundGuard-WiFi","provisioning_required":false}`),
+	)
+	require.NoError(t, err)
+}
+
+func TestHandleControllerTelemetryWithoutUserDoesNotRequireDeviceLookup(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	store := mockdb.NewMockStore(ctrl)
+	deviceUID := "246F28F074DC"
+	controller := db.ControllerDevice{
+		ID:                  10,
+		ControllerDeviceUid: deviceUID,
+	}
+	store.EXPECT().GetControllerDeviceByUID(gomock.Any(), deviceUID).Return(controller, nil).Times(2)
+	store.EXPECT().UpdateControllerDeviceTelemetryByUID(gomock.Any(), gomock.Any()).Return(controller, nil)
+	store.EXPECT().GetLatestControllerDeviceConfigurationCommand(gomock.Any(), int64(10)).Return(db.ControllerDeviceConfigurationCommand{}, sql.ErrNoRows)
+
+	sub := subscriber.NewTelemetrySubscriber(client.NewNoopClient(), store, nil)
+	err := sub.HandleTelemetry(
+		context.Background(),
+		mqtt.DeviceTelemetryTopic("ground-guard", deviceUID),
+		[]byte(`{"status":"ONLINE","ip_address":"192.168.15.5","wifi_ssid":"GroundGuard-WiFi"}`),
+	)
+	require.NoError(t, err)
 }

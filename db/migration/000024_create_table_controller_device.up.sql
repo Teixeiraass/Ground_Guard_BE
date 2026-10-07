@@ -1,9 +1,9 @@
 CREATE TABLE "controller_devices" (
   "id" bigserial PRIMARY KEY,
-  "uuid" UUID UNIQUE DEFAULT (gen_random_uuid()),
-  "controller_device_uid" varchar(100) UNIQUE,
-  "name" varchar(100),
-  "firmware_version" varchar(50),
+  "uuid" UUID UNIQUE NOT NULL DEFAULT (gen_random_uuid()),
+  "controller_device_uid" varchar(100) NOT NULL UNIQUE,
+  "name" varchar(100) NOT NULL,
+  "firmware_version" varchar(50) NOT NULL,
   "firmware_build" varchar(50),
   "last_update" timestamptz,
   "ip_address" inet,

@@ -15,10 +15,9 @@ func createRandomDevice(t *testing.T) Device {
 	require.NoError(t, err)
 
 	arg := CreateDeviceParams{
-		DeviceUid:       util.RandomString(8),
-		Name:            util.RandomString(6),
-		FirmwareVersion: util.RandomFirwareVersion(),
-		QrToken:         qrToken,
+		DeviceUid: util.RandomString(8),
+		Name:      util.RandomString(6),
+		QrToken:   qrToken,
 	}
 
 	device, err := testQueries.CreateDevice(context.Background(), arg)
@@ -27,7 +26,6 @@ func createRandomDevice(t *testing.T) Device {
 
 	require.Equal(t, arg.DeviceUid, device.DeviceUid)
 	require.Equal(t, arg.Name, device.Name)
-	require.Equal(t, arg.FirmwareVersion, device.FirmwareVersion)
 
 	return device
 }
@@ -46,14 +44,10 @@ func TestGetDevice(t *testing.T) {
 	require.Equal(t, device1.ID, device2.ID)
 	require.Equal(t, device1.Uuid, device2.Uuid)
 	require.Equal(t, device1.DeviceUid, device2.DeviceUid)
-	require.Equal(t, device1.FirmwareVersion, device2.FirmwareVersion)
-	require.Equal(t, device1.FirmwareBuild, device2.FirmwareBuild)
 	require.Equal(t, device1.LastUpdate, device2.LastUpdate)
-	require.Equal(t, device1.IpAddress, device2.IpAddress)
-	require.Equal(t, device1.WifiSsid, device2.WifiSsid)
 	require.Equal(t, device1.LastSeen, device2.LastSeen)
 	require.Equal(t, device1.Status, device2.Status)
-	require.Equal(t, device1.UserID, device2.UserID)
+	require.Equal(t, device1.ControllerDeviceID, device2.ControllerDeviceID)
 	require.Equal(t, device1.QrToken, device2.QrToken)
 	require.Equal(t, device1.QrCodeFile, device2.QrCodeFile)
 	require.WithinDuration(t, device1.CreatedAt, device2.CreatedAt, time.Second)
@@ -74,63 +68,77 @@ func TestUpdateDevice(t *testing.T) {
 	require.Equal(t, device1.ID, device2.ID)
 	require.Equal(t, device1.Uuid, device2.Uuid)
 	require.Equal(t, device1.Name, device2.Name)
-	require.Equal(t, device1.FirmwareVersion, device2.FirmwareVersion)
-	require.Equal(t, device1.FirmwareBuild, device2.FirmwareBuild)
 	require.Equal(t, device1.LastUpdate, device2.LastUpdate)
-	require.Equal(t, device1.IpAddress, device2.IpAddress)
-	require.Equal(t, device1.WifiSsid, device2.WifiSsid)
 	require.Equal(t, device1.LastSeen, device2.LastSeen)
 	require.Equal(t, arg.Status, device2.Status)
-	require.Equal(t, device1.UserID, device2.UserID)
+	require.Equal(t, device1.ControllerDeviceID, device2.ControllerDeviceID)
 	require.Equal(t, device1.QrToken, device2.QrToken)
 	require.Equal(t, device1.QrCodeFile, device2.QrCodeFile)
 	require.WithinDuration(t, device1.CreatedAt, device2.CreatedAt, time.Second)
 }
 
-func TestUpdateLinkDeviceToUserByQrToken(t *testing.T) {
+func TestUpdateLinkDeviceToControllerDeviceByQrToken(t *testing.T) {
 	device1 := createRandomDevice(t)
-	user := createRandomUser(t)
+	controllerDevice := createRandomControllerDevice(t)
 
-	arg := LinkDeviceToUserByQrTokenParams{
+	arg := LinkDeviceToControllerDeviceByQrTokenParams{
 		QrToken: device1.QrToken,
-		UserID: sql.NullInt64{
-			Int64: user.ID,
+		ControllerDeviceID: sql.NullInt64{
+			Int64: controllerDevice.ID,
 			Valid: true,
 		},
 	}
 
-	device2, err := testQueries.LinkDeviceToUserByQrToken(context.Background(), arg)
+	device2, err := testQueries.LinkDeviceToControllerDeviceByQrToken(context.Background(), arg)
+	require.NoError(t, err)
+	require.NotEmpty(t, device2)
+
+	require.Equal(t, device1.ID, device2.ID)
+	require.Equal(t, device1.Uuid, device2.Uuid)
+	require.Equal(t, arg.ControllerDeviceID, device2.ControllerDeviceID)
+	require.WithinDuration(t, device1.CreatedAt, device2.CreatedAt, time.Second)
+}
+
+func TestLinkDeviceToControllerDeviceByQrToken(t *testing.T) {
+	device1 := createRandomDevice(t)
+	controllerDevice := createRandomControllerDevice(t)
+
+	arg := LinkDeviceToControllerDeviceByQrTokenParams{
+		QrToken: device1.QrToken,
+		ControllerDeviceID: sql.NullInt64{
+			Int64: controllerDevice.ID,
+			Valid: true,
+		},
+	}
+
+	device2, err := testQueries.LinkDeviceToControllerDeviceByQrToken(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, device2)
 
 	require.Equal(t, device1.ID, device2.ID)
 	require.Equal(t, device1.Uuid, device2.Uuid)
 	require.Equal(t, device1.Name, device2.Name)
-	require.Equal(t, device1.FirmwareVersion, device2.FirmwareVersion)
-	require.Equal(t, device1.FirmwareBuild, device2.FirmwareBuild)
 	require.Equal(t, device1.LastUpdate, device2.LastUpdate)
-	require.Equal(t, device1.IpAddress, device2.IpAddress)
-	require.Equal(t, device1.WifiSsid, device2.WifiSsid)
 	require.Equal(t, device1.LastSeen, device2.LastSeen)
 	require.Equal(t, device1.Status, device2.Status)
-	require.Equal(t, arg.UserID, device2.UserID)
+	require.Equal(t, arg.ControllerDeviceID, device2.ControllerDeviceID)
 	require.Equal(t, device1.QrToken, device2.QrToken)
 	require.Equal(t, device1.QrCodeFile, device2.QrCodeFile)
 	require.WithinDuration(t, device1.CreatedAt, device2.CreatedAt, time.Second)
 }
 
 func TestListDevices(t *testing.T) {
-	user := createRandomUser(t)
+	controllerDevice := createRandomControllerDevice(t)
 
 	for i := 0; i < 5; i++ {
 		device := createRandomDevice(t)
 
-		_, err := testQueries.LinkDeviceToUserByQrToken(
+		_, err := testQueries.LinkDeviceToControllerDeviceByQrToken(
 			context.Background(),
-			LinkDeviceToUserByQrTokenParams{
+			LinkDeviceToControllerDeviceByQrTokenParams{
 				QrToken: device.QrToken,
-				UserID: sql.NullInt64{
-					Int64: user.ID,
+				ControllerDeviceID: sql.NullInt64{
+					Int64: controllerDevice.ID,
 					Valid: true,
 				},
 			},
@@ -140,8 +148,8 @@ func TestListDevices(t *testing.T) {
 	}
 
 	arg := ListDevicesParams{
-		UserID: sql.NullInt64{
-			Int64: user.ID,
+		ControllerDeviceID: sql.NullInt64{
+			Int64: controllerDevice.ID,
 			Valid: true,
 		},
 		Limit:  5,
@@ -154,6 +162,6 @@ func TestListDevices(t *testing.T) {
 	require.Len(t, devices, 5)
 
 	for _, device := range devices {
-		require.Equal(t, user.ID, device.UserID.Int64)
+		require.Equal(t, controllerDevice.ID, device.ControllerDeviceID.Int64)
 	}
 }

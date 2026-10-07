@@ -1,7 +1,16 @@
 basePath: /api/v1
 definitions:
-  dto.CreateDeviceRequest:
+  dto.ControllerDeviceConfigurationResponse:
     properties:
+      command_id:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.ControllerDeviceResponse:
+    properties:
+      configuration:
+        $ref: '#/definitions/dto.ControllerDeviceConfigurationResponse'
       device_uid:
         type: string
       firmware_build:
@@ -10,14 +19,31 @@ definitions:
         type: string
       ip_address:
         type: string
+      is_online:
+        type: boolean
+      last_seen:
+        type: string
+      last_update:
+        type: string
+      name:
+        type: string
+      user:
+        type: integer
+      uuid:
+        type: string
+      wifi_ssid:
+        type: string
+    type: object
+  dto.CreateDeviceRequest:
+    properties:
+      device_uid:
+        type: string
       name:
         type: string
       status:
         enum:
         - ATIVO
         - INATIVO
-        type: string
-      wifi_ssid:
         type: string
     required:
     - device_uid
@@ -74,6 +100,29 @@ definitions:
     - max_irrigation_per_day
     - moisture_threshold
     type: object
+  dto.CreateIrrigationScheduleRequest:
+    properties:
+      days_of_week:
+        type: string
+      device_uuid:
+        type: string
+      duration_seconds:
+        maximum: 86400
+        minimum: 1
+        type: integer
+      enabled:
+        type: boolean
+      name:
+        maxLength: 100
+        type: string
+      start_time:
+        type: string
+    required:
+    - days_of_week
+    - device_uuid
+    - duration_seconds
+    - start_time
+    type: object
   dto.CreateUserRequest:
     properties:
       email:
@@ -93,13 +142,9 @@ definitions:
     type: object
   dto.DeviceResponse:
     properties:
+      controllerDeviceId:
+        type: integer
       device_uid:
-        type: string
-      firmware_build:
-        type: string
-      firmware_version:
-        type: string
-      ip_address:
         type: string
       is_irrigating:
         type: boolean
@@ -113,11 +158,7 @@ definitions:
         type: string
       status:
         type: string
-      user:
-        type: integer
       uuid:
-        type: string
-      wifi_ssid:
         type: string
     type: object
   dto.DeviceStatisticsResponse:
@@ -203,6 +244,27 @@ definitions:
       uuid:
         type: string
     type: object
+  dto.IrrigationScheduleResponse:
+    properties:
+      created_at:
+        type: string
+      days_of_week:
+        type: string
+      device_id:
+        type: integer
+      duration_seconds:
+        type: integer
+      enabled:
+        type: boolean
+      name:
+        type: string
+      start_time:
+        type: string
+      updated_at:
+        type: string
+      uuid:
+        type: string
+    type: object
   dto.LegalDocumentResponse:
     properties:
       active:
@@ -258,6 +320,21 @@ definitions:
     required:
     - id_token
     type: object
+  dto.RegisterControllerDeviceRequest:
+    properties:
+      device_uid:
+        type: string
+      firmware_build:
+        type: string
+      firmware_version:
+        type: string
+      name:
+        type: string
+    required:
+    - device_uid
+    - firmware_build
+    - firmware_version
+    type: object
   dto.RenewAccessTokenRequest:
     properties:
       refresh_token:
@@ -311,6 +388,33 @@ definitions:
         type: string
       video_url:
         type: string
+    type: object
+  dto.UpdateIrrigationScheduleRequest:
+    properties:
+      days_of_week:
+        type: string
+      duration_seconds:
+        maximum: 86400
+        minimum: 1
+        type: integer
+      enabled:
+        type: boolean
+      name:
+        maxLength: 100
+        type: string
+      start_time:
+        type: string
+    required:
+    - days_of_week
+    - duration_seconds
+    - start_time
+    type: object
+  dto.UpdateNameControllerDeviceRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
     type: object
   dto.UpdateNameDeviceRequest:
     properties:
@@ -384,12 +488,184 @@ info:
   title: Ground Guard API
   version: 1.0.0
 paths:
+  /controller-devices:
+    get:
+      parameters:
+      - description: Página
+        in: query
+        name: page_id
+        required: true
+        type: integer
+      - description: Itens por página
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ControllerDeviceResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Listar controladoras
+      tags:
+      - controller-devices
+  /controller-devices/{uuid}:
+    get:
+      parameters:
+      - description: UUID da controladora
+        in: path
+        name: uuid
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ControllerDeviceResponse'
+      security:
+      - BearerAuth: []
+      summary: Obter controladora
+      tags:
+      - controller-devices
+  /controller-devices/claim/{uid}:
+    put:
+      parameters:
+      - description: UID da controladora
+        in: path
+        name: uid
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ControllerDeviceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Reivindicar controladora
+      tags:
+      - controller-devices
+  /controller-devices/name/{uuid}:
+    put:
+      parameters:
+      - description: UUID da controladora
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Novo nome
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateNameControllerDeviceRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ControllerDeviceResponse'
+      security:
+      - BearerAuth: []
+      summary: Renomear controladora
+      tags:
+      - controller-devices
+  /controller-devices/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Dados da controladora
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterControllerDeviceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ControllerDeviceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Registrar controladora via hardware
+      tags:
+      - controller-devices
+  /controller-devices/uid/{uid}:
+    get:
+      parameters:
+      - description: UID da controladora
+        in: path
+        name: uid
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ControllerDeviceResponse'
+      security:
+      - BearerAuth: []
+      summary: Obter controladora por UID
+      tags:
+      - controller-devices
+  /controller-devices/unlink/{uuid}:
+    put:
+      parameters:
+      - description: UUID da controladora
+        in: path
+        name: uuid
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ControllerDeviceResponse'
+      security:
+      - BearerAuth: []
+      summary: Desvincular controladora
+      tags:
+      - controller-devices
   /devices:
     get:
       consumes:
       - application/json
-      description: Retorna uma lista paginada de todos os dispositivos associados
-        ao usuário autenticado.
+      description: Retorna uma lista paginada de dispositivos associados ao usuário
+        autenticado. Pode filtrar por controller_uuid.
       parameters:
       - description: Número da página (mínimo 1)
         in: query
@@ -401,6 +677,10 @@ paths:
         name: page_size
         required: true
         type: integer
+      - description: UUID da controladora
+        in: query
+        name: controller_uuid
+        type: string
       produces:
       - application/json
       responses:
@@ -564,6 +844,11 @@ paths:
       - description: Token do QR Code do dispositivo
         in: path
         name: qr_token
+        required: true
+        type: string
+      - description: UUID da controladora proprietária
+        in: query
+        name: controller_uuid
         required: true
         type: string
       produces:
@@ -1230,6 +1515,210 @@ paths:
       security:
       - BearerAuth: []
       summary: Obter histórico de irrigação
+      tags:
+      - irrigation
+  /irrigation/schedules:
+    get:
+      description: Retorna os agendamentos de irrigação do usuário autenticado.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.IrrigationScheduleResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Listar agendamentos de irrigação
+      tags:
+      - irrigation
+    post:
+      consumes:
+      - application/json
+      description: Cria um agendamento de irrigação para um dispositivo pertencente
+        ao usuário autenticado.
+      parameters:
+      - description: Dados do agendamento
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateIrrigationScheduleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.IrrigationScheduleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Criar agendamento de irrigação
+      tags:
+      - irrigation
+  /irrigation/schedules/{uuid}:
+    delete:
+      description: Exclui um agendamento pertencente ao usuário autenticado.
+      parameters:
+      - description: UUID do agendamento
+        format: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Excluir agendamento de irrigação
+      tags:
+      - irrigation
+    get:
+      description: Retorna um agendamento pertencente ao usuário autenticado.
+      parameters:
+      - description: UUID do agendamento
+        format: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.IrrigationScheduleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Obter agendamento de irrigação
+      tags:
+      - irrigation
+    put:
+      consumes:
+      - application/json
+      description: Atualiza um agendamento pertencente ao usuário autenticado.
+      parameters:
+      - description: UUID do agendamento
+        format: uuid
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Dados do agendamento
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateIrrigationScheduleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.IrrigationScheduleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Atualizar agendamento de irrigação
       tags:
       - irrigation
   /legal-document/{uuid}:

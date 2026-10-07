@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 
+	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/Teixeiraass/ground_guard_be/internal/middleware"
 	"github.com/Teixeiraass/ground_guard_be/token"
@@ -131,13 +132,14 @@ func (server *Server) GetDevice(ctx *gin.Context) {
 
 // ListDevice
 // @Summary      Listar dispositivos do usuário
-// @Description  Retorna uma lista paginada de todos os dispositivos associados ao usuário autenticado.
+// @Description  Retorna uma lista paginada de dispositivos associados ao usuário autenticado. Pode filtrar por controller_uuid.
 // @Tags         devices
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
 // @Param        page_id    query     int  true  "Número da página (mínimo 1)"
 // @Param        page_size  query     int  true  "Quantidade de itens por página (5 a 10)"
+// @Param        controller_uuid query string false "UUID da controladora"
 // @Success      200        {array}   dto.DeviceResponse
 // @Failure      400        {object}  map[string]interface{} "Bad Request (Parâmetros de paginação inválidos)"
 // @Failure      401        {object}  map[string]interface{} "Unauthorized"
@@ -151,7 +153,18 @@ func (server *Server) ListDevice(ctx *gin.Context) {
 	}
 
 	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
-	devices, err := server.DeviceService.ListDevices(ctx, authPayload.UserID, req.PageSize, (req.PageID-1)*req.PageSize)
+	var devices []db.Device
+	var err error
+	if req.ControllerUUID == "" {
+		devices, err = server.DeviceService.ListDevices(ctx, authPayload.UserID, req.PageSize, (req.PageID-1)*req.PageSize)
+	} else {
+		controllerUUID, parseErr := uuid.Parse(req.ControllerUUID)
+		if parseErr != nil {
+			ctx.JSON(http.StatusBadRequest, errorResponse(parseErr))
+			return
+		}
+		devices, err = server.DeviceService.ListDevicesByController(ctx, controllerUUID, authPayload.UserID, req.PageSize, (req.PageID-1)*req.PageSize)
+	}
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -208,6 +221,7 @@ func (server *Server) GetDeviceByUID(ctx *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        qr_token   path      string  true  "Token do QR Code do dispositivo"
+// @Param        controller_uuid query string true  "UUID da controladora proprietária"
 // @Success      200        {object}  dto.DeviceResponse
 // @Failure      401        {object}  map[string]interface{} "Unauthorized (Usuário não autenticado)"
 // @Failure      404        {object}  map[string]interface{} "Not Found (QR Token inválido)"
@@ -217,8 +231,13 @@ func (server *Server) LinkDeviceToUserByQrToken(ctx *gin.Context) {
 	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 
 	qrToken := ctx.Param("qr_token")
+	controllerDeviceUUID, err := uuid.Parse(ctx.Query("controller_uuid"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
 
-	device, err := server.DeviceService.LinkDeviceToUserByQrToken(ctx, qrToken, authPayload.UserID)
+	device, err := server.DeviceService.LinkDeviceToControllerDeviceByQrToken(ctx, qrToken, controllerDeviceUUID, authPayload.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -256,7 +275,7 @@ func (server *Server) UnlinkDeviceFromUser(ctx *gin.Context) {
 		return
 	}
 
-	device, err := server.DeviceService.UnlinkDeviceFromUser(ctx, deviceUUID, authPayload.UserID)
+	device, err := server.DeviceService.UnlinkDeviceFromControllerDevice(ctx, deviceUUID, authPayload.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))

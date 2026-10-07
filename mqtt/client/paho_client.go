@@ -15,6 +15,7 @@ const mqttPublishWaitTimeout = 5 * time.Second
 type PahoClient struct {
 	client      mqttgo.Client
 	topicPrefix string
+	onConnect   func()
 }
 
 func NewPahoClient(config util.Config) (Client, error) {
@@ -41,6 +42,12 @@ func NewPahoClient(config util.Config) (Client, error) {
 	opts.SetConnectRetryInterval(5 * time.Second)
 	opts.SetKeepAlive(30 * time.Second)
 	opts.SetOrderMatters(false)
+	pahoClient := &PahoClient{topicPrefix: topicPrefix}
+	opts.SetOnConnectHandler(func(mqttgo.Client) {
+		if pahoClient.onConnect != nil {
+			pahoClient.onConnect()
+		}
+	})
 
 	if config.MQTTUsername != "" {
 		opts.SetUsername(config.MQTTUsername)
@@ -53,10 +60,8 @@ func NewPahoClient(config util.Config) (Client, error) {
 		return nil, fmt.Errorf("cannot connect to mqtt broker: %w", token.Error())
 	}
 
-	return &PahoClient{
-		client:      client,
-		topicPrefix: topicPrefix,
-	}, nil
+	pahoClient.client = client
+	return pahoClient, nil
 }
 
 func (c *PahoClient) Publish(topic string, payload []byte) error {
@@ -83,4 +88,8 @@ func (c *PahoClient) Close() {
 
 func (c *PahoClient) TopicPrefix() string {
 	return mqtt.NormalizeTopicPrefix(c.topicPrefix)
+}
+
+func (c *PahoClient) SetOnConnect(handler func()) {
+	c.onConnect = handler
 }

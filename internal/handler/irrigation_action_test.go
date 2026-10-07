@@ -34,9 +34,9 @@ func TestListIrrigationHistoryAPI(t *testing.T) {
 	newestAction := randomIrrigationHistoryAction(user.ID)
 	newestAction.ID = oldestAction.ID + 1
 	newestAction.Uuid = util.RandomUuid()
-	oldestAction.StartedAt = date.Add(2 * time.Hour)
+	oldestAction.StartedAt = date.Add(-3 * time.Hour)
 	oldestAction.CreatedAt = oldestAction.StartedAt
-	newestAction.StartedAt = date.Add(3 * time.Hour)
+	newestAction.StartedAt = date.Add(-2 * time.Hour)
 	newestAction.CreatedAt = newestAction.StartedAt
 	oldestAction.FinishedAt = sql.NullTime{Time: oldestAction.StartedAt.Add(30 * time.Minute), Valid: true}
 	newestAction.FinishedAt = sql.NullTime{Time: newestAction.StartedAt.Add(30 * time.Minute), Valid: true}
@@ -202,6 +202,7 @@ func TestGetWaterConsumptionAPI(t *testing.T) {
 	store := mockdb.NewMockStore(ctrl)
 	mqttClient := mockmqtt.NewMockClient(ctrl)
 	store.EXPECT().GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).Return(device, nil)
+	store.EXPECT().GetDeviceUserID(gomock.Any(), gomock.Eq(device.Uuid)).Return(sql.NullInt64{Int64: user.ID, Valid: true}, nil)
 	store.EXPECT().
 		ListIrrigationAction(gomock.Any(), gomock.Eq(db.ListIrrigationActionParams{UserID: user.ID, Limit: 100, Offset: 0})).
 		Return(storeExpectation, nil)
@@ -245,7 +246,7 @@ func TestGetStatisticsAPI(t *testing.T) {
 
 	historyAction := randomIrrigationHistoryAction(user.ID)
 	historyAction.DeviceID = device.ID
-	historyAction.StartedAt = date.Add(2 * time.Hour)
+	historyAction.StartedAt = date.Add(-2 * time.Hour)
 	historyAction.CreatedAt = historyAction.StartedAt
 	historyAction.FinishedAt = sql.NullTime{Time: historyAction.StartedAt.Add(30 * time.Minute), Valid: true}
 	historyAction.WaterVolumeMl = sql.NullInt32{Int32: 500, Valid: true}
@@ -265,8 +266,9 @@ func TestGetStatisticsAPI(t *testing.T) {
 	store := mockdb.NewMockStore(ctrl)
 	mqttClient := mockmqtt.NewMockClient(ctrl)
 	store.EXPECT().GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).Return(device, nil).Times(2)
+	store.EXPECT().GetDeviceUserID(gomock.Any(), gomock.Eq(device.Uuid)).Return(sql.NullInt64{Int64: user.ID, Valid: true}, nil).Times(2)
 	store.EXPECT().ListIrrigationAction(gomock.Any(), gomock.Eq(db.ListIrrigationActionParams{UserID: user.ID, Limit: 100, Offset: 0})).Return([]db.IrrigationAction{historyAction, consumptionAction}, nil).Times(2)
-	store.EXPECT().ListDevices(gomock.Any(), gomock.Any()).Return([]db.Device{device}, nil)
+	store.EXPECT().ListDevicesByUserID(gomock.Any(), gomock.Any()).Return([]db.Device{device}, nil)
 	mqttClient.EXPECT().TopicPrefix().Times(0)
 
 	server, err := NewServer(util.Config{TokenSymmetricKey: util.RandomString(32), AccessTokenDuration: time.Minute}, store, mqttClient)
@@ -325,6 +327,7 @@ func TestCreateIrrigationCommandAPI(t *testing.T) {
 					GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).
 					Times(1).
 					Return(device, nil)
+				store.EXPECT().GetDeviceUserID(gomock.Any(), gomock.Eq(device.Uuid)).Return(sql.NullInt64{Int64: user.ID, Valid: true}, nil)
 
 				store.EXPECT().
 					ExistsPendingIrrigationCommand(gomock.Any(), device.ID).
@@ -425,6 +428,7 @@ func TestCreateIrrigationCommandAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore, mqttClient *mockmqtt.MockClient) {
 				store.EXPECT().GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).Times(1).Return(device, nil)
+				store.EXPECT().GetDeviceUserID(gomock.Any(), gomock.Eq(device.Uuid)).Return(sql.NullInt64{Int64: user.ID, Valid: true}, nil)
 				store.EXPECT().CreateIrrigationCommand(gomock.Any(), gomock.Any()).Times(0)
 				mqttClient.EXPECT().Publish(gomock.Any(), gomock.Any()).Times(0)
 			},
@@ -445,6 +449,7 @@ func TestCreateIrrigationCommandAPI(t *testing.T) {
 				offlineDevice := device
 				offlineDevice.Status = "inativo"
 				store.EXPECT().GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).Times(1).Return(offlineDevice, nil)
+				store.EXPECT().GetDeviceUserID(gomock.Any(), gomock.Eq(device.Uuid)).Return(sql.NullInt64{Int64: user.ID, Valid: true}, nil)
 				store.EXPECT().CreateIrrigationCommand(gomock.Any(), gomock.Any()).Times(0)
 				mqttClient.EXPECT().Publish(gomock.Any(), gomock.Any()).Times(0)
 			},
@@ -466,6 +471,7 @@ func TestCreateIrrigationCommandAPI(t *testing.T) {
 				store.EXPECT().
 					GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).
 					Return(device, nil)
+				store.EXPECT().GetDeviceUserID(gomock.Any(), gomock.Eq(device.Uuid)).Return(sql.NullInt64{Int64: user.ID, Valid: true}, nil)
 
 				store.EXPECT().
 					ExistsPendingIrrigationCommand(gomock.Any(), device.ID).
@@ -556,16 +562,12 @@ func TestCreateIrrigationCommandAPI(t *testing.T) {
 
 func randomIrrigationCommandDevice(userID int64) db.Device {
 	return db.Device{
-		ID:              util.RandomInt(1, 1000),
-		Uuid:            util.RandomUuid(),
-		DeviceUid:       util.RandomString(10),
-		Name:            util.RandomString(6),
-		FirmwareVersion: util.RandomString(8),
-		Status:          "ativo",
-		UserID: sql.NullInt64{
-			Int64: userID,
-			Valid: true,
-		},
+		ID:                 util.RandomInt(1, 1000),
+		Uuid:               util.RandomUuid(),
+		DeviceUid:          util.RandomString(10),
+		Name:               util.RandomString(6),
+		Status:             "ativo",
+		ControllerDeviceID: sql.NullInt64{Int64: userID, Valid: true},
 	}
 }
 

@@ -23,7 +23,7 @@ INSERT INTO irrigation_actions (
 ) VALUES (
     $1,$2,$3,$4,$5,$6
 )
-RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at
+RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, controller_device_id
 `
 
 type CreateIrrigationActionParams struct {
@@ -58,6 +58,7 @@ func (q *Queries) CreateIrrigationAction(ctx context.Context, arg CreateIrrigati
 		&i.WaterVolumeMl,
 		&i.ErrorMessage,
 		&i.CreatedAt,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
@@ -88,7 +89,7 @@ func (q *Queries) ExistsActiveIrrigationAction(ctx context.Context, deviceID int
 }
 
 const getActiveIrrigationActionByDevice = `-- name: GetActiveIrrigationActionByDevice :one
-SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at
+SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, controller_device_id
 FROM irrigation_actions
 WHERE device_id = $1
 AND status = 'ATIVO'
@@ -111,12 +112,13 @@ func (q *Queries) GetActiveIrrigationActionByDevice(ctx context.Context, deviceI
 		&i.WaterVolumeMl,
 		&i.ErrorMessage,
 		&i.CreatedAt,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
 
 const getIrrigationAction = `-- name: GetIrrigationAction :one
-SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at FROM irrigation_actions
+SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, controller_device_id FROM irrigation_actions
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -136,12 +138,13 @@ func (q *Queries) GetIrrigationAction(ctx context.Context, argUuid uuid.UUID) (I
 		&i.WaterVolumeMl,
 		&i.ErrorMessage,
 		&i.CreatedAt,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
 
 const listIrrigationAction = `-- name: ListIrrigationAction :many
-SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at FROM irrigation_actions
+SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, controller_device_id FROM irrigation_actions
 WHERE user_id = $1
 ORDER BY id
 LIMIT $2
@@ -176,6 +179,7 @@ func (q *Queries) ListIrrigationAction(ctx context.Context, arg ListIrrigationAc
 			&i.WaterVolumeMl,
 			&i.ErrorMessage,
 			&i.CreatedAt,
+			&i.ControllerDeviceID,
 		); err != nil {
 			return nil, err
 		}
@@ -199,7 +203,7 @@ SET
     water_volume_ml = $5,
     error_message = $6
 WHERE uuid = $1
-RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at
+RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, controller_device_id
 `
 
 type UpdateIrrigationActionParams struct {
@@ -234,6 +238,7 @@ func (q *Queries) UpdateIrrigationAction(ctx context.Context, arg UpdateIrrigati
 		&i.WaterVolumeMl,
 		&i.ErrorMessage,
 		&i.CreatedAt,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }

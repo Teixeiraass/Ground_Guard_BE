@@ -57,7 +57,8 @@ func (s *irrigationService) CreateIrrigationCommand(ctx context.Context, req dto
 		return nil, err
 	}
 
-	if !device.UserID.Valid || device.UserID.Int64 != userID {
+	deviceUserID, err := s.store.GetDeviceUserID(ctx, deviceUUID)
+	if err != nil || !deviceUserID.Valid || deviceUserID.Int64 != userID {
 		return nil, errors.New("device doesn't belong to authenticated user")
 	}
 
@@ -387,7 +388,8 @@ func (s *irrigationService) resolveDeviceID(ctx context.Context, userID int64, d
 		return nil, err
 	}
 
-	if !device.UserID.Valid || device.UserID.Int64 != userID {
+	deviceUserID, err := s.store.GetDeviceUserID(ctx, *deviceUUID)
+	if err != nil || !deviceUserID.Valid || deviceUserID.Int64 != userID {
 		return nil, errors.New("device doesn't belong to authenticated user")
 	}
 
@@ -403,7 +405,8 @@ func (s *irrigationService) CreateIrrigationSchedule(ctx context.Context, req dt
 	if err != nil {
 		return nil, err
 	}
-	if !device.UserID.Valid || device.UserID.Int64 != userID {
+	deviceUserID, err := s.store.GetDeviceUserID(ctx, deviceUUID)
+	if err != nil || !deviceUserID.Valid || deviceUserID.Int64 != userID {
 		return nil, errors.New("device doesn't belong to authenticated user")
 	}
 

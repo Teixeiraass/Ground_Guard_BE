@@ -11,57 +11,44 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/sqlc-dev/pqtype"
 )
 
 const createDevice = `-- name: CreateDevice :one
 INSERT INTO devices (
   device_uid, 
-  name, 
-  firmware_version,
-  firmware_build,
+  name,
   last_update,
-  ip_address,
-  wifi_ssid,
   last_seen,
   status,
-  user_id,
   qr_token,
-  qr_code_file
+  qr_code_file,
+  controller_device_id
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
-) RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
+  $1, $2, $3, $4, $5, $6, $7, $8
+) RETURNING id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id
 `
 
 type CreateDeviceParams struct {
-	DeviceUid       string         `json:"device_uid"`
-	Name            string         `json:"name"`
-	FirmwareVersion string         `json:"firmware_version"`
-	FirmwareBuild   sql.NullString `json:"firmware_build"`
-	LastUpdate      time.Time      `json:"last_update"`
-	IpAddress       pqtype.Inet    `json:"ip_address"`
-	WifiSsid        sql.NullString `json:"wifi_ssid"`
-	LastSeen        sql.NullTime   `json:"last_seen"`
-	Status          string         `json:"status"`
-	UserID          sql.NullInt64  `json:"user_id"`
-	QrToken         string         `json:"qr_token"`
-	QrCodeFile      sql.NullString `json:"qr_code_file"`
+	DeviceUid          string         `json:"device_uid"`
+	Name               string         `json:"name"`
+	LastUpdate         time.Time      `json:"last_update"`
+	LastSeen           sql.NullTime   `json:"last_seen"`
+	Status             string         `json:"status"`
+	QrToken            string         `json:"qr_token"`
+	QrCodeFile         sql.NullString `json:"qr_code_file"`
+	ControllerDeviceID sql.NullInt64  `json:"controller_device_id"`
 }
 
 func (q *Queries) CreateDevice(ctx context.Context, arg CreateDeviceParams) (Device, error) {
 	row := q.db.QueryRowContext(ctx, createDevice,
 		arg.DeviceUid,
 		arg.Name,
-		arg.FirmwareVersion,
-		arg.FirmwareBuild,
 		arg.LastUpdate,
-		arg.IpAddress,
-		arg.WifiSsid,
 		arg.LastSeen,
 		arg.Status,
-		arg.UserID,
 		arg.QrToken,
 		arg.QrCodeFile,
+		arg.ControllerDeviceID,
 	)
 	var i Device
 	err := row.Scan(
@@ -69,26 +56,22 @@ func (q *Queries) CreateDevice(ctx context.Context, arg CreateDeviceParams) (Dev
 		&i.Uuid,
 		&i.DeviceUid,
 		&i.Name,
-		&i.FirmwareVersion,
-		&i.FirmwareBuild,
 		&i.LastUpdate,
-		&i.IpAddress,
-		&i.WifiSsid,
 		&i.LastSeen,
 		&i.Status,
-		&i.UserID,
 		&i.CreatedAt,
 		&i.QrToken,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
 		&i.SoilMoisture,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
 
 const getDevice = `-- name: GetDevice :one
-SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture FROM devices
+SELECT id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id FROM devices
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -100,26 +83,22 @@ func (q *Queries) GetDevice(ctx context.Context, argUuid uuid.UUID) (Device, err
 		&i.Uuid,
 		&i.DeviceUid,
 		&i.Name,
-		&i.FirmwareVersion,
-		&i.FirmwareBuild,
 		&i.LastUpdate,
-		&i.IpAddress,
-		&i.WifiSsid,
 		&i.LastSeen,
 		&i.Status,
-		&i.UserID,
 		&i.CreatedAt,
 		&i.QrToken,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
 		&i.SoilMoisture,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
 
 const getDeviceByUID = `-- name: GetDeviceByUID :one
-SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture FROM devices
+SELECT id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id FROM devices
 WHERE device_uid = $1 LIMIT 1
 `
 
@@ -131,26 +110,22 @@ func (q *Queries) GetDeviceByUID(ctx context.Context, deviceUid string) (Device,
 		&i.Uuid,
 		&i.DeviceUid,
 		&i.Name,
-		&i.FirmwareVersion,
-		&i.FirmwareBuild,
 		&i.LastUpdate,
-		&i.IpAddress,
-		&i.WifiSsid,
 		&i.LastSeen,
 		&i.Status,
-		&i.UserID,
 		&i.CreatedAt,
 		&i.QrToken,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
 		&i.SoilMoisture,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
 
 const getDeviceForUpdate = `-- name: GetDeviceForUpdate :one
-SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture FROM devices
+SELECT id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id FROM devices
 WHERE uuid = $1 LIMIT 1
 FOR NO KEY UPDATE
 `
@@ -163,78 +138,139 @@ func (q *Queries) GetDeviceForUpdate(ctx context.Context, argUuid uuid.UUID) (De
 		&i.Uuid,
 		&i.DeviceUid,
 		&i.Name,
-		&i.FirmwareVersion,
-		&i.FirmwareBuild,
 		&i.LastUpdate,
-		&i.IpAddress,
-		&i.WifiSsid,
 		&i.LastSeen,
 		&i.Status,
-		&i.UserID,
 		&i.CreatedAt,
 		&i.QrToken,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
 		&i.SoilMoisture,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
 
-const linkDeviceToUserByQrToken = `-- name: LinkDeviceToUserByQrToken :one
-UPDATE devices
-SET user_id = $2
-WHERE qr_token = $1 AND user_id IS NULL
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
+const getDeviceUserID = `-- name: GetDeviceUserID :one
+SELECT controller_devices.user_id
+FROM devices
+JOIN controller_devices ON controller_devices.id = devices.controller_device_id
+WHERE devices.uuid = $1
+LIMIT 1
 `
 
-type LinkDeviceToUserByQrTokenParams struct {
-	QrToken string        `json:"qr_token"`
-	UserID  sql.NullInt64 `json:"user_id"`
+func (q *Queries) GetDeviceUserID(ctx context.Context, argUuid uuid.UUID) (sql.NullInt64, error) {
+	row := q.db.QueryRowContext(ctx, getDeviceUserID, argUuid)
+	var user_id sql.NullInt64
+	err := row.Scan(&user_id)
+	return user_id, err
 }
 
-func (q *Queries) LinkDeviceToUserByQrToken(ctx context.Context, arg LinkDeviceToUserByQrTokenParams) (Device, error) {
-	row := q.db.QueryRowContext(ctx, linkDeviceToUserByQrToken, arg.QrToken, arg.UserID)
+const getDeviceUserIDByUID = `-- name: GetDeviceUserIDByUID :one
+SELECT controller_devices.user_id
+FROM devices
+JOIN controller_devices ON controller_devices.id = devices.controller_device_id
+WHERE devices.device_uid = $1
+LIMIT 1
+`
+
+func (q *Queries) GetDeviceUserIDByUID(ctx context.Context, deviceUid string) (sql.NullInt64, error) {
+	row := q.db.QueryRowContext(ctx, getDeviceUserIDByUID, deviceUid)
+	var user_id sql.NullInt64
+	err := row.Scan(&user_id)
+	return user_id, err
+}
+
+const linkDeviceToControllerDeviceByQrToken = `-- name: LinkDeviceToControllerDeviceByQrToken :one
+UPDATE devices
+SET controller_device_id = $2
+WHERE qr_token = $1 AND controller_device_id IS NULL
+RETURNING id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id
+`
+
+type LinkDeviceToControllerDeviceByQrTokenParams struct {
+	QrToken            string        `json:"qr_token"`
+	ControllerDeviceID sql.NullInt64 `json:"controller_device_id"`
+}
+
+func (q *Queries) LinkDeviceToControllerDeviceByQrToken(ctx context.Context, arg LinkDeviceToControllerDeviceByQrTokenParams) (Device, error) {
+	row := q.db.QueryRowContext(ctx, linkDeviceToControllerDeviceByQrToken, arg.QrToken, arg.ControllerDeviceID)
 	var i Device
 	err := row.Scan(
 		&i.ID,
 		&i.Uuid,
 		&i.DeviceUid,
 		&i.Name,
-		&i.FirmwareVersion,
-		&i.FirmwareBuild,
 		&i.LastUpdate,
-		&i.IpAddress,
-		&i.WifiSsid,
 		&i.LastSeen,
 		&i.Status,
-		&i.UserID,
 		&i.CreatedAt,
 		&i.QrToken,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
 		&i.SoilMoisture,
+		&i.ControllerDeviceID,
+	)
+	return i, err
+}
+
+const linkDeviceToUserControllerByQrToken = `-- name: LinkDeviceToUserControllerByQrToken :one
+UPDATE devices
+SET controller_device_id = controller_devices.id
+FROM controller_devices
+WHERE devices.qr_token = $1
+  AND controller_devices.uuid = $2
+  AND controller_devices.user_id = $3
+  AND devices.controller_device_id IS NULL
+RETURNING devices.id, devices.uuid, devices.device_uid, devices.name, devices.last_update, devices.last_seen, devices.status, devices.created_at, devices.qr_token, devices.qr_code_file, devices.is_online, devices.is_irrigating, devices.soil_moisture, devices.controller_device_id
+`
+
+type LinkDeviceToUserControllerByQrTokenParams struct {
+	QrToken string        `json:"qr_token"`
+	Uuid    uuid.UUID     `json:"uuid"`
+	UserID  sql.NullInt64 `json:"user_id"`
+}
+
+func (q *Queries) LinkDeviceToUserControllerByQrToken(ctx context.Context, arg LinkDeviceToUserControllerByQrTokenParams) (Device, error) {
+	row := q.db.QueryRowContext(ctx, linkDeviceToUserControllerByQrToken, arg.QrToken, arg.Uuid, arg.UserID)
+	var i Device
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.DeviceUid,
+		&i.Name,
+		&i.LastUpdate,
+		&i.LastSeen,
+		&i.Status,
+		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
+		&i.IsOnline,
+		&i.IsIrrigating,
+		&i.SoilMoisture,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
 
 const listDevices = `-- name: ListDevices :many
-SELECT id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture FROM devices
-WHERE user_id = $1
+SELECT id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id FROM devices
+WHERE controller_device_id = $1
 ORDER BY id
 LIMIT $2
 OFFSET $3
 `
 
 type ListDevicesParams struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	Limit  int32         `json:"limit"`
-	Offset int32         `json:"offset"`
+	ControllerDeviceID sql.NullInt64 `json:"controller_device_id"`
+	Limit              int32         `json:"limit"`
+	Offset             int32         `json:"offset"`
 }
 
 func (q *Queries) ListDevices(ctx context.Context, arg ListDevicesParams) ([]Device, error) {
-	rows, err := q.db.QueryContext(ctx, listDevices, arg.UserID, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listDevices, arg.ControllerDeviceID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -247,20 +283,16 @@ func (q *Queries) ListDevices(ctx context.Context, arg ListDevicesParams) ([]Dev
 			&i.Uuid,
 			&i.DeviceUid,
 			&i.Name,
-			&i.FirmwareVersion,
-			&i.FirmwareBuild,
 			&i.LastUpdate,
-			&i.IpAddress,
-			&i.WifiSsid,
 			&i.LastSeen,
 			&i.Status,
-			&i.UserID,
 			&i.CreatedAt,
 			&i.QrToken,
 			&i.QrCodeFile,
 			&i.IsOnline,
 			&i.IsIrrigating,
 			&i.SoilMoisture,
+			&i.ControllerDeviceID,
 		); err != nil {
 			return nil, err
 		}
@@ -275,40 +307,188 @@ func (q *Queries) ListDevices(ctx context.Context, arg ListDevicesParams) ([]Dev
 	return items, nil
 }
 
-const unlinkDeviceFromUser = `-- name: UnlinkDeviceFromUser :one
-UPDATE devices
-SET user_id = NULL
-WHERE uuid = $1 AND user_id = $2
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
+const listDevicesByControllerUUIDAndUserID = `-- name: ListDevicesByControllerUUIDAndUserID :many
+SELECT devices.id, devices.uuid, devices.device_uid, devices.name, devices.last_update, devices.last_seen, devices.status, devices.created_at, devices.qr_token, devices.qr_code_file, devices.is_online, devices.is_irrigating, devices.soil_moisture, devices.controller_device_id
+FROM devices
+JOIN controller_devices ON controller_devices.id = devices.controller_device_id
+WHERE controller_devices.uuid = $1
+  AND controller_devices.user_id = $2
+ORDER BY devices.id
+LIMIT $4
+OFFSET $3
 `
 
-type UnlinkDeviceFromUserParams struct {
-	Uuid   uuid.UUID     `json:"uuid"`
-	UserID sql.NullInt64 `json:"user_id"`
+type ListDevicesByControllerUUIDAndUserIDParams struct {
+	ControllerUuid uuid.UUID     `json:"controller_uuid"`
+	UserID         sql.NullInt64 `json:"user_id"`
+	PageOffset     int32         `json:"page_offset"`
+	PageLimit      int32         `json:"page_limit"`
 }
 
-func (q *Queries) UnlinkDeviceFromUser(ctx context.Context, arg UnlinkDeviceFromUserParams) (Device, error) {
-	row := q.db.QueryRowContext(ctx, unlinkDeviceFromUser, arg.Uuid, arg.UserID)
+func (q *Queries) ListDevicesByControllerUUIDAndUserID(ctx context.Context, arg ListDevicesByControllerUUIDAndUserIDParams) ([]Device, error) {
+	rows, err := q.db.QueryContext(ctx, listDevicesByControllerUUIDAndUserID,
+		arg.ControllerUuid,
+		arg.UserID,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Device{}
+	for rows.Next() {
+		var i Device
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uuid,
+			&i.DeviceUid,
+			&i.Name,
+			&i.LastUpdate,
+			&i.LastSeen,
+			&i.Status,
+			&i.CreatedAt,
+			&i.QrToken,
+			&i.QrCodeFile,
+			&i.IsOnline,
+			&i.IsIrrigating,
+			&i.SoilMoisture,
+			&i.ControllerDeviceID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDevicesByUserID = `-- name: ListDevicesByUserID :many
+SELECT devices.id, devices.uuid, devices.device_uid, devices.name, devices.last_update, devices.last_seen, devices.status, devices.created_at, devices.qr_token, devices.qr_code_file, devices.is_online, devices.is_irrigating, devices.soil_moisture, devices.controller_device_id
+FROM devices
+JOIN controller_devices ON controller_devices.id = devices.controller_device_id
+WHERE controller_devices.user_id = $1
+ORDER BY devices.id
+LIMIT $2
+OFFSET $3
+`
+
+type ListDevicesByUserIDParams struct {
+	UserID sql.NullInt64 `json:"user_id"`
+	Limit  int32         `json:"limit"`
+	Offset int32         `json:"offset"`
+}
+
+func (q *Queries) ListDevicesByUserID(ctx context.Context, arg ListDevicesByUserIDParams) ([]Device, error) {
+	rows, err := q.db.QueryContext(ctx, listDevicesByUserID, arg.UserID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Device{}
+	for rows.Next() {
+		var i Device
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uuid,
+			&i.DeviceUid,
+			&i.Name,
+			&i.LastUpdate,
+			&i.LastSeen,
+			&i.Status,
+			&i.CreatedAt,
+			&i.QrToken,
+			&i.QrCodeFile,
+			&i.IsOnline,
+			&i.IsIrrigating,
+			&i.SoilMoisture,
+			&i.ControllerDeviceID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const unlinkDeviceFromControllerDevice = `-- name: UnlinkDeviceFromControllerDevice :one
+UPDATE devices
+SET controller_device_id = NULL
+WHERE uuid = $1 AND controller_device_id = $2
+RETURNING id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id
+`
+
+type UnlinkDeviceFromControllerDeviceParams struct {
+	Uuid               uuid.UUID     `json:"uuid"`
+	ControllerDeviceID sql.NullInt64 `json:"controller_device_id"`
+}
+
+func (q *Queries) UnlinkDeviceFromControllerDevice(ctx context.Context, arg UnlinkDeviceFromControllerDeviceParams) (Device, error) {
+	row := q.db.QueryRowContext(ctx, unlinkDeviceFromControllerDevice, arg.Uuid, arg.ControllerDeviceID)
 	var i Device
 	err := row.Scan(
 		&i.ID,
 		&i.Uuid,
 		&i.DeviceUid,
 		&i.Name,
-		&i.FirmwareVersion,
-		&i.FirmwareBuild,
 		&i.LastUpdate,
-		&i.IpAddress,
-		&i.WifiSsid,
 		&i.LastSeen,
 		&i.Status,
-		&i.UserID,
 		&i.CreatedAt,
 		&i.QrToken,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
 		&i.SoilMoisture,
+		&i.ControllerDeviceID,
+	)
+	return i, err
+}
+
+const unlinkDeviceFromUserController = `-- name: UnlinkDeviceFromUserController :one
+UPDATE devices
+SET controller_device_id = NULL
+FROM controller_devices
+WHERE devices.uuid = $1
+  AND controller_devices.id = devices.controller_device_id
+  AND controller_devices.user_id = $2
+RETURNING devices.id, devices.uuid, devices.device_uid, devices.name, devices.last_update, devices.last_seen, devices.status, devices.created_at, devices.qr_token, devices.qr_code_file, devices.is_online, devices.is_irrigating, devices.soil_moisture, devices.controller_device_id
+`
+
+type UnlinkDeviceFromUserControllerParams struct {
+	Uuid   uuid.UUID     `json:"uuid"`
+	UserID sql.NullInt64 `json:"user_id"`
+}
+
+func (q *Queries) UnlinkDeviceFromUserController(ctx context.Context, arg UnlinkDeviceFromUserControllerParams) (Device, error) {
+	row := q.db.QueryRowContext(ctx, unlinkDeviceFromUserController, arg.Uuid, arg.UserID)
+	var i Device
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.DeviceUid,
+		&i.Name,
+		&i.LastUpdate,
+		&i.LastSeen,
+		&i.Status,
+		&i.CreatedAt,
+		&i.QrToken,
+		&i.QrCodeFile,
+		&i.IsOnline,
+		&i.IsIrrigating,
+		&i.SoilMoisture,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
@@ -316,54 +496,35 @@ func (q *Queries) UnlinkDeviceFromUser(ctx context.Context, arg UnlinkDeviceFrom
 const updateDeviceRegistration = `-- name: UpdateDeviceRegistration :one
 UPDATE devices
 SET
-    firmware_version = $2,
-    firmware_build = $3,
-    ip_address = $4,
-    wifi_ssid = $5,
-    status = $6,
+    status = $2,
     last_seen = NOW()
 WHERE device_uid = $1
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
+RETURNING id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id
 `
 
 type UpdateDeviceRegistrationParams struct {
-	DeviceUid       string         `json:"device_uid"`
-	FirmwareVersion string         `json:"firmware_version"`
-	FirmwareBuild   sql.NullString `json:"firmware_build"`
-	IpAddress       pqtype.Inet    `json:"ip_address"`
-	WifiSsid        sql.NullString `json:"wifi_ssid"`
-	Status          string         `json:"status"`
+	DeviceUid string `json:"device_uid"`
+	Status    string `json:"status"`
 }
 
 func (q *Queries) UpdateDeviceRegistration(ctx context.Context, arg UpdateDeviceRegistrationParams) (Device, error) {
-	row := q.db.QueryRowContext(ctx, updateDeviceRegistration,
-		arg.DeviceUid,
-		arg.FirmwareVersion,
-		arg.FirmwareBuild,
-		arg.IpAddress,
-		arg.WifiSsid,
-		arg.Status,
-	)
+	row := q.db.QueryRowContext(ctx, updateDeviceRegistration, arg.DeviceUid, arg.Status)
 	var i Device
 	err := row.Scan(
 		&i.ID,
 		&i.Uuid,
 		&i.DeviceUid,
 		&i.Name,
-		&i.FirmwareVersion,
-		&i.FirmwareBuild,
 		&i.LastUpdate,
-		&i.IpAddress,
-		&i.WifiSsid,
 		&i.LastSeen,
 		&i.Status,
-		&i.UserID,
 		&i.CreatedAt,
 		&i.QrToken,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
 		&i.SoilMoisture,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
@@ -374,7 +535,7 @@ SET
     is_online = $2, 
     is_irrigating = $3
 WHERE device_uid = $1
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
+RETURNING id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id
 `
 
 type UpdateDeviceStateParams struct {
@@ -391,20 +552,16 @@ func (q *Queries) UpdateDeviceState(ctx context.Context, arg UpdateDeviceStatePa
 		&i.Uuid,
 		&i.DeviceUid,
 		&i.Name,
-		&i.FirmwareVersion,
-		&i.FirmwareBuild,
 		&i.LastUpdate,
-		&i.IpAddress,
-		&i.WifiSsid,
 		&i.LastSeen,
 		&i.Status,
-		&i.UserID,
 		&i.CreatedAt,
 		&i.QrToken,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
 		&i.SoilMoisture,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
@@ -414,20 +571,16 @@ UPDATE devices
 SET
     last_seen = $2,
     status = $3,
-    ip_address = $4,
-    wifi_ssid = $5,
-    soil_moisture = $6
+    soil_moisture = $4
 WHERE device_uid = $1
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
+RETURNING id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id
 `
 
 type UpdateDeviceTelemetryByUIDParams struct {
-	DeviceUid    string         `json:"device_uid"`
-	LastSeen     sql.NullTime   `json:"last_seen"`
-	Status       string         `json:"status"`
-	IpAddress    pqtype.Inet    `json:"ip_address"`
-	WifiSsid     sql.NullString `json:"wifi_ssid"`
-	SoilMoisture sql.NullInt32  `json:"soil_moisture"`
+	DeviceUid    string        `json:"device_uid"`
+	LastSeen     sql.NullTime  `json:"last_seen"`
+	Status       string        `json:"status"`
+	SoilMoisture sql.NullInt32 `json:"soil_moisture"`
 }
 
 func (q *Queries) UpdateDeviceTelemetryByUID(ctx context.Context, arg UpdateDeviceTelemetryByUIDParams) (Device, error) {
@@ -435,8 +588,6 @@ func (q *Queries) UpdateDeviceTelemetryByUID(ctx context.Context, arg UpdateDevi
 		arg.DeviceUid,
 		arg.LastSeen,
 		arg.Status,
-		arg.IpAddress,
-		arg.WifiSsid,
 		arg.SoilMoisture,
 	)
 	var i Device
@@ -445,20 +596,16 @@ func (q *Queries) UpdateDeviceTelemetryByUID(ctx context.Context, arg UpdateDevi
 		&i.Uuid,
 		&i.DeviceUid,
 		&i.Name,
-		&i.FirmwareVersion,
-		&i.FirmwareBuild,
 		&i.LastUpdate,
-		&i.IpAddress,
-		&i.WifiSsid,
 		&i.LastSeen,
 		&i.Status,
-		&i.UserID,
 		&i.CreatedAt,
 		&i.QrToken,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
 		&i.SoilMoisture,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
@@ -467,7 +614,7 @@ const updateDevices = `-- name: UpdateDevices :one
 UPDATE devices
 set status = $2
 WHERE uuid = $1
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
+RETURNING id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id
 `
 
 type UpdateDevicesParams struct {
@@ -483,20 +630,16 @@ func (q *Queries) UpdateDevices(ctx context.Context, arg UpdateDevicesParams) (D
 		&i.Uuid,
 		&i.DeviceUid,
 		&i.Name,
-		&i.FirmwareVersion,
-		&i.FirmwareBuild,
 		&i.LastUpdate,
-		&i.IpAddress,
-		&i.WifiSsid,
 		&i.LastSeen,
 		&i.Status,
-		&i.UserID,
 		&i.CreatedAt,
 		&i.QrToken,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
 		&i.SoilMoisture,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }
@@ -505,7 +648,7 @@ const updateNameDevice = `-- name: UpdateNameDevice :one
 UPDATE devices
 set name = $2
 WHERE uuid = $1
-RETURNING id, uuid, device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, last_seen, status, user_id, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture
+RETURNING id, uuid, device_uid, name, last_update, last_seen, status, created_at, qr_token, qr_code_file, is_online, is_irrigating, soil_moisture, controller_device_id
 `
 
 type UpdateNameDeviceParams struct {
@@ -521,20 +664,16 @@ func (q *Queries) UpdateNameDevice(ctx context.Context, arg UpdateNameDevicePara
 		&i.Uuid,
 		&i.DeviceUid,
 		&i.Name,
-		&i.FirmwareVersion,
-		&i.FirmwareBuild,
 		&i.LastUpdate,
-		&i.IpAddress,
-		&i.WifiSsid,
 		&i.LastSeen,
 		&i.Status,
-		&i.UserID,
 		&i.CreatedAt,
 		&i.QrToken,
 		&i.QrCodeFile,
 		&i.IsOnline,
 		&i.IsIrrigating,
 		&i.SoilMoisture,
+		&i.ControllerDeviceID,
 	)
 	return i, err
 }

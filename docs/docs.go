@@ -22,6 +22,280 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/controller-devices": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "controller-devices"
+                ],
+                "summary": "Listar controladoras",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Página",
+                        "name": "page_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Itens por página",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.ControllerDeviceResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/controller-devices/claim/{uid}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "controller-devices"
+                ],
+                "summary": "Reivindicar controladora",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UID da controladora",
+                        "name": "uid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ControllerDeviceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/controller-devices/name/{uuid}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "controller-devices"
+                ],
+                "summary": "Renomear controladora",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID da controladora",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Novo nome",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateNameControllerDeviceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ControllerDeviceResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/controller-devices/register": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "controller-devices"
+                ],
+                "summary": "Registrar controladora via hardware",
+                "parameters": [
+                    {
+                        "description": "Dados da controladora",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RegisterControllerDeviceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ControllerDeviceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/controller-devices/uid/{uid}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "controller-devices"
+                ],
+                "summary": "Obter controladora por UID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UID da controladora",
+                        "name": "uid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ControllerDeviceResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/controller-devices/unlink/{uuid}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "controller-devices"
+                ],
+                "summary": "Desvincular controladora",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID da controladora",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ControllerDeviceResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/controller-devices/{uuid}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "controller-devices"
+                ],
+                "summary": "Obter controladora",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID da controladora",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ControllerDeviceResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/devices": {
             "get": {
                 "security": [
@@ -29,7 +303,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retorna uma lista paginada de todos os dispositivos associados ao usuário autenticado.",
+                "description": "Retorna uma lista paginada de dispositivos associados ao usuário autenticado. Pode filtrar por controller_uuid.",
                 "consumes": [
                     "application/json"
                 ],
@@ -54,6 +328,12 @@ const docTemplate = `{
                         "name": "page_size",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID da controladora",
+                        "name": "controller_uuid",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -179,6 +459,13 @@ const docTemplate = `{
                         "description": "Token do QR Code do dispositivo",
                         "name": "qr_token",
                         "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID da controladora proprietária",
+                        "name": "controller_uuid",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -1277,6 +1564,311 @@ const docTemplate = `{
                 }
             }
         },
+        "/irrigation/schedules": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna os agendamentos de irrigação do usuário autenticado.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "irrigation"
+                ],
+                "summary": "Listar agendamentos de irrigação",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.IrrigationScheduleResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cria um agendamento de irrigação para um dispositivo pertencente ao usuário autenticado.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "irrigation"
+                ],
+                "summary": "Criar agendamento de irrigação",
+                "parameters": [
+                    {
+                        "description": "Dados do agendamento",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateIrrigationScheduleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IrrigationScheduleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/irrigation/schedules/{uuid}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna um agendamento pertencente ao usuário autenticado.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "irrigation"
+                ],
+                "summary": "Obter agendamento de irrigação",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID do agendamento",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IrrigationScheduleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Atualiza um agendamento pertencente ao usuário autenticado.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "irrigation"
+                ],
+                "summary": "Atualizar agendamento de irrigação",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID do agendamento",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados do agendamento",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateIrrigationScheduleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.IrrigationScheduleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Exclui um agendamento pertencente ao usuário autenticado.",
+                "tags": [
+                    "irrigation"
+                ],
+                "summary": "Excluir agendamento de irrigação",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID do agendamento",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/legal-document/{uuid}": {
             "get": {
                 "description": "Retorna os detalhes de um documento legal específico baseado no seu UUID",
@@ -2032,14 +2624,23 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.CreateDeviceRequest": {
+        "dto.ControllerDeviceConfigurationResponse": {
             "type": "object",
-            "required": [
-                "device_uid",
-                "name",
-                "status"
-            ],
             "properties": {
+                "command_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ControllerDeviceResponse": {
+            "type": "object",
+            "properties": {
+                "configuration": {
+                    "$ref": "#/definitions/dto.ControllerDeviceConfigurationResponse"
+                },
                 "device_uid": {
                     "type": "string"
                 },
@@ -2052,6 +2653,40 @@ const docTemplate = `{
                 "ip_address": {
                     "type": "string"
                 },
+                "is_online": {
+                    "type": "boolean"
+                },
+                "last_seen": {
+                    "type": "string"
+                },
+                "last_update": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "integer"
+                },
+                "uuid": {
+                    "type": "string"
+                },
+                "wifi_ssid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateDeviceRequest": {
+            "type": "object",
+            "required": [
+                "device_uid",
+                "name",
+                "status"
+            ],
+            "properties": {
+                "device_uid": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -2061,9 +2696,6 @@ const docTemplate = `{
                         "ATIVO",
                         "INATIVO"
                     ]
-                },
-                "wifi_ssid": {
-                    "type": "string"
                 }
             }
         },
@@ -2139,6 +2771,38 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CreateIrrigationScheduleRequest": {
+            "type": "object",
+            "required": [
+                "days_of_week",
+                "device_uuid",
+                "duration_seconds",
+                "start_time"
+            ],
+            "properties": {
+                "days_of_week": {
+                    "type": "string"
+                },
+                "device_uuid": {
+                    "type": "string"
+                },
+                "duration_seconds": {
+                    "type": "integer",
+                    "maximum": 86400,
+                    "minimum": 1
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "start_time": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.CreateUserRequest": {
             "type": "object",
             "required": [
@@ -2166,16 +2830,10 @@ const docTemplate = `{
         "dto.DeviceResponse": {
             "type": "object",
             "properties": {
+                "controllerDeviceId": {
+                    "type": "integer"
+                },
                 "device_uid": {
-                    "type": "string"
-                },
-                "firmware_build": {
-                    "type": "string"
-                },
-                "firmware_version": {
-                    "type": "string"
-                },
-                "ip_address": {
                     "type": "string"
                 },
                 "is_irrigating": {
@@ -2196,13 +2854,7 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
-                "user": {
-                    "type": "integer"
-                },
                 "uuid": {
-                    "type": "string"
-                },
-                "wifi_ssid": {
                     "type": "string"
                 }
             }
@@ -2334,6 +2986,38 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.IrrigationScheduleResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "days_of_week": {
+                    "type": "string"
+                },
+                "device_id": {
+                    "type": "integer"
+                },
+                "duration_seconds": {
+                    "type": "integer"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.LegalDocumentResponse": {
             "type": "object",
             "properties": {
@@ -2418,6 +3102,28 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.RegisterControllerDeviceRequest": {
+            "type": "object",
+            "required": [
+                "device_uid",
+                "firmware_build",
+                "firmware_version"
+            ],
+            "properties": {
+                "device_uid": {
+                    "type": "string"
+                },
+                "firmware_build": {
+                    "type": "string"
+                },
+                "firmware_version": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.RenewAccessTokenRequest": {
             "type": "object",
             "required": [
@@ -2497,6 +3203,45 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "video_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateIrrigationScheduleRequest": {
+            "type": "object",
+            "required": [
+                "days_of_week",
+                "duration_seconds",
+                "start_time"
+            ],
+            "properties": {
+                "days_of_week": {
+                    "type": "string"
+                },
+                "duration_seconds": {
+                    "type": "integer",
+                    "maximum": 86400,
+                    "minimum": 1
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "start_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateNameControllerDeviceRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
                     "type": "string"
                 }
             }

@@ -47,6 +47,7 @@ func TestCreateIrrigationScheduleAPI(t *testing.T) {
 	store := mockdb.NewMockStore(ctrl)
 	mqttClient := mockmqtt.NewMockClient(ctrl)
 	store.EXPECT().GetDevice(gomock.Any(), device.Uuid).Return(device, nil)
+	store.EXPECT().GetDeviceUserID(gomock.Any(), device.Uuid).Return(sql.NullInt64{Int64: userID, Valid: true}, nil)
 	store.EXPECT().CreateIrrigationSchedule(gomock.Any(), gomock.Eq(db.CreateIrrigationScheduleParams{
 		DeviceID: device.ID, UserID: userID, Name: requestBodyName(requestBody.Name),
 		Enabled: true, StartTime: schedule.StartTime, DurationSeconds: 120, DaysOfWeek: "1,3,5",

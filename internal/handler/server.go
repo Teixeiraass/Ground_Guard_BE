@@ -17,18 +17,19 @@ import (
 )
 
 type Server struct {
-	config            util.Config
-	store             db.Store
-	tokenMaker        token.Maker
-	oauthService      *appoauth.Service
-	mqttClient        client.Client
-	router            *gin.Engine
-	Hub               *websocket.Hub
-	WSHandler         *websocket.Handler
-	DeviceService     service.DeviceService
-	UserService       service.UserService
-	IrrigationService service.IrrigationService
-	ContentService    service.ContentService
+	config                  util.Config
+	store                   db.Store
+	tokenMaker              token.Maker
+	oauthService            *appoauth.Service
+	mqttClient              client.Client
+	router                  *gin.Engine
+	Hub                     *websocket.Hub
+	WSHandler               *websocket.Handler
+	DeviceService           service.DeviceService
+	ControllerDeviceService service.ControllerDeviceService
+	UserService             service.UserService
+	IrrigationService       service.IrrigationService
+	ContentService          service.ContentService
 }
 
 func NewServer(config util.Config, store db.Store, mqttClient client.Client) (*Server, error) {
@@ -54,17 +55,18 @@ func NewServer(config util.Config, store db.Store, mqttClient client.Client) (*S
 	timeoutWorker.Start()
 
 	server := &Server{
-		config:            config,
-		store:             store,
-		tokenMaker:        tokenMaker,
-		oauthService:      appoauth.NewService(config),
-		mqttClient:        mqttClient,
-		Hub:               hub,
-		WSHandler: wsHandler,
-		DeviceService:     service.NewDeviceService(store),
-		UserService:       service.NewUserService(store, tokenMaker, config),
-		IrrigationService: service.NewIrrigationService(store, mqttClient),
-		ContentService:    service.NewContentService(store),
+		config:                  config,
+		store:                   store,
+		tokenMaker:              tokenMaker,
+		oauthService:            appoauth.NewService(config),
+		mqttClient:              mqttClient,
+		Hub:                     hub,
+		WSHandler:               wsHandler,
+		DeviceService:           service.NewDeviceService(store),
+		ControllerDeviceService: service.NewControllerDeviceService(store, mqttClient),
+		UserService:             service.NewUserService(store, tokenMaker, config),
+		IrrigationService:       service.NewIrrigationService(store, mqttClient),
+		ContentService:          service.NewContentService(store),
 	}
 
 	server.router = routes.Setup(server.tokenMaker, server)
