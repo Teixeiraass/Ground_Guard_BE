@@ -21,19 +21,23 @@ INSERT INTO irrigation_schedules (
     enabled,
     start_time,
     duration_seconds,
-    days_of_week
-) VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id
+    days_of_week,
+    irrigation_mode,
+    moisture_threshold
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id, irrigation_mode, moisture_threshold, last_triggered_at, lead_notified_at, group_id
 `
 
 type CreateIrrigationScheduleParams struct {
-	DeviceID        int64          `json:"device_id"`
-	UserID          int64          `json:"user_id"`
-	Name            sql.NullString `json:"name"`
-	Enabled         bool           `json:"enabled"`
-	StartTime       time.Time      `json:"start_time"`
-	DurationSeconds int32          `json:"duration_seconds"`
-	DaysOfWeek      string         `json:"days_of_week"`
+	DeviceID          int64          `json:"device_id"`
+	UserID            int64          `json:"user_id"`
+	Name              sql.NullString `json:"name"`
+	Enabled           bool           `json:"enabled"`
+	StartTime         time.Time      `json:"start_time"`
+	DurationSeconds   int32          `json:"duration_seconds"`
+	DaysOfWeek        string         `json:"days_of_week"`
+	IrrigationMode    string         `json:"irrigation_mode"`
+	MoistureThreshold sql.NullInt32  `json:"moisture_threshold"`
 }
 
 func (q *Queries) CreateIrrigationSchedule(ctx context.Context, arg CreateIrrigationScheduleParams) (IrrigationSchedule, error) {
@@ -45,6 +49,8 @@ func (q *Queries) CreateIrrigationSchedule(ctx context.Context, arg CreateIrriga
 		arg.StartTime,
 		arg.DurationSeconds,
 		arg.DaysOfWeek,
+		arg.IrrigationMode,
+		arg.MoistureThreshold,
 	)
 	var i IrrigationSchedule
 	err := row.Scan(
@@ -60,6 +66,11 @@ func (q *Queries) CreateIrrigationSchedule(ctx context.Context, arg CreateIrriga
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ControllerDeviceID,
+		&i.IrrigationMode,
+		&i.MoistureThreshold,
+		&i.LastTriggeredAt,
+		&i.LeadNotifiedAt,
+		&i.GroupID,
 	)
 	return i, err
 }
@@ -83,7 +94,7 @@ func (q *Queries) DeleteIrrigationSchedule(ctx context.Context, arg DeleteIrriga
 }
 
 const getIrrigationSchedule = `-- name: GetIrrigationSchedule :one
-SELECT id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id
+SELECT id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id, irrigation_mode, moisture_threshold, last_triggered_at, lead_notified_at, group_id
 FROM irrigation_schedules
 WHERE uuid = $1 AND user_id = $2
 LIMIT 1
@@ -110,12 +121,64 @@ func (q *Queries) GetIrrigationSchedule(ctx context.Context, arg GetIrrigationSc
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ControllerDeviceID,
+		&i.IrrigationMode,
+		&i.MoistureThreshold,
+		&i.LastTriggeredAt,
+		&i.LeadNotifiedAt,
+		&i.GroupID,
 	)
 	return i, err
 }
 
+const listEnabledIrrigationSchedules = `-- name: ListEnabledIrrigationSchedules :many
+SELECT id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id, irrigation_mode, moisture_threshold, last_triggered_at, lead_notified_at, group_id
+FROM irrigation_schedules
+WHERE enabled = true
+`
+
+func (q *Queries) ListEnabledIrrigationSchedules(ctx context.Context) ([]IrrigationSchedule, error) {
+	rows, err := q.db.QueryContext(ctx, listEnabledIrrigationSchedules)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []IrrigationSchedule{}
+	for rows.Next() {
+		var i IrrigationSchedule
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uuid,
+			&i.DeviceID,
+			&i.UserID,
+			&i.Name,
+			&i.Enabled,
+			&i.StartTime,
+			&i.DurationSeconds,
+			&i.DaysOfWeek,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ControllerDeviceID,
+			&i.IrrigationMode,
+			&i.MoistureThreshold,
+			&i.LastTriggeredAt,
+			&i.LeadNotifiedAt,
+			&i.GroupID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listIrrigationSchedules = `-- name: ListIrrigationSchedules :many
-SELECT id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id
+SELECT id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id, irrigation_mode, moisture_threshold, last_triggered_at, lead_notified_at, group_id
 FROM irrigation_schedules
 WHERE user_id = $1
 ORDER BY start_time, id
@@ -143,6 +206,11 @@ func (q *Queries) ListIrrigationSchedules(ctx context.Context, userID int64) ([]
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ControllerDeviceID,
+			&i.IrrigationMode,
+			&i.MoistureThreshold,
+			&i.LastTriggeredAt,
+			&i.LeadNotifiedAt,
+			&i.GroupID,
 		); err != nil {
 			return nil, err
 		}
@@ -157,6 +225,22 @@ func (q *Queries) ListIrrigationSchedules(ctx context.Context, userID int64) ([]
 	return items, nil
 }
 
+const setIrrigationScheduleGroup = `-- name: SetIrrigationScheduleGroup :exec
+UPDATE irrigation_schedules
+SET group_id = $2
+WHERE id = $1
+`
+
+type SetIrrigationScheduleGroupParams struct {
+	ID      int64         `json:"id"`
+	GroupID sql.NullInt64 `json:"group_id"`
+}
+
+func (q *Queries) SetIrrigationScheduleGroup(ctx context.Context, arg SetIrrigationScheduleGroupParams) error {
+	_, err := q.db.ExecContext(ctx, setIrrigationScheduleGroup, arg.ID, arg.GroupID)
+	return err
+}
+
 const updateIrrigationSchedule = `-- name: UpdateIrrigationSchedule :one
 UPDATE irrigation_schedules
 SET name = $3,
@@ -164,19 +248,23 @@ SET name = $3,
     start_time = $5,
     duration_seconds = $6,
     days_of_week = $7,
+    irrigation_mode = $8,
+    moisture_threshold = $9,
     updated_at = now()
 WHERE uuid = $1 AND user_id = $2
-RETURNING id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id
+RETURNING id, uuid, device_id, user_id, name, enabled, start_time, duration_seconds, days_of_week, created_at, updated_at, controller_device_id, irrigation_mode, moisture_threshold, last_triggered_at, lead_notified_at, group_id
 `
 
 type UpdateIrrigationScheduleParams struct {
-	Uuid            uuid.UUID      `json:"uuid"`
-	UserID          int64          `json:"user_id"`
-	Name            sql.NullString `json:"name"`
-	Enabled         bool           `json:"enabled"`
-	StartTime       time.Time      `json:"start_time"`
-	DurationSeconds int32          `json:"duration_seconds"`
-	DaysOfWeek      string         `json:"days_of_week"`
+	Uuid              uuid.UUID      `json:"uuid"`
+	UserID            int64          `json:"user_id"`
+	Name              sql.NullString `json:"name"`
+	Enabled           bool           `json:"enabled"`
+	StartTime         time.Time      `json:"start_time"`
+	DurationSeconds   int32          `json:"duration_seconds"`
+	DaysOfWeek        string         `json:"days_of_week"`
+	IrrigationMode    string         `json:"irrigation_mode"`
+	MoistureThreshold sql.NullInt32  `json:"moisture_threshold"`
 }
 
 func (q *Queries) UpdateIrrigationSchedule(ctx context.Context, arg UpdateIrrigationScheduleParams) (IrrigationSchedule, error) {
@@ -188,6 +276,8 @@ func (q *Queries) UpdateIrrigationSchedule(ctx context.Context, arg UpdateIrriga
 		arg.StartTime,
 		arg.DurationSeconds,
 		arg.DaysOfWeek,
+		arg.IrrigationMode,
+		arg.MoistureThreshold,
 	)
 	var i IrrigationSchedule
 	err := row.Scan(
@@ -203,6 +293,45 @@ func (q *Queries) UpdateIrrigationSchedule(ctx context.Context, arg UpdateIrriga
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ControllerDeviceID,
+		&i.IrrigationMode,
+		&i.MoistureThreshold,
+		&i.LastTriggeredAt,
+		&i.LeadNotifiedAt,
+		&i.GroupID,
 	)
 	return i, err
+}
+
+const updateIrrigationScheduleLastTriggered = `-- name: UpdateIrrigationScheduleLastTriggered :exec
+UPDATE irrigation_schedules
+SET last_triggered_at = $2,
+    updated_at = now()
+WHERE id = $1
+`
+
+type UpdateIrrigationScheduleLastTriggeredParams struct {
+	ID              int64        `json:"id"`
+	LastTriggeredAt sql.NullTime `json:"last_triggered_at"`
+}
+
+func (q *Queries) UpdateIrrigationScheduleLastTriggered(ctx context.Context, arg UpdateIrrigationScheduleLastTriggeredParams) error {
+	_, err := q.db.ExecContext(ctx, updateIrrigationScheduleLastTriggered, arg.ID, arg.LastTriggeredAt)
+	return err
+}
+
+const updateIrrigationScheduleLeadNotified = `-- name: UpdateIrrigationScheduleLeadNotified :exec
+UPDATE irrigation_schedules
+SET lead_notified_at = $2,
+    updated_at = now()
+WHERE id = $1
+`
+
+type UpdateIrrigationScheduleLeadNotifiedParams struct {
+	ID             int64        `json:"id"`
+	LeadNotifiedAt sql.NullTime `json:"lead_notified_at"`
+}
+
+func (q *Queries) UpdateIrrigationScheduleLeadNotified(ctx context.Context, arg UpdateIrrigationScheduleLeadNotifiedParams) error {
+	_, err := q.db.ExecContext(ctx, updateIrrigationScheduleLeadNotified, arg.ID, arg.LeadNotifiedAt)
+	return err
 }

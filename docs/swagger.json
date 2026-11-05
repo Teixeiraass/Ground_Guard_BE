@@ -19,6 +19,568 @@
     "host": "api-dev.ground-guard.com.br",
     "basePath": "/api/v1",
     "paths": {
+        "/admin/firmware": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Listar versões do firmware (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Página (default 1)",
+                        "name": "page_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Itens por página (default 20)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.FirmwareReleaseResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Envia o firmware.bin da controladora. A versão precisa ser maior que a última publicada. Donos de controladoras desatualizadas sem atualização automática recebem uma notificação.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Publicar nova versão do firmware (admin)",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "firmware.bin gerado pelo PlatformIO",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Versão, ex.: 1.1.0 (igual ao FIRMWARE_VERSION do config.h)",
+                        "name": "version",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Build, ex.: 2",
+                        "name": "build",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "O que mudou",
+                        "name": "release_notes",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.FirmwareReleaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Arquivo ou versão inválidos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Acesso de admin necessário",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Versão não é maior que a última",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/support/conversations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Uma linha por usuário que já escreveu no chat, com a última mensagem e quantas mensagens do usuário ainda não foram lidas.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Listar conversas do suporte (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Página (default 1)",
+                        "name": "page_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Itens por página (default 50, máx 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.SupportConversationResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Acesso de admin necessário",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/support/conversations/{uuid}/messages": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lista as mensagens do chat do usuário, mais recentes primeiro, e marca as mensagens dele como lidas.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Ler conversa de suporte de um usuário (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID do usuário",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Página (default 1)",
+                        "name": "page_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Itens por página (default 50, máx 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.SupportMessageResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Acesso de admin necessário",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Usuário não encontrado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Grava a resposta, entrega em tempo real via WebSocket e envia uma notificação/push ao usuário.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Responder usuário no chat de suporte (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID do usuário",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Resposta (até 2000 caracteres)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SendSupportMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SupportMessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Acesso de admin necessário",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Usuário não encontrado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna uma lista paginada de usuários, com busca opcional por username/email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Listar usuários (admin)",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Número da página",
+                        "name": "page_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 5,
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Busca por username ou email",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.AdminUserResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Requisição inválida",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Acesso de admin necessário",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users/{uuid}/ban": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Suspende o acesso de um usuário à plataforma",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Banir usuário (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID do usuário",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Motivo do banimento",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.BanUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminUserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Requisição inválida",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Acesso de admin necessário",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Usuário não encontrado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users/{uuid}/unban": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Restaura o acesso de um usuário à plataforma",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Desbanir usuário (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID do usuário",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminUserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Requisição inválida",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Acesso de admin necessário",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Usuário não encontrado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/app-version": {
+            "get": {
+                "description": "Endpoint público usado pelo app pra saber se precisa forçar atualização (abaixo da mínima) ou só avisar (abaixo da mais recente).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "helper"
+                ],
+                "summary": "Versão mínima/mais recente do app",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AppVersionResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/controller-devices": {
             "get": {
                 "security": [
@@ -156,6 +718,57 @@
                 }
             }
         },
+        "/controller-devices/pairing/{uid}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "controller-devices"
+                ],
+                "summary": "Reiniciar pareamento Bluetooth",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UID da controladora",
+                        "name": "uid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ControllerDeviceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/controller-devices/register": {
             "post": {
                 "consumes": [
@@ -288,6 +901,628 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/dto.ControllerDeviceResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/controller-devices/{uuid}/firmware": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Versão atual e mais recente, se há atualização, preferência de atualização automática, progresso da última atualização e, se houver, por que a atualização está bloqueada (OFFLINE, IRRIGATING, IN_PROGRESS).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "firmware"
+                ],
+                "summary": "Situação do firmware da controladora",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID da controladora",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ControllerFirmwareResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/controller-devices/{uuid}/firmware/auto-update": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Com a opção ligada, a controladora se atualiza sozinha entre 02h e 05h (horário de Brasília), nunca durante uma irrigação.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "firmware"
+                ],
+                "summary": "Preferência de atualização automática",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID da controladora",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Preferência",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SetAutoUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ControllerFirmwareResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/controller-devices/{uuid}/firmware/update": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Envia o comando de atualização. A controladora baixa a versão publicada, confere o SHA-256, grava e reinicia; o progresso chega via WebSocket (controller_ota) e notificação.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "firmware"
+                ],
+                "summary": "Atualizar firmware da controladora agora",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID da controladora",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ControllerFirmwareResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Sem atualização, offline, irrigando ou atualização em andamento",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/device-groups": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-groups"
+                ],
+                "summary": "Listar grupos de dispositivos",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.DeviceGroupResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-groups"
+                ],
+                "summary": "Criar grupo de dispositivos",
+                "parameters": [
+                    {
+                        "description": "Nome do grupo",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateDeviceGroupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeviceGroupResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/device-groups/{uuid}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-groups"
+                ],
+                "summary": "Obter grupo de dispositivos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID do grupo",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeviceGroupDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-groups"
+                ],
+                "summary": "Renomear grupo de dispositivos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID do grupo",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Novo nome",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateDeviceGroupNameRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeviceGroupResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Exclui o grupo; os dispositivos e agendamentos dele continuam existindo, só ficam sem grupo.",
+                "tags": [
+                    "device-groups"
+                ],
+                "summary": "Excluir grupo de dispositivos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID do grupo",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/device-groups/{uuid}/irrigation-commands": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Dispara START ou STOP em todos os dispositivos do grupo. Um device falhando (ex: já irrigando) não cancela os demais.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-groups"
+                ],
+                "summary": "Irrigar/parar o grupo inteiro",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID do grupo",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Ação",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.GroupIrrigationCommandRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.GroupIrrigationCommandResult"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/device-groups/{uuid}/schedules": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cria um agendamento de irrigação idêntico para cada dispositivo do grupo.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-groups"
+                ],
+                "summary": "Criar agendamento para o grupo inteiro",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID do grupo",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados do agendamento",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateGroupScheduleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.IrrigationScheduleResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/device-groups/{uuid}/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Consumo de água, histórico de irrigação e resumo de umidade agregados de todos os dispositivos do grupo.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "device-groups"
+                ],
+                "summary": "Estatísticas do grupo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID do grupo",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Data no formato YYYY-MM-DD",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Período de consumo (day, week ou month)",
+                        "name": "period",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeviceGroupStatisticsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -873,6 +2108,213 @@
                 }
             }
         },
+        "/devices/{uuid}/group": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Move o dispositivo para o grupo informado, ou remove de qualquer grupo se group_uuid for omitido/nulo.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Atribuir dispositivo a um grupo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID do Dispositivo",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Grupo de destino",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AssignDeviceToGroupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeviceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{uuid}/location": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Grava a latitude/longitude do sensor para exibi-lo na aba Mapa. Só o dono do sensor pode alterar.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Posicionar sensor no mapa",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID do Dispositivo",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Coordenadas",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateDeviceLocationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeviceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Remover sensor do mapa",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID do Dispositivo",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeviceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/faqs": {
             "get": {
                 "description": "Retorna uma lista paginada de FAQs",
@@ -986,57 +2428,92 @@
                 }
             }
         },
-        "/help-contents": {
+        "/firmware/latest": {
             "get": {
-                "description": "Retorna uma lista paginada de conteúdos de ajuda",
-                "consumes": [
-                    "application/json"
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "help-contents"
+                    "firmware"
                 ],
-                "summary": "Listar conteúdos de ajuda",
+                "summary": "Última versão do firmware",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.FirmwareReleaseResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Nenhuma versão publicada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/firmware/manifest": {
+            "get": {
+                "description": "Usado pela controladora antes de se atualizar: versão mais recente, tamanho, SHA-256 e caminho relativo do download.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "firmware"
+                ],
+                "summary": "Manifesto do firmware (controladora)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.FirmwareManifestResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Nenhuma versão publicada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/firmware/{uuid}/download": {
+            "get": {
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "firmware"
+                ],
+                "summary": "Baixar imagem do firmware (controladora)",
                 "parameters": [
                     {
-                        "minimum": 1,
-                        "type": "integer",
-                        "description": "Número da página",
-                        "name": "page_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "maximum": 100,
-                        "minimum": 1,
-                        "type": "integer",
-                        "description": "Tamanho da página",
-                        "name": "page_size",
-                        "in": "query",
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID da versão",
+                        "name": "uuid",
+                        "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Sucesso",
+                        "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.HelpContentResponse"
-                            }
+                            "type": "file"
                         }
                     },
-                    "400": {
-                        "description": "Requisição inválida (Erro de paginação)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Erro interno do servidor",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1084,6 +2561,71 @@
                     },
                     "404": {
                         "description": "Conteúdo de ajuda não encontrado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/help_contents": {
+            "get": {
+                "description": "Retorna uma lista paginada de conteúdos de ajuda, opcionalmente filtrada por categoria (FIRST_STEPS, IOT, IRRIGATION, ACCOUNT)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "help-contents"
+                ],
+                "summary": "Listar conteúdos de ajuda",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Número da página",
+                        "name": "page_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 10,
+                        "minimum": 5,
+                        "type": "integer",
+                        "description": "Tamanho da página",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Categoria",
+                        "name": "category",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.HelpContentResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Requisição inválida (Erro de paginação)",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1979,6 +3521,519 @@
                 }
             }
         },
+        "/legal-documents/terms/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna se o usuário autenticado precisa aceitar a versão atual dos termos de uso",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "legal-documents"
+                ],
+                "summary": "Checar aceite dos termos de uso",
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TermsAcceptanceStatusResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/legal-documents/{uuid}/accept": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra o aceite do usuário autenticado para o documento legal informado",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "legal-documents"
+                ],
+                "summary": "Aceitar um documento legal",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "UUID do documento legal",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Sucesso"
+                    },
+                    "400": {
+                        "description": "Requisição inválida (UUID mal formatado)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Documento legal não encontrado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/notification-preferences": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lista cada tipo de notificação automática e se está habilitado para o usuário autenticado.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Listar preferências de notificação",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.NotificationPreferenceResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/notification-preferences/{type}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Atualizar preferência de notificação",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tipo da notificação",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Preferência",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateNotificationPreferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lista as notificações do usuário autenticado, mais recentes primeiro.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Listar notificações",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Página (default 1)",
+                        "name": "page_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Itens por página (default 20)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.NotificationResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/read-all": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Marcar todas as notificações como lidas",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/{uuid}/read": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Marcar notificação como lida",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID da notificação",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.NotificationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/password-reset/confirm": {
+            "post": {
+                "description": "Define a nova senha a partir do token de redefinição recebido por email. Chamado pela página web de redefinição.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Confirma a redefinição de senha",
+                "parameters": [
+                    {
+                        "description": "Token, nova senha e token do captcha",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ConfirmPasswordResetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Senha redefinida com sucesso"
+                    },
+                    "400": {
+                        "description": "Token inválido/expirado, captcha reprovado ou payload inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno no servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/password-reset/request": {
+            "post": {
+                "description": "Envia um email com um link para redefinir a senha, se o email existir. Sempre responde 204, pra não revelar se o email está cadastrado.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Solicita redefinição de senha",
+                "parameters": [
+                    {
+                        "description": "Email e token do captcha",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RequestPasswordResetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Solicitação processada"
+                    },
+                    "400": {
+                        "description": "Payload inválido ou captcha reprovado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno no servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/push-tokens": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Registrar token de push notification",
+                "parameters": [
+                    {
+                        "description": "Token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RegisterPushTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/push-tokens/{token}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Remover token de push notification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/reset-password": {
+            "get": {
+                "description": "Página HTML aberta a partir do link enviado por email. O usuário define a nova senha ali (chama POST /password-reset/confirm).",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Página de redefinição de senha",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token de redefinição de senha recebido por email",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/statistics": {
             "get": {
                 "security": [
@@ -2040,6 +4095,158 @@
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/statistics/soil-health": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Avalia os sensores do usuário: estado atual de cada um (OK, DRY, WET, OFFLINE, FAULT, NO_DATA) contra a faixa ideal de umidade e o percentual do tempo dentro dessa faixa nas últimas 24h. A faixa ideal começa no limite de irrigação automática do sensor (padrão 35%) e vai até 80%.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "statistics"
+                ],
+                "summary": "Saúde do solo",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SoilHealthResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/support/messages": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lista as mensagens do chat de suporte do usuário autenticado, mais recentes primeiro, e marca as respostas do suporte como lidas.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "support"
+                ],
+                "summary": "Listar mensagens do chat de suporte",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Página (default 1)",
+                        "name": "page_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Itens por página (default 50, máx 100)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.SupportMessageResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "support"
+                ],
+                "summary": "Enviar mensagem ao suporte",
+                "parameters": [
+                    {
+                        "description": "Mensagem (até 2000 caracteres)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SendSupportMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SupportMessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2443,11 +4650,64 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Exclui (soft delete) a conta do usuário logado, exigindo a senha como confirmação. Revoga as sessões ativas.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Exclui a conta do usuário autenticado",
+                "parameters": [
+                    {
+                        "description": "Senha para confirmar a exclusão",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeleteAccountRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Conta excluída com sucesso"
+                    },
+                    "400": {
+                        "description": "Senha incorreta ou payload inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno no servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
             }
         },
-        "/users/name/{uuid}": {
+        "/users/name": {
             "put": {
-                "description": "Atualiza o nome completo (full name) de um usuário específico utilizando o seu UUID.",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Atualiza o nome completo (full name) do usuário autenticado.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2459,14 +4719,6 @@
                 ],
                 "summary": "Atualiza o nome do usuário",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "UUID do Usuário",
-                        "name": "uuid",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "description": "Dados para atualização do nome",
                         "name": "request",
@@ -2485,7 +4737,7 @@
                         }
                     },
                     "400": {
-                        "description": "Requisição inválida (Payload JSON ou UUID incorreto)",
+                        "description": "Requisição inválida (Payload JSON incorreto)",
                         "schema": {
                             "type": "object"
                         }
@@ -2561,6 +4813,56 @@
                 }
             }
         },
+        "/users/password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Troca a senha do usuário logado, exigindo a senha atual como confirmação.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Altera a senha do usuário autenticado",
+                "parameters": [
+                    {
+                        "description": "Senha atual e nova senha",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Senha alterada com sucesso"
+                    },
+                    "400": {
+                        "description": "Senha atual incorreta ou payload inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno no servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/users/profile-image": {
             "put": {
                 "security": [
@@ -2618,9 +4920,326 @@
                     }
                 }
             }
+        },
+        "/users/verify-email": {
+            "post": {
+                "description": "Confirma o email a partir do token recebido por email. Endpoint público (chamado pela página web de confirmação).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Confirma o email do usuário",
+                "parameters": [
+                    {
+                        "description": "Token de verificação",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VerifyEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Email confirmado"
+                    },
+                    "400": {
+                        "description": "Token inválido, expirado ou payload inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno no servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/users/verify-email/resend": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Gera um novo token e reenvia o email de confirmação para o usuário autenticado.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Reenvia o email de verificação",
+                "responses": {
+                    "204": {
+                        "description": "Email reenviado (ou já estava verificado)"
+                    },
+                    "500": {
+                        "description": "Erro interno no servidor",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/verify-email": {
+            "get": {
+                "description": "Página HTML aberta a partir do link enviado por email. Confirma o email ao clicar (chama POST /users/verify-email).",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Página de confirmação de email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token de verificação de email recebido por email",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/weather/current": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Repasse autenticado da API do OpenWeather (/weather, unidades métricas, pt_br), com cache de 10 minutos. A chave fica só no servidor.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "weather"
+                ],
+                "summary": "Clima atual da cidade",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Cidade",
+                        "name": "city",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/weather/forecast": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Repasse autenticado da API do OpenWeather (/forecast, unidades métricas, pt_br), com cache de 10 minutos.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "weather"
+                ],
+                "summary": "Previsão do tempo da cidade",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Cidade",
+                        "name": "city",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "dto.AdminUserResponse": {
+            "type": "object",
+            "properties": {
+                "ban_reason": {
+                    "type": "string"
+                },
+                "banned_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "is_admin": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AppVersionResponse": {
+            "type": "object",
+            "properties": {
+                "android_store_url": {
+                    "type": "string"
+                },
+                "ios_store_url": {
+                    "type": "string"
+                },
+                "latest_version": {
+                    "description": "LatestVersion é a versão mais recente publicada nas lojas. Clientes\nabaixo dessa (mas acima da mínima) podem continuar usando o app, só\nrecebem um aviso não-bloqueante sugerindo atualizar.",
+                    "type": "string"
+                },
+                "minimum_version": {
+                    "description": "MinimumVersion é a menor versão ainda aceita. Clientes com versão\ninstalada abaixo dessa devem ser bloqueados até atualizar.",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AssignDeviceToGroupRequest": {
+            "type": "object",
+            "properties": {
+                "group_uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.BanUserRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "current_password",
+                "new_password"
+            ],
+            "properties": {
+                "current_password": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string",
+                    "minLength": 6
+                }
+            }
+        },
+        "dto.ConfirmPasswordResetRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "token"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "token": {
+                    "type": "string"
+                },
+                "turnstile_token": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.ControllerDeviceConfigurationResponse": {
             "type": "object",
             "properties": {
@@ -2662,14 +5281,62 @@
                 "name": {
                     "type": "string"
                 },
-                "user": {
-                    "type": "integer"
-                },
                 "uuid": {
                     "type": "string"
                 },
                 "wifi_ssid": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.ControllerFirmwareResponse": {
+            "type": "object",
+            "properties": {
+                "auto_update": {
+                    "type": "boolean"
+                },
+                "blocked_reason": {
+                    "description": "Why \"update now\" is disabled: OFFLINE, IRRIGATING or IN_PROGRESS.",
+                    "type": "string"
+                },
+                "controller_uuid": {
+                    "type": "string"
+                },
+                "current_version": {
+                    "type": "string"
+                },
+                "latest_version": {
+                    "type": "string"
+                },
+                "ota_error": {
+                    "type": "string"
+                },
+                "ota_status": {
+                    "type": "string"
+                },
+                "ota_target_version": {
+                    "type": "string"
+                },
+                "ota_updated_at": {
+                    "type": "string"
+                },
+                "release_notes": {
+                    "type": "string"
+                },
+                "update_available": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.CreateDeviceGroupRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 100
                 }
             }
         },
@@ -2693,6 +5360,46 @@
                         "ATIVO",
                         "INATIVO"
                     ]
+                }
+            }
+        },
+        "dto.CreateGroupScheduleRequest": {
+            "type": "object",
+            "required": [
+                "days_of_week",
+                "duration_seconds",
+                "start_time"
+            ],
+            "properties": {
+                "days_of_week": {
+                    "type": "string"
+                },
+                "duration_seconds": {
+                    "type": "integer",
+                    "maximum": 86400,
+                    "minimum": 1
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "irrigation_mode": {
+                    "type": "string",
+                    "enum": [
+                        "DURATION",
+                        "HUMIDITY"
+                    ]
+                },
+                "moisture_threshold": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 1
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "start_time": {
+                    "type": "string"
                 }
             }
         },
@@ -2743,7 +5450,9 @@
                     "type": "string"
                 },
                 "dry_time_minutes": {
-                    "type": "integer"
+                    "type": "integer",
+                    "maximum": 10080,
+                    "minimum": 1
                 },
                 "end_hour": {
                     "type": "string"
@@ -2757,11 +5466,13 @@
                 },
                 "max_irrigation_per_day": {
                     "type": "integer",
+                    "maximum": 48,
                     "minimum": 1
                 },
                 "moisture_threshold": {
                     "type": "integer",
-                    "maximum": 100
+                    "maximum": 100,
+                    "minimum": 1
                 },
                 "start_hour": {
                     "type": "string"
@@ -2790,6 +5501,18 @@
                 },
                 "enabled": {
                     "type": "boolean"
+                },
+                "irrigation_mode": {
+                    "type": "string",
+                    "enum": [
+                        "DURATION",
+                        "HUMIDITY"
+                    ]
+                },
+                "moisture_threshold": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 1
                 },
                 "name": {
                     "type": "string",
@@ -2824,6 +5547,122 @@
                 }
             }
         },
+        "dto.DeleteAccountRequest": {
+            "type": "object",
+            "required": [
+                "password"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.DeviceGroupDetailResponse": {
+            "type": "object",
+            "properties": {
+                "avg_soil_moisture": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "device_count": {
+                    "type": "integer"
+                },
+                "devices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.DeviceResponse"
+                    }
+                },
+                "irrigating_count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "online_count": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.DeviceGroupResponse": {
+            "type": "object",
+            "properties": {
+                "avg_soil_moisture": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "device_count": {
+                    "type": "integer"
+                },
+                "irrigating_count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "online_count": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.DeviceGroupStatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "avg_soil_moisture": {
+                    "type": "number"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "device_count": {
+                    "type": "integer"
+                },
+                "group_uuid": {
+                    "type": "string"
+                },
+                "irrigating_count": {
+                    "type": "integer"
+                },
+                "irrigation_history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.IrrigationHistoryResponse"
+                    }
+                },
+                "max_soil_moisture": {
+                    "type": "integer"
+                },
+                "min_soil_moisture": {
+                    "type": "integer"
+                },
+                "online_count": {
+                    "type": "integer"
+                },
+                "period": {
+                    "type": "string"
+                },
+                "water_consumption": {
+                    "$ref": "#/definitions/dto.WaterConsumptionResponse"
+                }
+            }
+        },
         "dto.DeviceResponse": {
             "type": "object",
             "properties": {
@@ -2845,14 +5684,29 @@
                 "last_update": {
                     "type": "string"
                 },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
                 "name": {
                     "type": "string"
+                },
+                "sensor_ok": {
+                    "type": "boolean"
+                },
+                "soil_moisture": {
+                    "type": "integer"
                 },
                 "status": {
                     "type": "string"
                 },
                 "uuid": {
                     "type": "string"
+                },
+                "wifi_rssi": {
+                    "type": "integer"
                 }
             }
         },
@@ -2884,6 +5738,85 @@
                 },
                 "uuid": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.FirmwareManifestResponse": {
+            "type": "object",
+            "properties": {
+                "build": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "sha256": {
+                    "type": "string"
+                },
+                "signature": {
+                    "description": "Base64 DER ECDSA P-256 signature of the SHA-256 digest.",
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.FirmwareReleaseResponse": {
+            "type": "object",
+            "properties": {
+                "build": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "release_notes": {
+                    "type": "string"
+                },
+                "sha256": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.GroupIrrigationCommandRequest": {
+            "type": "object",
+            "required": [
+                "action"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": [
+                        "START",
+                        "STOP"
+                    ]
+                }
+            }
+        },
+        "dto.GroupIrrigationCommandResult": {
+            "type": "object",
+            "properties": {
+                "device_uuid": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         },
@@ -3001,6 +5934,15 @@
                 "enabled": {
                     "type": "boolean"
                 },
+                "irrigation_mode": {
+                    "type": "string"
+                },
+                "last_triggered_at": {
+                    "type": "string"
+                },
+                "moisture_threshold": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -3045,12 +5987,29 @@
                 "password"
             ],
             "properties": {
+                "app_version": {
+                    "type": "string"
+                },
+                "device_model": {
+                    "description": "Campos opcionais de telemetria do dispositivo, enviados pelo app. Apps antigos\nque ainda não mandam esses campos continuam logando normalmente (ficam vazios).",
+                    "type": "string"
+                },
                 "email": {
+                    "type": "string"
+                },
+                "os_version": {
                     "type": "string"
                 },
                 "password": {
                     "type": "string",
                     "minLength": 6
+                },
+                "platform": {
+                    "type": "string",
+                    "enum": [
+                        "android",
+                        "ios"
+                    ]
                 }
             }
         },
@@ -3088,14 +6047,67 @@
                 }
             }
         },
+        "dto.NotificationPreferenceResponse": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.NotificationResponse": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "read_at": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.OAuthLoginRequest": {
             "type": "object",
             "required": [
                 "id_token"
             ],
             "properties": {
+                "app_version": {
+                    "type": "string"
+                },
+                "device_model": {
+                    "type": "string"
+                },
                 "id_token": {
                     "type": "string"
+                },
+                "os_version": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string",
+                    "enum": [
+                        "android",
+                        "ios"
+                    ]
                 }
             }
         },
@@ -3121,6 +6133,25 @@
                 }
             }
         },
+        "dto.RegisterPushTokenRequest": {
+            "type": "object",
+            "required": [
+                "platform",
+                "token"
+            ],
+            "properties": {
+                "platform": {
+                    "type": "string",
+                    "enum": [
+                        "android",
+                        "ios"
+                    ]
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.RenewAccessTokenRequest": {
             "type": "object",
             "required": [
@@ -3140,6 +6171,129 @@
                 },
                 "access_token": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.RequestPasswordResetRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "turnstile_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SendSupportMessageRequest": {
+            "type": "object",
+            "required": [
+                "body"
+            ],
+            "properties": {
+                "body": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SensorHealthResponse": {
+            "type": "object",
+            "properties": {
+                "ideal_max": {
+                    "type": "integer"
+                },
+                "ideal_min": {
+                    "type": "integer"
+                },
+                "last_seen": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "readings_24h": {
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "soil_moisture": {
+                    "type": "integer"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "time_in_range_24h": {
+                    "type": "integer"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SetAutoUpdateRequest": {
+            "type": "object",
+            "required": [
+                "enabled"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.SoilHealthResponse": {
+            "type": "object",
+            "properties": {
+                "avg_moisture": {
+                    "type": "integer"
+                },
+                "generated_at": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "sensors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.SensorHealthResponse"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "summary": {
+                    "$ref": "#/definitions/dto.SoilHealthSummary"
+                }
+            }
+        },
+        "dto.SoilHealthSummary": {
+            "type": "object",
+            "properties": {
+                "dry": {
+                    "type": "integer"
+                },
+                "fault": {
+                    "type": "integer"
+                },
+                "no_data": {
+                    "type": "integer"
+                },
+                "offline": {
+                    "type": "integer"
+                },
+                "ok": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "wet": {
+                    "type": "integer"
                 }
             }
         },
@@ -3169,6 +6323,63 @@
                 },
                 "water_consumption": {
                     "$ref": "#/definitions/dto.WaterConsumptionResponse"
+                }
+            }
+        },
+        "dto.SupportConversationResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "last_body": {
+                    "type": "string"
+                },
+                "last_message_at": {
+                    "type": "string"
+                },
+                "last_sender": {
+                    "type": "string"
+                },
+                "unread_count": {
+                    "type": "integer"
+                },
+                "user_uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SupportMessageResponse": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "read_at": {
+                    "type": "string"
+                },
+                "sender": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TermsAcceptanceStatusResponse": {
+            "type": "object",
+            "properties": {
+                "document": {
+                    "$ref": "#/definitions/dto.LegalDocumentResponse"
+                },
+                "needs_acceptance": {
+                    "type": "boolean"
                 }
             }
         },
@@ -3204,11 +6415,43 @@
                 }
             }
         },
+        "dto.UpdateDeviceGroupNameRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
+        "dto.UpdateDeviceLocationRequest": {
+            "type": "object",
+            "required": [
+                "latitude",
+                "longitude"
+            ],
+            "properties": {
+                "latitude": {
+                    "type": "number",
+                    "maximum": 90,
+                    "minimum": -90
+                },
+                "longitude": {
+                    "type": "number",
+                    "maximum": 180,
+                    "minimum": -180
+                }
+            }
+        },
         "dto.UpdateIrrigationScheduleRequest": {
             "type": "object",
             "required": [
                 "days_of_week",
                 "duration_seconds",
+                "enabled",
                 "start_time"
             ],
             "properties": {
@@ -3222,6 +6465,18 @@
                 },
                 "enabled": {
                     "type": "boolean"
+                },
+                "irrigation_mode": {
+                    "type": "string",
+                    "enum": [
+                        "DURATION",
+                        "HUMIDITY"
+                    ]
+                },
+                "moisture_threshold": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 1
                 },
                 "name": {
                     "type": "string",
@@ -3254,6 +6509,17 @@
                 }
             }
         },
+        "dto.UpdateNotificationPreferenceRequest": {
+            "type": "object",
+            "required": [
+                "enabled"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
         "dto.UpdateUserNameRequest": {
             "type": "object",
             "required": [
@@ -3274,6 +6540,9 @@
                 "email": {
                     "type": "string"
                 },
+                "email_verified": {
+                    "type": "boolean"
+                },
                 "full_name": {
                     "type": "string"
                 },
@@ -3284,6 +6553,17 @@
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.VerifyEmailRequest": {
+            "type": "object",
+            "required": [
+                "token"
+            ],
+            "properties": {
+                "token": {
                     "type": "string"
                 }
             }

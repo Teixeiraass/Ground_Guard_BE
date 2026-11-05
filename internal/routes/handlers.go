@@ -14,4 +14,11 @@ type Handlers interface {
 	IrrigationScheduleHandler
 	StatisticsHandler
 	WebSocketHandler
+	NotificationHandler
+	DeviceGroupHandler
+	AdminHandler
+	PasswordResetHandler
+	SupportHandler
+	FirmwareHandler
+	WeatherHandler
 }

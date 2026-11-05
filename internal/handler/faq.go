@@ -41,7 +41,7 @@ func (server *Server) GetFaq(ctx *gin.Context) {
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (server *Server) ListFaq(ctx *gin.Context) {
 
 	faqs, err := server.ContentService.ListFaq(ctx, req.PageSize, (req.PageID-1)*req.PageSize)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 

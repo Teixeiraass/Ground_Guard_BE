@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
+	"github.com/Teixeiraass/ground_guard_be/internal/middleware"
+	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -29,14 +31,14 @@ func (server *Server) CreateIrrigationPreference(ctx *gin.Context) {
 		return
 	}
 
-	irrigationPreference, err := server.IrrigationService.CreateIrrigationPreference(ctx, req)
+	irrigationPreference, err := server.IrrigationService.CreateIrrigationPreference(ctx, req, ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
 		log.Printf("erro ao criar irrigation preference: %v", err)
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -68,14 +70,14 @@ func (server *Server) GetIrrigationPreference(ctx *gin.Context) {
 		return
 	}
 
-	irrigationPreference, err := server.IrrigationService.GetIrrigationPreference(ctx, irrigationPreferenceUUID)
+	irrigationPreference, err := server.IrrigationService.GetIrrigationPreference(ctx, irrigationPreferenceUUID, ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -107,14 +109,14 @@ func (server *Server) GetIrrigationPreferenceByDevice(ctx *gin.Context) {
 		return
 	}
 
-	irrigationPreference, err := server.IrrigationService.GetIrrigationPreferenceByDevice(ctx, deviceUUID)
+	irrigationPreference, err := server.IrrigationService.GetIrrigationPreferenceByDevice(ctx, deviceUUID, ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 

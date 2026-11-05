@@ -16,6 +16,10 @@ INSERT INTO devices (
 SELECT * FROM devices
 WHERE uuid = $1 LIMIT 1;
 
+-- name: GetDeviceByID :one
+SELECT * FROM devices
+WHERE id = $1 LIMIT 1;
+
 -- name: GetDeviceForUpdate :one
 SELECT * FROM devices
 WHERE uuid = $1 LIMIT 1
@@ -109,12 +113,24 @@ WHERE devices.device_uid = $1
 LIMIT 1;
 
 -- name: UpdateDeviceTelemetryByUID :one
+-- A NULL soil_moisture keeps the last good reading (missing field or faulty sensor).
 UPDATE devices
 SET
-    last_seen = $2,
-    status = $3,
-    soil_moisture = $4
-WHERE device_uid = $1
+    last_seen = @last_seen,
+    status = @status,
+    soil_moisture = COALESCE(sqlc.narg(soil_moisture), soil_moisture),
+    soil_sensor_ok = sqlc.narg(soil_sensor_ok),
+    soil_raw = sqlc.narg(soil_raw),
+    wifi_rssi = sqlc.narg(wifi_rssi)
+WHERE device_uid = @device_uid
+RETURNING *;
+
+-- name: UpdateDeviceLocation :one
+UPDATE devices
+SET
+    latitude = sqlc.narg(latitude),
+    longitude = sqlc.narg(longitude)
+WHERE uuid = @uuid
 RETURNING *;
 
 -- name: UpdateDeviceRegistration :one
@@ -128,7 +144,13 @@ RETURNING *;
 -- name: UpdateDeviceState :one
 UPDATE devices
 SET
-    is_online = $2, 
+    is_online = $2,
     is_irrigating = $3
 WHERE device_uid = $1
+RETURNING *;
+
+-- name: AssignDeviceToGroup :one
+UPDATE devices
+SET group_id = $2
+WHERE uuid = $1
 RETURNING *;

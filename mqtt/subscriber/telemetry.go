@@ -17,9 +17,19 @@ import (
 )
 
 type TelemetrySubscriber struct {
-	client client.Client
-	store  db.Store
-	hub    *websocket.Hub
+	client     client.Client
+	store      db.Store
+	hub        *websocket.Hub
+	otaHandler OtaEventHandler
+}
+
+// OtaEventHandler processes firmware-update progress reported by controllers.
+type OtaEventHandler interface {
+	HandleOtaEvent(ctx context.Context, deviceUID string, event mqtt.OtaEventPayload) error
+}
+
+func (s *TelemetrySubscriber) SetOtaEventHandler(h OtaEventHandler) {
+	s.otaHandler = h
 }
 
 const maxControllerConfigurationAttempts int32 = 5
@@ -122,6 +132,20 @@ func minInt32(value, max int32) int32 {
 	return max
 }
 
+func nullBool(v *bool) sql.NullBool {
+	if v == nil {
+		return sql.NullBool{}
+	}
+	return sql.NullBool{Bool: *v, Valid: true}
+}
+
+func nullInt32(v *int32) sql.NullInt32 {
+	if v == nil {
+		return sql.NullInt32{}
+	}
+	return sql.NullInt32{Int32: *v, Valid: true}
+}
+
 func (s *TelemetrySubscriber) RetryPendingControllerConfiguration(ctx context.Context, deviceUID string) error {
 	return s.retryControllerConfiguration(ctx, deviceUID)
 }
@@ -146,11 +170,18 @@ func (s *TelemetrySubscriber) RetryAllPendingControllerConfigurations(ctx contex
 func (s *TelemetrySubscriber) Start() error {
 	if reconnectClient, ok := s.client.(client.ReconnectAwareClient); ok {
 		reconnectClient.SetOnConnect(func() {
+			if err := s.subscribeTopics(); err != nil {
+				log.Printf("mqtt subscription restore error: %v", err)
+			}
 			if err := s.RetryAllPendingControllerConfigurations(context.Background()); err != nil {
 				fmt.Printf("mqtt controller configuration retry error: %v\n", err)
 			}
 		})
 	}
+	return s.subscribeTopics()
+}
+
+func (s *TelemetrySubscriber) subscribeTopics() error {
 	if err := s.client.Subscribe(
 		mqtt.DeviceTelemetryWildcard(s.client.TopicPrefix()),
 		s.handleTelemetryMessage,
@@ -202,6 +233,14 @@ func (s *TelemetrySubscriber) HandleEvent(ctx context.Context, topic string, pay
 	deviceUID, ok := mqtt.DeviceUIDFromEventTopic(s.client.TopicPrefix(), topic)
 	if !ok {
 		return fmt.Errorf("invalid event topic: %s", topic)
+	}
+
+	var otaEvent mqtt.OtaEventPayload
+	if err := json.Unmarshal(payload, &otaEvent); err == nil && otaEvent.OtaStatus != "" {
+		if s.otaHandler == nil {
+			return fmt.Errorf("ota event received but no handler is configured")
+		}
+		return s.otaHandler.HandleOtaEvent(ctx, deviceUID, otaEvent)
 	}
 
 	var event IrrigationEventPayload
@@ -289,12 +328,18 @@ func (s *TelemetrySubscriber) HandleEvent(ctx context.Context, topic string, pay
 
 	switch command.Action {
 	case "START":
+		triggerType := "MANUAL"
+		if command.ScheduleID.Valid {
+			triggerType = "AGENDADO"
+		}
+
 		action, err := s.store.CreateIrrigationAction(ctx, db.CreateIrrigationActionParams{
 			DeviceID:        device.ID,
 			UserID:          command.UserID,
 			DurationSeconds: command.DurationSeconds,
 			Status:          IrrigationActionActive,
-			TriggerType:     "MANUAL",
+			TriggerType:     triggerType,
+			ScheduleID:      command.ScheduleID,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create irrigation action: %w", err)
@@ -464,6 +509,18 @@ func (s *TelemetrySubscriber) HandleTelemetry(ctx context.Context, topic string,
 		if err != nil {
 			return fmt.Errorf("update controller device telemetry: %w", err)
 		}
+		if telemetry.FirmwareVersion != "" && util.IsValidVersion(telemetry.FirmwareVersion) &&
+			(telemetry.FirmwareVersion != updatedController.FirmwareVersion ||
+				telemetry.FirmwareBuild != updatedController.FirmwareBuild.String) {
+			updatedController, err = s.store.UpdateControllerDeviceFirmware(ctx, db.UpdateControllerDeviceFirmwareParams{
+				ID:              updatedController.ID,
+				FirmwareVersion: telemetry.FirmwareVersion,
+				FirmwareBuild:   sql.NullString{String: telemetry.FirmwareBuild, Valid: telemetry.FirmwareBuild != ""},
+			})
+			if err != nil {
+				return fmt.Errorf("update controller firmware version: %w", err)
+			}
+		}
 		if err := s.retryControllerConfiguration(ctx, deviceUID); err != nil {
 			fmt.Printf("mqtt controller configuration retry error on telemetry for %s: %v\n", deviceUID, err)
 		}
@@ -488,51 +545,60 @@ func (s *TelemetrySubscriber) HandleTelemetry(ctx context.Context, topic string,
 		return fmt.Errorf("find controller device by uid: %w", controllerErr)
 	}
 
+	moisture, moistureValid := telemetry.ValidSoilMoisture()
+
 	device, err := s.store.UpdateDeviceTelemetryByUID(ctx, db.UpdateDeviceTelemetryByUIDParams{
-		DeviceUid: deviceUID,
-		LastSeen:  util.ToNullTime(time.Now()),
-		Status:    status,
-		SoilMoisture: sql.NullInt32{
-			Int32: telemetry.SoilMoisture,
-			Valid: true,
-		},
+		DeviceUid:    deviceUID,
+		LastSeen:     util.ToNullTime(time.Now()),
+		Status:       status,
+		SoilMoisture: sql.NullInt32{Int32: moisture, Valid: moistureValid},
+		SoilSensorOk: nullBool(telemetry.SensorOK),
+		SoilRaw:      nullInt32(telemetry.SoilRaw),
+		WifiRssi:     nullInt32(telemetry.RSSI),
 	})
 	if err != nil {
 		return fmt.Errorf("update device telemetry: %w", err)
 	}
-	latestHistory, err := s.store.GetLatestDeviceSensorHistory(ctx, device.ID)
-	shouldInsertHistory := false
-	if err != nil {
-		if err == sql.ErrNoRows {
-			shouldInsertHistory = true
-		} else {
-			return fmt.Errorf("failed to get latest sensor history: %w", err)
-		}
-	} else {
-		if time.Since(latestHistory.CreatedAt) >= 5*time.Minute {
-			shouldInsertHistory = true
-		}
-	}
 
-	if shouldInsertHistory {
-		_, err = s.store.CreateDeviceSensorHistory(ctx, db.CreateDeviceSensorHistoryParams{
-			DeviceID:     device.ID,
-			SoilMoisture: telemetry.SoilMoisture,
-		})
+	if moistureValid {
+		latestHistory, err := s.store.GetLatestDeviceSensorHistory(ctx, device.ID)
+		shouldInsertHistory := false
 		if err != nil {
-			return fmt.Errorf("failed to create sensor history: %w", err)
+			if err == sql.ErrNoRows {
+				shouldInsertHistory = true
+			} else {
+				return fmt.Errorf("failed to get latest sensor history: %w", err)
+			}
+		} else if time.Since(latestHistory.CreatedAt) >= 5*time.Minute {
+			shouldInsertHistory = true
+		}
+
+		if shouldInsertHistory {
+			_, err = s.store.CreateDeviceSensorHistory(ctx, db.CreateDeviceSensorHistoryParams{
+				DeviceID:     device.ID,
+				SoilMoisture: moisture,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to create sensor history: %w", err)
+			}
 		}
 	}
 
 	userID, err := s.store.GetDeviceUserIDByUID(ctx, deviceUID)
 	if err == nil && userID.Valid && s.hub != nil {
-		s.hub.BroadcastToUser(userID.Int64, map[string]any{
-			"type":          "device_telemetry",
-			"device_uid":    deviceUID,
-			"soil_moisture": telemetry.SoilMoisture,
-			"wifi_ssid":     telemetry.WifiSSID,
-			"ip_address":    telemetry.IPAddress,
-		})
+		event := map[string]any{
+			"type":       "device_telemetry",
+			"device_uid": deviceUID,
+			"wifi_ssid":  telemetry.WifiSSID,
+			"ip_address": telemetry.IPAddress,
+		}
+		if moistureValid {
+			event["soil_moisture"] = moisture
+		}
+		if telemetry.SensorOK != nil {
+			event["sensor_ok"] = *telemetry.SensorOK
+		}
+		s.hub.BroadcastToUser(userID.Int64, event)
 	}
 	log.Printf("mqtt telemetry device updated device_uid=%s status=%s ip=%s wifi_ssid=%s",
 		deviceUID, status, telemetry.IPAddress, telemetry.WifiSSID)

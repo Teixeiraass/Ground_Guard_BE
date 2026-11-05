@@ -11,6 +11,32 @@ import (
 	"github.com/google/uuid"
 )
 
+const getLatestActiveLegalDocumentByType = `-- name: GetLatestActiveLegalDocumentByType :one
+SELECT id, uuid, type, version, title, content, active, published_at, created_at
+FROM legal_documents
+WHERE type = $1
+AND active = true
+ORDER BY published_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetLatestActiveLegalDocumentByType(ctx context.Context, type_ string) (LegalDocument, error) {
+	row := q.db.QueryRowContext(ctx, getLatestActiveLegalDocumentByType, type_)
+	var i LegalDocument
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.Type,
+		&i.Version,
+		&i.Title,
+		&i.Content,
+		&i.Active,
+		&i.PublishedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getLegalDocument = `-- name: GetLegalDocument :one
 SELECT id, uuid, type, version, title, content, active, published_at, created_at
 FROM legal_documents

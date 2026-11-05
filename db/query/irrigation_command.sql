@@ -3,12 +3,14 @@ INSERT INTO irrigation_commands (
     device_id,
     user_id,
     action,
-    duration_seconds
+    duration_seconds,
+    schedule_id
 ) VALUES (
     $1,
     $2,
     $3,
-    $4
+    $4,
+    $5
 )
 RETURNING *;
 

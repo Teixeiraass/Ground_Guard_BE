@@ -51,14 +51,23 @@ func (server *Server) OAuthLogin(ctx *gin.Context) {
 		EmailVerified: identity.EmailVerified,
 		Picture:       identity.Picture,
 	})
+	if errors.Is(err, ErrOAuthEmailNotVerified) {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "verifique seu e-mail no provedor antes de entrar", "code": "OAUTH_EMAIL_NOT_VERIFIED"})
+		return
+	}
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
-	rsp, err := server.createLoginResponse(ctx, user, ctx.Request.UserAgent(), ctx.ClientIP())
+	rsp, err := server.createLoginResponse(ctx, user, ctx.Request.UserAgent(), ctx.ClientIP(), deviceInfo{
+		DeviceModel: req.DeviceModel,
+		Platform:    req.Platform,
+		OsVersion:   req.OsVersion,
+		AppVersion:  req.AppVersion,
+	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 

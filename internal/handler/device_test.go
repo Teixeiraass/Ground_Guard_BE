@@ -97,6 +97,7 @@ func TestGetDeviceAPI(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
+			store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
 			tc.buildStubs(store)
 
 			server := newTestServer(t, store)

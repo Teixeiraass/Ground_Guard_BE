@@ -16,6 +16,7 @@ import (
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/Teixeiraass/ground_guard_be/internal/middleware"
 	mockmqtt "github.com/Teixeiraass/ground_guard_be/mqtt/mock"
+	"github.com/Teixeiraass/ground_guard_be/push"
 	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/gin-gonic/gin"
@@ -81,10 +82,11 @@ func TestListIrrigationHistoryAPI(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
+			store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
 			mqttClient := mockmqtt.NewMockClient(ctrl)
 			tc.buildStubs(store, mqttClient)
 
-			server, err := NewServer(util.Config{TokenSymmetricKey: util.RandomString(32), AccessTokenDuration: time.Minute}, store, mqttClient)
+			server, err := NewServer(util.Config{TokenSymmetricKey: util.RandomString(32), AccessTokenDuration: time.Minute}, store, mqttClient, push.NewNoopSender())
 			require.NoError(t, err)
 
 			recorder := httptest.NewRecorder()
@@ -119,6 +121,9 @@ func TestGetIrrigationHistoryAPI(t *testing.T) {
 				store.EXPECT().
 					GetIrrigationAction(gomock.Any(), gomock.Eq(action.Uuid)).
 					Return(action, nil)
+				deviceUUID := util.RandomUuid()
+				store.EXPECT().GetDeviceByID(gomock.Any(), action.DeviceID).Return(db.Device{ID: action.DeviceID, Uuid: deviceUUID}, nil)
+				store.EXPECT().GetDeviceUserID(gomock.Any(), deviceUUID).Return(sql.NullInt64{Int64: user.ID, Valid: true}, nil)
 				mqttClient.EXPECT().TopicPrefix().Times(0)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
@@ -136,6 +141,27 @@ func TestGetIrrigationHistoryAPI(t *testing.T) {
 		},
 	}
 
+	testCases = append(testCases, struct {
+		name          string
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		buildStubs    func(store *mockdb.MockStore, mqttClient *mockmqtt.MockClient)
+		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}{
+		name: "AnotherUsersHistoryIsNotFound",
+		setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			middleware.AddAuthorization(t, request, tokenMaker, middleware.AuthorizationTypeBearer, user.Username, user.ID, user.Uuid, time.Minute)
+		},
+		buildStubs: func(store *mockdb.MockStore, mqttClient *mockmqtt.MockClient) {
+			store.EXPECT().GetIrrigationAction(gomock.Any(), gomock.Eq(action.Uuid)).Return(action, nil)
+			deviceUUID := util.RandomUuid()
+			store.EXPECT().GetDeviceByID(gomock.Any(), action.DeviceID).Return(db.Device{ID: action.DeviceID, Uuid: deviceUUID}, nil)
+			store.EXPECT().GetDeviceUserID(gomock.Any(), deviceUUID).Return(sql.NullInt64{Int64: user.ID + 1, Valid: true}, nil)
+		},
+		checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+			require.Equal(t, http.StatusNotFound, recorder.Code)
+		},
+	})
+
 	for i := range testCases {
 		tc := testCases[i]
 
@@ -144,10 +170,11 @@ func TestGetIrrigationHistoryAPI(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
+			store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
 			mqttClient := mockmqtt.NewMockClient(ctrl)
 			tc.buildStubs(store, mqttClient)
 
-			server, err := NewServer(util.Config{TokenSymmetricKey: util.RandomString(32), AccessTokenDuration: time.Minute}, store, mqttClient)
+			server, err := NewServer(util.Config{TokenSymmetricKey: util.RandomString(32), AccessTokenDuration: time.Minute}, store, mqttClient, push.NewNoopSender())
 			require.NoError(t, err)
 
 			recorder := httptest.NewRecorder()
@@ -200,6 +227,7 @@ func TestGetWaterConsumptionAPI(t *testing.T) {
 	defer ctrl.Finish()
 
 	store := mockdb.NewMockStore(ctrl)
+	store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
 	mqttClient := mockmqtt.NewMockClient(ctrl)
 	store.EXPECT().GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).Return(device, nil)
 	store.EXPECT().GetDeviceUserID(gomock.Any(), gomock.Eq(device.Uuid)).Return(sql.NullInt64{Int64: user.ID, Valid: true}, nil)
@@ -208,7 +236,7 @@ func TestGetWaterConsumptionAPI(t *testing.T) {
 		Return(storeExpectation, nil)
 	mqttClient.EXPECT().TopicPrefix().Times(0)
 
-	server, err := NewServer(util.Config{TokenSymmetricKey: util.RandomString(32), AccessTokenDuration: time.Minute}, store, mqttClient)
+	server, err := NewServer(util.Config{TokenSymmetricKey: util.RandomString(32), AccessTokenDuration: time.Minute}, store, mqttClient, push.NewNoopSender())
 	require.NoError(t, err)
 
 	recorder := httptest.NewRecorder()
@@ -264,6 +292,7 @@ func TestGetStatisticsAPI(t *testing.T) {
 	defer ctrl.Finish()
 
 	store := mockdb.NewMockStore(ctrl)
+	store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
 	mqttClient := mockmqtt.NewMockClient(ctrl)
 	store.EXPECT().GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).Return(device, nil).Times(2)
 	store.EXPECT().GetDeviceUserID(gomock.Any(), gomock.Eq(device.Uuid)).Return(sql.NullInt64{Int64: user.ID, Valid: true}, nil).Times(2)
@@ -271,7 +300,7 @@ func TestGetStatisticsAPI(t *testing.T) {
 	store.EXPECT().ListDevicesByUserID(gomock.Any(), gomock.Any()).Return([]db.Device{device}, nil)
 	mqttClient.EXPECT().TopicPrefix().Times(0)
 
-	server, err := NewServer(util.Config{TokenSymmetricKey: util.RandomString(32), AccessTokenDuration: time.Minute}, store, mqttClient)
+	server, err := NewServer(util.Config{TokenSymmetricKey: util.RandomString(32), AccessTokenDuration: time.Minute}, store, mqttClient, push.NewNoopSender())
 	require.NoError(t, err)
 
 	recorder := httptest.NewRecorder()
@@ -364,8 +393,9 @@ func TestCreateIrrigationCommandAPI(t *testing.T) {
 					Times(0)
 
 				expectedPayload, err := json.Marshal(dto.IrrigationCommandPayload{
-					CommandID: commandUUID.String(),
-					Action:    "START",
+					CommandID:       commandUUID.String(),
+					LegacyCommandID: commandUUID.String(),
+					Action:          "START",
 					DurationSeconds: func() *int32 {
 						v := int32(300)
 						return &v
@@ -536,13 +566,14 @@ func TestCreateIrrigationCommandAPI(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
+			store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
 			mqttClient := mockmqtt.NewMockClient(ctrl)
 			tc.buildStubs(store, mqttClient)
 
 			server, err := NewServer(util.Config{
 				TokenSymmetricKey:   util.RandomString(32),
 				AccessTokenDuration: time.Minute,
-			}, store, mqttClient)
+			}, store, mqttClient, push.NewNoopSender())
 			require.NoError(t, err)
 
 			recorder := httptest.NewRecorder()

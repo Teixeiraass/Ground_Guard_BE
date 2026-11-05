@@ -17,7 +17,7 @@ const claimControllerDeviceByUID = `-- name: ClaimControllerDeviceByUID :one
 UPDATE controller_devices
 SET user_id = $1
 WHERE UPPER(controller_device_uid) = UPPER(CAST($2 AS TEXT)) AND (user_id IS NULL OR user_id = $1)
-RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at
+RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version
 `
 
 type ClaimControllerDeviceByUIDParams struct {
@@ -42,6 +42,13 @@ func (q *Queries) ClaimControllerDeviceByUID(ctx context.Context, arg ClaimContr
 		&i.LastSeen,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.AutoUpdate,
+		&i.OtaStatus,
+		&i.OtaTargetVersion,
+		&i.OtaError,
+		&i.OtaRequestedAt,
+		&i.OtaUpdatedAt,
+		&i.UpdateNotifiedVersion,
 	)
 	return i, err
 }
@@ -59,7 +66,7 @@ INSERT INTO controller_devices (
   user_id
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8, $9
-) RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at
+) RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version
 `
 
 type CreateControllerDeviceParams struct {
@@ -101,12 +108,19 @@ func (q *Queries) CreateControllerDevice(ctx context.Context, arg CreateControll
 		&i.LastSeen,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.AutoUpdate,
+		&i.OtaStatus,
+		&i.OtaTargetVersion,
+		&i.OtaError,
+		&i.OtaRequestedAt,
+		&i.OtaUpdatedAt,
+		&i.UpdateNotifiedVersion,
 	)
 	return i, err
 }
 
 const getControllerDevice = `-- name: GetControllerDevice :one
-SELECT id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at FROM controller_devices
+SELECT id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version FROM controller_devices
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -127,12 +141,19 @@ func (q *Queries) GetControllerDevice(ctx context.Context, argUuid uuid.UUID) (C
 		&i.LastSeen,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.AutoUpdate,
+		&i.OtaStatus,
+		&i.OtaTargetVersion,
+		&i.OtaError,
+		&i.OtaRequestedAt,
+		&i.OtaUpdatedAt,
+		&i.UpdateNotifiedVersion,
 	)
 	return i, err
 }
 
 const getControllerDeviceByID = `-- name: GetControllerDeviceByID :one
-SELECT id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at FROM controller_devices
+SELECT id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version FROM controller_devices
 WHERE id = $1 LIMIT 1
 `
 
@@ -153,12 +174,19 @@ func (q *Queries) GetControllerDeviceByID(ctx context.Context, id int64) (Contro
 		&i.LastSeen,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.AutoUpdate,
+		&i.OtaStatus,
+		&i.OtaTargetVersion,
+		&i.OtaError,
+		&i.OtaRequestedAt,
+		&i.OtaUpdatedAt,
+		&i.UpdateNotifiedVersion,
 	)
 	return i, err
 }
 
 const getControllerDeviceByUID = `-- name: GetControllerDeviceByUID :one
-SELECT id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at FROM controller_devices
+SELECT id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version FROM controller_devices
 WHERE UPPER(controller_device_uid) = UPPER(CAST($1 AS TEXT)) LIMIT 1
 `
 
@@ -179,12 +207,19 @@ func (q *Queries) GetControllerDeviceByUID(ctx context.Context, controllerDevice
 		&i.LastSeen,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.AutoUpdate,
+		&i.OtaStatus,
+		&i.OtaTargetVersion,
+		&i.OtaError,
+		&i.OtaRequestedAt,
+		&i.OtaUpdatedAt,
+		&i.UpdateNotifiedVersion,
 	)
 	return i, err
 }
 
 const getControllerDeviceForUpdate = `-- name: GetControllerDeviceForUpdate :one
-SELECT id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at FROM controller_devices
+SELECT id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version FROM controller_devices
 WHERE uuid = $1 LIMIT 1
 FOR NO KEY UPDATE
 `
@@ -206,12 +241,19 @@ func (q *Queries) GetControllerDeviceForUpdate(ctx context.Context, argUuid uuid
 		&i.LastSeen,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.AutoUpdate,
+		&i.OtaStatus,
+		&i.OtaTargetVersion,
+		&i.OtaError,
+		&i.OtaRequestedAt,
+		&i.OtaUpdatedAt,
+		&i.UpdateNotifiedVersion,
 	)
 	return i, err
 }
 
 const listControllerDevices = `-- name: ListControllerDevices :many
-SELECT id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at FROM controller_devices
+SELECT id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version FROM controller_devices
 WHERE user_id = $1
 ORDER BY id
 LIMIT $2
@@ -247,6 +289,13 @@ func (q *Queries) ListControllerDevices(ctx context.Context, arg ListControllerD
 			&i.LastSeen,
 			&i.UserID,
 			&i.CreatedAt,
+			&i.AutoUpdate,
+			&i.OtaStatus,
+			&i.OtaTargetVersion,
+			&i.OtaError,
+			&i.OtaRequestedAt,
+			&i.OtaUpdatedAt,
+			&i.UpdateNotifiedVersion,
 		); err != nil {
 			return nil, err
 		}
@@ -265,7 +314,7 @@ const unlinkControllerDeviceFromUser = `-- name: UnlinkControllerDeviceFromUser 
 UPDATE controller_devices
 SET user_id = NULL
 WHERE uuid = $1 AND user_id = $2
-RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at
+RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version
 `
 
 type UnlinkControllerDeviceFromUserParams struct {
@@ -290,6 +339,13 @@ func (q *Queries) UnlinkControllerDeviceFromUser(ctx context.Context, arg Unlink
 		&i.LastSeen,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.AutoUpdate,
+		&i.OtaStatus,
+		&i.OtaTargetVersion,
+		&i.OtaError,
+		&i.OtaRequestedAt,
+		&i.OtaUpdatedAt,
+		&i.UpdateNotifiedVersion,
 	)
 	return i, err
 }
@@ -303,7 +359,7 @@ SET
     wifi_ssid = $4,
     last_seen = NOW()
 WHERE UPPER(controller_device_uid) = UPPER(CAST($5 AS TEXT))
-RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at
+RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version
 `
 
 type UpdateControllerDeviceRegistrationParams struct {
@@ -337,6 +393,13 @@ func (q *Queries) UpdateControllerDeviceRegistration(ctx context.Context, arg Up
 		&i.LastSeen,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.AutoUpdate,
+		&i.OtaStatus,
+		&i.OtaTargetVersion,
+		&i.OtaError,
+		&i.OtaRequestedAt,
+		&i.OtaUpdatedAt,
+		&i.UpdateNotifiedVersion,
 	)
 	return i, err
 }
@@ -346,7 +409,7 @@ UPDATE controller_devices
 SET
     is_online = $1
 WHERE UPPER(controller_device_uid) = UPPER(CAST($2 AS TEXT))
-RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at
+RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version
 `
 
 type UpdateControllerDeviceStateParams struct {
@@ -371,6 +434,13 @@ func (q *Queries) UpdateControllerDeviceState(ctx context.Context, arg UpdateCon
 		&i.LastSeen,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.AutoUpdate,
+		&i.OtaStatus,
+		&i.OtaTargetVersion,
+		&i.OtaError,
+		&i.OtaRequestedAt,
+		&i.OtaUpdatedAt,
+		&i.UpdateNotifiedVersion,
 	)
 	return i, err
 }
@@ -382,7 +452,7 @@ SET
     ip_address = $2,
     wifi_ssid = $3
 WHERE UPPER(controller_device_uid) = UPPER(CAST($4 AS TEXT))
-RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at
+RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version
 `
 
 type UpdateControllerDeviceTelemetryByUIDParams struct {
@@ -414,6 +484,13 @@ func (q *Queries) UpdateControllerDeviceTelemetryByUID(ctx context.Context, arg 
 		&i.LastSeen,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.AutoUpdate,
+		&i.OtaStatus,
+		&i.OtaTargetVersion,
+		&i.OtaError,
+		&i.OtaRequestedAt,
+		&i.OtaUpdatedAt,
+		&i.UpdateNotifiedVersion,
 	)
 	return i, err
 }
@@ -422,7 +499,7 @@ const updateNameControllerDevice = `-- name: UpdateNameControllerDevice :one
 UPDATE controller_devices
 set name = $2
 WHERE uuid = $1
-RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at
+RETURNING id, uuid, controller_device_uid, name, firmware_version, firmware_build, last_update, ip_address, wifi_ssid, is_online, last_seen, user_id, created_at, auto_update, ota_status, ota_target_version, ota_error, ota_requested_at, ota_updated_at, update_notified_version
 `
 
 type UpdateNameControllerDeviceParams struct {
@@ -447,6 +524,13 @@ func (q *Queries) UpdateNameControllerDevice(ctx context.Context, arg UpdateName
 		&i.LastSeen,
 		&i.UserID,
 		&i.CreatedAt,
+		&i.AutoUpdate,
+		&i.OtaStatus,
+		&i.OtaTargetVersion,
+		&i.OtaError,
+		&i.OtaRequestedAt,
+		&i.OtaUpdatedAt,
+		&i.UpdateNotifiedVersion,
 	)
 	return i, err
 }

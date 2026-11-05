@@ -20,6 +20,8 @@ services:
       - "1883:1883" # Keep MQTT open for IoT devices
     volumes:
       - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mqtt/acl.conf:/mosquitto/config/acl.conf:ro
+      - ./mqtt/passwd:/mosquitto/config/passwd:ro
 
   api:
     build:
@@ -31,6 +33,7 @@ services:
     # DB_SOURCE, MQTT_BROKER_URL, Google OAuth, etc., should be configured in the .env file on the server.
     # Ex: DB_SOURCE=postgresql://root:secret@postgres:5432/ground_guard?sslmode=disable
     # Ex: MQTT_BROKER_URL=tcp://mosquitto:1883
+    # Required: MQTT_USERNAME=ground-guard-api and MQTT_PASSWORD (see mqtt/passwd)
     depends_on:
       - postgres
       - mosquitto

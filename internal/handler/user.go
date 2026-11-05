@@ -2,14 +2,16 @@ package handler
 
 import (
 	"database/sql"
+	"errors"
 	"io"
 	"net/http"
 
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/Teixeiraass/ground_guard_be/internal/middleware"
+	"github.com/Teixeiraass/ground_guard_be/internal/service"
 	"github.com/Teixeiraass/ground_guard_be/token"
+	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 // CreateUser
@@ -37,7 +39,7 @@ func (server *Server) CreateUser(ctx *gin.Context) {
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -65,7 +67,7 @@ func (server *Server) GetUser(ctx *gin.Context) {
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -89,20 +91,35 @@ func (server *Server) LoginUser(ctx *gin.Context) {
 	var req dto.LoginUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// Per-account limit on failed attempts, on top of the per-IP one: stops
+	// password guessing against one account spread over many IPs.
+	accountKey := "login|" + service.NormalizeEmail(req.Email)
+	if blocked, wait := server.loginAccountLimiter.Blocked(accountKey); blocked {
+		middleware.TooManyRequests(ctx, wait)
+		return
 	}
 
 	rsp, err := server.UserService.LoginUser(ctx, req, ctx.Request.UserAgent(), ctx.ClientIP())
 	if err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+		// Unknown email and wrong password answer the same, so the login
+		// can't be used to discover which emails have an account.
+		if err.Error() == "unauthorized" {
+			server.loginAccountLimiter.Hit(accountKey)
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 			return
 		}
-		if err.Error() == "unauthorized" {
-			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		if errors.Is(err, service.ErrUserBanned) {
+			ctx.JSON(http.StatusForbidden, gin.H{
+				"error": "sua conta foi suspensa",
+				"code":  "USER_BANNED",
+			})
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -139,7 +156,7 @@ func (server *Server) RenewAccessToken(ctx *gin.Context) {
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -174,7 +191,7 @@ func (server *Server) LogoutUser(ctx *gin.Context) {
 			ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -185,16 +202,16 @@ func (server *Server) LogoutUser(ctx *gin.Context) {
 
 // UpdateUserName
 // @Summary      Atualiza o nome do usuário
-// @Description  Atualiza o nome completo (full name) de um usuário específico utilizando o seu UUID.
+// @Description  Atualiza o nome completo (full name) do usuário autenticado.
 // @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        uuid    path      string                     true  "UUID do Usuário" Format(uuid)
+// @Security     BearerAuth
 // @Param        request body      dto.UpdateUserNameRequest  true  "Dados para atualização do nome"
 // @Success      200     {object}  dto.UserResponse           "Usuário atualizado com sucesso"
-// @Failure      400     {object}  object                     "Requisição inválida (Payload JSON ou UUID incorreto)"
+// @Failure      400     {object}  object                     "Requisição inválida (Payload JSON incorreto)"
 // @Failure      500     {object}  object                     "Erro interno no servidor"
-// @Router       /users/name/{uuid} [put]
+// @Router       /users/name [put]
 func (server *Server) UpdateUserName(ctx *gin.Context) {
 	var req dto.UpdateUserNameRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -202,21 +219,134 @@ func (server *Server) UpdateUserName(ctx *gin.Context) {
 		return
 	}
 
-	uuidStr := ctx.Param("uuid")
+	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 
-	userUUID, err := uuid.Parse(uuidStr)
+	user, err := server.UserService.UpdateUserName(ctx, payload.UserUUID, req.FullName)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	user, err := server.UserService.UpdateUserName(ctx, userUUID, req.FullName)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, dto.NewUserResponse(*user))
+}
+
+// ChangePassword
+// @Summary      Altera a senha do usuário autenticado
+// @Description  Troca a senha do usuário logado, exigindo a senha atual como confirmação.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request body      dto.ChangePasswordRequest  true  "Senha atual e nova senha"
+// @Success      204     "Senha alterada com sucesso"
+// @Failure      400     {object}  map[string]interface{} "Senha atual incorreta ou payload inválido"
+// @Failure      500     {object}  map[string]interface{} "Erro interno no servidor"
+// @Router       /users/password [put]
+func (server *Server) ChangePassword(ctx *gin.Context) {
+	var req dto.ChangePasswordRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+
+	err := server.UserService.ChangePassword(ctx, payload.UserUUID, req.CurrentPassword, req.NewPassword)
+	if err != nil {
+		if errors.Is(err, service.ErrCurrentPasswordIncorrect) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "senha atual incorreta"})
+			return
+		}
+		serverError(ctx, err)
+		return
+	}
+
+	ctx.Status(http.StatusNoContent)
+}
+
+// DeleteAccount
+// @Summary      Exclui a conta do usuário autenticado
+// @Description  Exclui (soft delete) a conta do usuário logado, exigindo a senha como confirmação. Revoga as sessões ativas.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request body      dto.DeleteAccountRequest  true  "Senha para confirmar a exclusão"
+// @Success      204     "Conta excluída com sucesso"
+// @Failure      400     {object}  map[string]interface{} "Senha incorreta ou payload inválido"
+// @Failure      500     {object}  map[string]interface{} "Erro interno no servidor"
+// @Router       /users/me [delete]
+func (server *Server) DeleteAccount(ctx *gin.Context) {
+	var req dto.DeleteAccountRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+
+	err := server.UserService.DeleteAccount(ctx, payload.UserUUID, req.Password)
+	if err != nil {
+		if errors.Is(err, service.ErrCurrentPasswordIncorrect) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "senha incorreta"})
+			return
+		}
+		serverError(ctx, err)
+		return
+	}
+
+	ctx.Status(http.StatusNoContent)
+}
+
+// VerifyEmail
+// @Summary      Confirma o email do usuário
+// @Description  Confirma o email a partir do token recebido por email. Endpoint público (chamado pela página web de confirmação).
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        request body      dto.VerifyEmailRequest  true  "Token de verificação"
+// @Success      204     "Email confirmado"
+// @Failure      400     {object}  map[string]interface{} "Token inválido, expirado ou payload inválido"
+// @Failure      500     {object}  map[string]interface{} "Erro interno no servidor"
+// @Router       /users/verify-email [post]
+func (server *Server) VerifyEmail(ctx *gin.Context) {
+	var req dto.VerifyEmailRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	err := server.UserService.VerifyEmail(ctx, req.Token)
+	if err != nil {
+		if errors.Is(err, service.ErrInvalidOrExpiredToken) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "token inválido ou expirado"})
+			return
+		}
+		serverError(ctx, err)
+		return
+	}
+
+	ctx.Status(http.StatusNoContent)
+}
+
+// ResendVerificationEmail
+// @Summary      Reenvia o email de verificação
+// @Description  Gera um novo token e reenvia o email de confirmação para o usuário autenticado.
+// @Tags         users
+// @Produce      json
+// @Security     BearerAuth
+// @Success      204     "Email reenviado (ou já estava verificado)"
+// @Failure      500     {object}  map[string]interface{} "Erro interno no servidor"
+// @Router       /users/verify-email/resend [post]
+func (server *Server) ResendVerificationEmail(ctx *gin.Context) {
+	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+
+	if err := server.UserService.ResendVerificationEmail(ctx, payload.UserUUID); err != nil {
+		serverError(ctx, err)
+		return
+	}
+
+	ctx.Status(http.StatusNoContent)
 }
 
 // UpdateProfileImage
@@ -243,20 +373,24 @@ func (server *Server) UpdateProfileImage(ctx *gin.Context) {
 
 	f, err := file.Open()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 	defer f.Close()
 
 	imageData, err := io.ReadAll(f)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
 	user, err := server.UserService.UpdateProfileImage(ctx, payload.UserUUID, imageData, payload.Username)
+	if errors.Is(err, util.ErrInvalidImage) {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 

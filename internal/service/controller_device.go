@@ -33,8 +33,9 @@ type ControllerDeviceService interface {
 	ListControllerDevices(ctx context.Context, userID int64, limit int32, offset int32) ([]db.ControllerDevice, error)
 	GetControllerDeviceByUID(ctx context.Context, uid string) (*db.ControllerDevice, error)
 	ClaimControllerDeviceByUID(ctx context.Context, uid string, userID int64) (*db.ControllerDevice, *dto.ControllerDeviceConfigurationResponse, error)
+	TriggerControllerDevicePairing(ctx context.Context, uid string, userID int64) (*db.ControllerDevice, error)
 	UnlinkControllerDeviceFromUser(ctx context.Context, controllerDeviceUUID uuid.UUID, userID int64) (*db.ControllerDevice, error)
-	UpdateNameControllerDevice(ctx context.Context, controllerDeviceUUID uuid.UUID, name string) (*db.ControllerDevice, error)
+	UpdateNameControllerDevice(ctx context.Context, controllerDeviceUUID uuid.UUID, name string, userID int64) (*db.ControllerDevice, error)
 }
 
 type controllerDeviceService struct {
@@ -99,7 +100,23 @@ func (s *controllerDeviceService) RegisterControllerDevice(ctx context.Context, 
 	}
 	existing, err := s.store.GetControllerDeviceByUID(ctx, uid)
 	if err == nil {
-		return &existing, nil
+		// This endpoint is unauthenticated, so it may only set the version
+		// of an unclaimed controller. Owned controllers report their
+		// version over MQTT telemetry instead.
+		if existing.UserID.Valid ||
+			(existing.FirmwareVersion == req.FirmwareVersion &&
+				existing.FirmwareBuild.String == req.FirmwareBuild) {
+			return &existing, nil
+		}
+		updated, err := s.store.UpdateControllerDeviceFirmware(ctx, db.UpdateControllerDeviceFirmwareParams{
+			ID:              existing.ID,
+			FirmwareVersion: req.FirmwareVersion,
+			FirmwareBuild:   sql.NullString{String: req.FirmwareBuild, Valid: req.FirmwareBuild != ""},
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &updated, nil
 	}
 	if err == sql.ErrNoRows {
 		name := req.Name
@@ -196,6 +213,34 @@ func (s *controllerDeviceService) ClaimControllerDeviceByUID(ctx context.Context
 	return &controllerDevice, configuration, nil
 }
 
+func (s *controllerDeviceService) TriggerControllerDevicePairing(ctx context.Context, uid string, userID int64) (*db.ControllerDevice, error) {
+	normalizedUID, err := normalizeControllerDeviceUID(uid)
+	if err != nil {
+		return nil, err
+	}
+	controllerDevice, err := s.store.GetControllerDeviceByUID(ctx, normalizedUID)
+	if err != nil {
+		return nil, err
+	}
+	if controllerDevice.UserID.Valid && controllerDevice.UserID.Int64 != userID {
+		return nil, ErrControllerDeviceConflict
+	}
+
+	if _, noop := s.mqttClient.(*client.NoopClient); noop {
+		return nil, errors.New("mqtt client is disabled")
+	}
+
+	payload, err := mqtt.NewPairingStartCommand(uuid.New().String())
+	if err != nil {
+		return nil, err
+	}
+	if err := publisher.PublishCommand(s.mqttClient, controllerDevice.ControllerDeviceUid, payload); err != nil {
+		return nil, err
+	}
+
+	return &controllerDevice, nil
+}
+
 func (s *controllerDeviceService) ensureControllerConfiguration(ctx context.Context, controllerDevice db.ControllerDevice) (*dto.ControllerDeviceConfigurationResponse, error) {
 	command, err := s.store.GetLatestControllerDeviceConfigurationCommand(ctx, controllerDevice.ID)
 	if err != nil && err != sql.ErrNoRows {
@@ -275,7 +320,11 @@ func (s *controllerDeviceService) UnlinkControllerDeviceFromUser(ctx context.Con
 	return &controllerDevice, nil
 }
 
-func (s *controllerDeviceService) UpdateNameControllerDevice(ctx context.Context, deviceUUID uuid.UUID, name string) (*db.ControllerDevice, error) {
+func (s *controllerDeviceService) UpdateNameControllerDevice(ctx context.Context, deviceUUID uuid.UUID, name string, userID int64) (*db.ControllerDevice, error) {
+	if _, err := s.GetControllerDevice(ctx, deviceUUID, userID); err != nil {
+		return nil, err
+	}
+
 	arg := db.UpdateNameControllerDeviceParams{
 		Uuid: deviceUUID,
 		Name: name,

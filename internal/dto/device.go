@@ -13,6 +13,12 @@ type CreateDeviceRequest struct {
 	Status    string `json:"status" binding:"required,oneof=ATIVO INATIVO"`
 }
 
+// AssignDeviceToGroupRequest sets or clears the device's group. GroupUuid
+// nil/omitted means "remove from whatever group it's in".
+type AssignDeviceToGroupRequest struct {
+	GroupUuid *string `json:"group_uuid"`
+}
+
 type DeviceResponse struct {
 	Uuid               uuid.UUID  `json:"uuid"`
 	DeviceUid          string     `json:"device_uid"`
@@ -23,6 +29,11 @@ type DeviceResponse struct {
 	IsIrrigating       bool       `json:"is_irrigating"`
 	Status             string     `json:"status"`
 	ControllerDeviceId *int64     `json:"controllerDeviceId,omitempty"`
+	SoilMoisture       *int32     `json:"soil_moisture"`
+	SensorOk           *bool      `json:"sensor_ok"`
+	WifiRssi           *int32     `json:"wifi_rssi"`
+	Latitude           *float64   `json:"latitude"`
+	Longitude          *float64   `json:"longitude"`
 }
 
 func NewDeviceResponse(device db.Device) DeviceResponse {
@@ -36,7 +47,7 @@ func NewDeviceResponse(device db.Device) DeviceResponse {
 		controllerDeviceId = &device.ControllerDeviceID.Int64
 	}
 
-	return DeviceResponse{
+	rsp := DeviceResponse{
 		Uuid:               device.Uuid,
 		DeviceUid:          device.DeviceUid,
 		Name:               device.Name,
@@ -47,6 +58,25 @@ func NewDeviceResponse(device db.Device) DeviceResponse {
 		Status:             device.Status,
 		ControllerDeviceId: controllerDeviceId,
 	}
+	if device.SoilMoisture.Valid {
+		rsp.SoilMoisture = &device.SoilMoisture.Int32
+	}
+	if device.SoilSensorOk.Valid {
+		rsp.SensorOk = &device.SoilSensorOk.Bool
+	}
+	if device.WifiRssi.Valid {
+		rsp.WifiRssi = &device.WifiRssi.Int32
+	}
+	if device.Latitude.Valid && device.Longitude.Valid {
+		rsp.Latitude = &device.Latitude.Float64
+		rsp.Longitude = &device.Longitude.Float64
+	}
+	return rsp
+}
+
+type UpdateDeviceLocationRequest struct {
+	Latitude  *float64 `json:"latitude" binding:"required,min=-90,max=90"`
+	Longitude *float64 `json:"longitude" binding:"required,min=-180,max=180"`
 }
 
 type GetDeviceRequest struct {

@@ -91,3 +91,26 @@ func (q *Queries) GetUserAcceptedTermByUser(ctx context.Context, userID int64) (
 	)
 	return i, err
 }
+
+const getUserAcceptedTermByUserAndDocument = `-- name: GetUserAcceptedTermByUserAndDocument :one
+SELECT id, uuid, user_id, legal_document_id, accepted_at FROM user_accepted_terms
+WHERE user_id = $1 AND legal_document_id = $2 LIMIT 1
+`
+
+type GetUserAcceptedTermByUserAndDocumentParams struct {
+	UserID          int64 `json:"user_id"`
+	LegalDocumentID int64 `json:"legal_document_id"`
+}
+
+func (q *Queries) GetUserAcceptedTermByUserAndDocument(ctx context.Context, arg GetUserAcceptedTermByUserAndDocumentParams) (UserAcceptedTerm, error) {
+	row := q.db.QueryRowContext(ctx, getUserAcceptedTermByUserAndDocument, arg.UserID, arg.LegalDocumentID)
+	var i UserAcceptedTerm
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.UserID,
+		&i.LegalDocumentID,
+		&i.AcceptedAt,
+	)
+	return i, err
+}

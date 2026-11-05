@@ -13,19 +13,26 @@ import (
 )
 
 type ControllerDevice struct {
-	ID                  int64          `json:"id"`
-	Uuid                uuid.UUID      `json:"uuid"`
-	ControllerDeviceUid string         `json:"controller_device_uid"`
-	Name                string         `json:"name"`
-	FirmwareVersion     string         `json:"firmware_version"`
-	FirmwareBuild       sql.NullString `json:"firmware_build"`
-	LastUpdate          sql.NullTime   `json:"last_update"`
-	IpAddress           pqtype.Inet    `json:"ip_address"`
-	WifiSsid            sql.NullString `json:"wifi_ssid"`
-	IsOnline            bool           `json:"is_online"`
-	LastSeen            sql.NullTime   `json:"last_seen"`
-	UserID              sql.NullInt64  `json:"user_id"`
-	CreatedAt           time.Time      `json:"created_at"`
+	ID                    int64          `json:"id"`
+	Uuid                  uuid.UUID      `json:"uuid"`
+	ControllerDeviceUid   string         `json:"controller_device_uid"`
+	Name                  string         `json:"name"`
+	FirmwareVersion       string         `json:"firmware_version"`
+	FirmwareBuild         sql.NullString `json:"firmware_build"`
+	LastUpdate            sql.NullTime   `json:"last_update"`
+	IpAddress             pqtype.Inet    `json:"ip_address"`
+	WifiSsid              sql.NullString `json:"wifi_ssid"`
+	IsOnline              bool           `json:"is_online"`
+	LastSeen              sql.NullTime   `json:"last_seen"`
+	UserID                sql.NullInt64  `json:"user_id"`
+	CreatedAt             time.Time      `json:"created_at"`
+	AutoUpdate            bool           `json:"auto_update"`
+	OtaStatus             sql.NullString `json:"ota_status"`
+	OtaTargetVersion      sql.NullString `json:"ota_target_version"`
+	OtaError              sql.NullString `json:"ota_error"`
+	OtaRequestedAt        sql.NullTime   `json:"ota_requested_at"`
+	OtaUpdatedAt          sql.NullTime   `json:"ota_updated_at"`
+	UpdateNotifiedVersion sql.NullString `json:"update_notified_version"`
 }
 
 type ControllerDeviceConfigurationCommand struct {
@@ -45,20 +52,35 @@ type ControllerDeviceConfigurationCommand struct {
 }
 
 type Device struct {
-	ID                 int64          `json:"id"`
-	Uuid               uuid.UUID      `json:"uuid"`
-	DeviceUid          string         `json:"device_uid"`
-	Name               string         `json:"name"`
-	LastUpdate         time.Time      `json:"last_update"`
-	LastSeen           sql.NullTime   `json:"last_seen"`
-	Status             string         `json:"status"`
-	CreatedAt          time.Time      `json:"created_at"`
-	QrToken            string         `json:"qr_token"`
-	QrCodeFile         sql.NullString `json:"qr_code_file"`
-	IsOnline           bool           `json:"is_online"`
-	IsIrrigating       bool           `json:"is_irrigating"`
-	SoilMoisture       sql.NullInt32  `json:"soil_moisture"`
-	ControllerDeviceID sql.NullInt64  `json:"controller_device_id"`
+	ID                 int64           `json:"id"`
+	Uuid               uuid.UUID       `json:"uuid"`
+	DeviceUid          string          `json:"device_uid"`
+	Name               string          `json:"name"`
+	LastUpdate         time.Time       `json:"last_update"`
+	LastSeen           sql.NullTime    `json:"last_seen"`
+	Status             string          `json:"status"`
+	CreatedAt          time.Time       `json:"created_at"`
+	QrToken            string          `json:"qr_token"`
+	QrCodeFile         sql.NullString  `json:"qr_code_file"`
+	IsOnline           bool            `json:"is_online"`
+	IsIrrigating       bool            `json:"is_irrigating"`
+	SoilMoisture       sql.NullInt32   `json:"soil_moisture"`
+	ControllerDeviceID sql.NullInt64   `json:"controller_device_id"`
+	GroupID            sql.NullInt64   `json:"group_id"`
+	SoilSensorOk       sql.NullBool    `json:"soil_sensor_ok"`
+	SoilRaw            sql.NullInt32   `json:"soil_raw"`
+	WifiRssi           sql.NullInt32   `json:"wifi_rssi"`
+	Latitude           sql.NullFloat64 `json:"latitude"`
+	Longitude          sql.NullFloat64 `json:"longitude"`
+}
+
+type DeviceGroup struct {
+	ID        int64     `json:"id"`
+	Uuid      uuid.UUID `json:"uuid"`
+	UserID    int64     `json:"user_id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type DeviceSensorHistory struct {
@@ -79,6 +101,20 @@ type Faq struct {
 	Published   bool           `json:"published"`
 	OrderNumber int32          `json:"order_number"`
 	CreatedAt   time.Time      `json:"created_at"`
+}
+
+type FirmwareRelease struct {
+	ID           int64     `json:"id"`
+	Uuid         uuid.UUID `json:"uuid"`
+	Version      string    `json:"version"`
+	Build        string    `json:"build"`
+	FilePath     string    `json:"file_path"`
+	FileSize     int64     `json:"file_size"`
+	Sha256       string    `json:"sha256"`
+	ReleaseNotes string    `json:"release_notes"`
+	Published    bool      `json:"published"`
+	CreatedAt    time.Time `json:"created_at"`
+	Signature    string    `json:"signature"`
 }
 
 type HelpContent struct {
@@ -109,6 +145,7 @@ type IrrigationAction struct {
 	ErrorMessage       sql.NullString `json:"error_message"`
 	CreatedAt          time.Time      `json:"created_at"`
 	ControllerDeviceID sql.NullInt64  `json:"controller_device_id"`
+	ScheduleID         sql.NullInt64  `json:"schedule_id"`
 }
 
 type IrrigationCommand struct {
@@ -125,6 +162,7 @@ type IrrigationCommand struct {
 	CreatedAt          time.Time      `json:"created_at"`
 	IrrigationActionID sql.NullInt64  `json:"irrigation_action_id"`
 	ControllerDeviceID sql.NullInt64  `json:"controller_device_id"`
+	ScheduleID         sql.NullInt64  `json:"schedule_id"`
 }
 
 type IrrigationPreference struct {
@@ -165,6 +203,11 @@ type IrrigationSchedule struct {
 	CreatedAt          time.Time      `json:"created_at"`
 	UpdatedAt          time.Time      `json:"updated_at"`
 	ControllerDeviceID sql.NullInt64  `json:"controller_device_id"`
+	IrrigationMode     string         `json:"irrigation_mode"`
+	MoistureThreshold  sql.NullInt32  `json:"moisture_threshold"`
+	LastTriggeredAt    sql.NullTime   `json:"last_triggered_at"`
+	LeadNotifiedAt     sql.NullTime   `json:"lead_notified_at"`
+	GroupID            sql.NullInt64  `json:"group_id"`
 }
 
 type IrrigationScheduleHistory struct {
@@ -189,6 +232,27 @@ type LegalDocument struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type Notification struct {
+	ID        int64        `json:"id"`
+	Uuid      uuid.UUID    `json:"uuid"`
+	UserID    int64        `json:"user_id"`
+	Type      string       `json:"type"`
+	Source    string       `json:"source"`
+	Title     string       `json:"title"`
+	Body      string       `json:"body"`
+	ReadAt    sql.NullTime `json:"read_at"`
+	CreatedAt time.Time    `json:"created_at"`
+}
+
+type NotificationPreference struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	Type      string    `json:"type"`
+	Enabled   bool      `json:"enabled"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type OauthIdentity struct {
 	ID              int64     `json:"id"`
 	Uuid            uuid.UUID `json:"uuid"`
@@ -201,6 +265,24 @@ type OauthIdentity struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
+type PasswordResetToken struct {
+	ID        int64        `json:"id"`
+	UserID    int64        `json:"user_id"`
+	TokenHash string       `json:"token_hash"`
+	ExpiresAt time.Time    `json:"expires_at"`
+	UsedAt    sql.NullTime `json:"used_at"`
+	CreatedAt time.Time    `json:"created_at"`
+}
+
+type PushToken struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	Token     string    `json:"token"`
+	Platform  string    `json:"platform"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type Session struct {
 	ID           uuid.UUID `json:"id"`
 	UserID       int64     `json:"user_id"`
@@ -210,6 +292,17 @@ type Session struct {
 	IsBlocked    bool      `json:"is_blocked"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+type SupportMessage struct {
+	ID        int64         `json:"id"`
+	Uuid      uuid.UUID     `json:"uuid"`
+	UserID    int64         `json:"user_id"`
+	Sender    string        `json:"sender"`
+	AuthorID  sql.NullInt64 `json:"author_id"`
+	Body      string        `json:"body"`
+	ReadAt    sql.NullTime  `json:"read_at"`
+	CreatedAt time.Time     `json:"created_at"`
 }
 
 type Tutorial struct {
@@ -228,15 +321,28 @@ type Tutorial struct {
 }
 
 type User struct {
-	ID                int64          `json:"id"`
-	Uuid              uuid.UUID      `json:"uuid"`
-	Username          string         `json:"username"`
-	HashedPassword    string         `json:"hashed_password"`
-	FullName          string         `json:"full_name"`
-	Email             string         `json:"email"`
-	PasswordChangedAt time.Time      `json:"password_changed_at"`
-	CreatedAt         time.Time      `json:"created_at"`
-	ProfileImage      sql.NullString `json:"profile_image"`
+	ID                         int64          `json:"id"`
+	Uuid                       uuid.UUID      `json:"uuid"`
+	Username                   string         `json:"username"`
+	HashedPassword             string         `json:"hashed_password"`
+	FullName                   string         `json:"full_name"`
+	Email                      string         `json:"email"`
+	PasswordChangedAt          time.Time      `json:"password_changed_at"`
+	CreatedAt                  time.Time      `json:"created_at"`
+	ProfileImage               sql.NullString `json:"profile_image"`
+	Status                     string         `json:"status"`
+	BanReason                  sql.NullString `json:"ban_reason"`
+	BannedAt                   sql.NullTime   `json:"banned_at"`
+	IsAdmin                    bool           `json:"is_admin"`
+	EmailVerified              bool           `json:"email_verified"`
+	EmailVerificationToken     sql.NullString `json:"email_verification_token"`
+	EmailVerificationExpiresAt sql.NullTime   `json:"email_verification_expires_at"`
+	LastDeviceModel            sql.NullString `json:"last_device_model"`
+	LastPlatform               sql.NullString `json:"last_platform"`
+	LastOsVersion              sql.NullString `json:"last_os_version"`
+	LastAppVersion             sql.NullString `json:"last_app_version"`
+	LastSeenAt                 sql.NullTime   `json:"last_seen_at"`
+	DeletedAt                  sql.NullTime   `json:"deleted_at"`
 }
 
 type UserAcceptedTerm struct {

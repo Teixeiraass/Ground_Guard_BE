@@ -12,6 +12,48 @@ import (
 	"github.com/google/uuid"
 )
 
+const banUser = `-- name: BanUser :one
+UPDATE users
+SET status = 'BANNED', ban_reason = $2, banned_at = now()
+WHERE uuid = $1
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at
+`
+
+type BanUserParams struct {
+	Uuid      uuid.UUID      `json:"uuid"`
+	BanReason sql.NullString `json:"ban_reason"`
+}
+
+func (q *Queries) BanUser(ctx context.Context, arg BanUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, banUser, arg.Uuid, arg.BanReason)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
   username,
@@ -21,7 +63,7 @@ INSERT INTO users (
   profile_image
 ) VALUES (
   $1, $2, $3, $4, $5
-) RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image
+) RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at
 `
 
 type CreateUserParams struct {
@@ -51,12 +93,25 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image FROM users
+SELECT id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at FROM users
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -73,17 +128,31 @@ func (q *Queries) GetUser(ctx context.Context, argUuid uuid.UUID) (User, error) 
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image FROM users
-WHERE email = $1 LIMIT 1
+SELECT id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at FROM users
+WHERE lower(email) = lower($1) LIMIT 1
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
+// Case-insensitive so "Ana@x.com" and "ana@x.com" are the same account.
+func (q *Queries) GetUserByEmail(ctx context.Context, lower string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmail, lower)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -95,12 +164,25 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image FROM users
+SELECT id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -117,6 +199,284 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const listUsers = `-- name: ListUsers :many
+SELECT id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at FROM users
+WHERE $1::text = '' OR username ILIKE '%' || $1::text || '%' OR email ILIKE '%' || $1::text || '%'
+ORDER BY id
+LIMIT $3
+OFFSET $2
+`
+
+type ListUsersParams struct {
+	Search     string `json:"search"`
+	PageOffset int32  `json:"page_offset"`
+	PageLimit  int32  `json:"page_limit"`
+}
+
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listUsers, arg.Search, arg.PageOffset, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uuid,
+			&i.Username,
+			&i.HashedPassword,
+			&i.FullName,
+			&i.Email,
+			&i.PasswordChangedAt,
+			&i.CreatedAt,
+			&i.ProfileImage,
+			&i.Status,
+			&i.BanReason,
+			&i.BannedAt,
+			&i.IsAdmin,
+			&i.EmailVerified,
+			&i.EmailVerificationToken,
+			&i.EmailVerificationExpiresAt,
+			&i.LastDeviceModel,
+			&i.LastPlatform,
+			&i.LastOsVersion,
+			&i.LastAppVersion,
+			&i.LastSeenAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const markUserEmailVerified = `-- name: MarkUserEmailVerified :one
+UPDATE users
+SET email_verified = true, email_verification_token = NULL, email_verification_expires_at = NULL
+WHERE uuid = $1
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at
+`
+
+func (q *Queries) MarkUserEmailVerified(ctx context.Context, argUuid uuid.UUID) (User, error) {
+	row := q.db.QueryRowContext(ctx, markUserEmailVerified, argUuid)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const setEmailVerificationToken = `-- name: SetEmailVerificationToken :one
+UPDATE users
+SET email_verification_token = $2, email_verification_expires_at = $3
+WHERE uuid = $1
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at
+`
+
+type SetEmailVerificationTokenParams struct {
+	Uuid                       uuid.UUID      `json:"uuid"`
+	EmailVerificationToken     sql.NullString `json:"email_verification_token"`
+	EmailVerificationExpiresAt sql.NullTime   `json:"email_verification_expires_at"`
+}
+
+func (q *Queries) SetEmailVerificationToken(ctx context.Context, arg SetEmailVerificationTokenParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, setEmailVerificationToken, arg.Uuid, arg.EmailVerificationToken, arg.EmailVerificationExpiresAt)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const softDeleteUser = `-- name: SoftDeleteUser :one
+UPDATE users
+SET status = 'DELETED', deleted_at = now()
+WHERE uuid = $1
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at
+`
+
+func (q *Queries) SoftDeleteUser(ctx context.Context, argUuid uuid.UUID) (User, error) {
+	row := q.db.QueryRowContext(ctx, softDeleteUser, argUuid)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const unbanUser = `-- name: UnbanUser :one
+UPDATE users
+SET status = 'ACTIVE', ban_reason = NULL, banned_at = NULL
+WHERE uuid = $1
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at
+`
+
+func (q *Queries) UnbanUser(ctx context.Context, argUuid uuid.UUID) (User, error) {
+	row := q.db.QueryRowContext(ctx, unbanUser, argUuid)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const updateUserDeviceInfo = `-- name: UpdateUserDeviceInfo :one
+UPDATE users
+SET last_device_model = $2, last_platform = $3, last_os_version = $4, last_app_version = $5, last_seen_at = now()
+WHERE uuid = $1
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at
+`
+
+type UpdateUserDeviceInfoParams struct {
+	Uuid            uuid.UUID      `json:"uuid"`
+	LastDeviceModel sql.NullString `json:"last_device_model"`
+	LastPlatform    sql.NullString `json:"last_platform"`
+	LastOsVersion   sql.NullString `json:"last_os_version"`
+	LastAppVersion  sql.NullString `json:"last_app_version"`
+}
+
+func (q *Queries) UpdateUserDeviceInfo(ctx context.Context, arg UpdateUserDeviceInfoParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserDeviceInfo,
+		arg.Uuid,
+		arg.LastDeviceModel,
+		arg.LastPlatform,
+		arg.LastOsVersion,
+		arg.LastAppVersion,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -125,7 +485,7 @@ const updateUserName = `-- name: UpdateUserName :one
 UPDATE users
 SET full_name = $2
 WHERE uuid = $1
-RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at
 `
 
 type UpdateUserNameParams struct {
@@ -146,6 +506,61 @@ func (q *Queries) UpdateUserName(ctx context.Context, arg UpdateUserNameParams) 
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :one
+UPDATE users
+SET hashed_password = $2, password_changed_at = now()
+WHERE uuid = $1
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at
+`
+
+type UpdateUserPasswordParams struct {
+	Uuid           uuid.UUID `json:"uuid"`
+	HashedPassword string    `json:"hashed_password"`
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserPassword, arg.Uuid, arg.HashedPassword)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -154,7 +569,7 @@ const updateUserProfileImage = `-- name: UpdateUserProfileImage :one
 UPDATE users
 SET profile_image = $2
 WHERE uuid = $1
-RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at
 `
 
 type UpdateUserProfileImageParams struct {
@@ -175,6 +590,56 @@ func (q *Queries) UpdateUserProfileImage(ctx context.Context, arg UpdateUserProf
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const verifyUserEmailByToken = `-- name: VerifyUserEmailByToken :one
+UPDATE users
+SET email_verified = true, email_verification_token = NULL, email_verification_expires_at = NULL
+WHERE email_verification_token = $1 AND email_verification_expires_at > now()
+RETURNING id, uuid, username, hashed_password, full_name, email, password_changed_at, created_at, profile_image, status, ban_reason, banned_at, is_admin, email_verified, email_verification_token, email_verification_expires_at, last_device_model, last_platform, last_os_version, last_app_version, last_seen_at, deleted_at
+`
+
+func (q *Queries) VerifyUserEmailByToken(ctx context.Context, emailVerificationToken sql.NullString) (User, error) {
+	row := q.db.QueryRowContext(ctx, verifyUserEmailByToken, emailVerificationToken)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.ProfileImage,
+		&i.Status,
+		&i.BanReason,
+		&i.BannedAt,
+		&i.IsAdmin,
+		&i.EmailVerified,
+		&i.EmailVerificationToken,
+		&i.EmailVerificationExpiresAt,
+		&i.LastDeviceModel,
+		&i.LastPlatform,
+		&i.LastOsVersion,
+		&i.LastAppVersion,
+		&i.LastSeenAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

@@ -34,7 +34,6 @@ type ControllerDeviceResponse struct {
 	WifiSsid            *string                                `json:"wifi_ssid,omitempty"`
 	LastSeen            *time.Time                             `json:"last_seen"`
 	IsOnline            bool                                   `json:"is_online"`
-	User                *int64                                 `json:"user,omitempty"`
 	Configuration       *ControllerDeviceConfigurationResponse `json:"configuration,omitempty"`
 }
 
@@ -70,11 +69,6 @@ func NewControllerDeviceResponse(controllerDevice db.ControllerDevice) Controlle
 		lastUpdate = &controllerDevice.LastUpdate.Time
 	}
 
-	var userId *int64
-	if controllerDevice.UserID.Valid {
-		userId = &controllerDevice.UserID.Int64
-	}
-
 	return ControllerDeviceResponse{
 		Uuid:                controllerDevice.Uuid,
 		ControllerDeviceUid: controllerDevice.ControllerDeviceUid,
@@ -86,7 +80,6 @@ func NewControllerDeviceResponse(controllerDevice db.ControllerDevice) Controlle
 		WifiSsid:            wifiSsid,
 		LastSeen:            lastSeen,
 		IsOnline:            controllerDevice.IsOnline,
-		User:                userId,
 	}
 }
 

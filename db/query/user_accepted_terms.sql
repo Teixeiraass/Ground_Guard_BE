@@ -17,3 +17,7 @@ WHERE user_id = $1 LIMIT 1;
 -- name: GetUserAcceptedTermByLegalDocument :one
 SELECT * FROM user_accepted_terms
 WHERE legal_document_id = $1 LIMIT 1;
+
+-- name: GetUserAcceptedTermByUserAndDocument :one
+SELECT * FROM user_accepted_terms
+WHERE user_id = $1 AND legal_document_id = $2 LIMIT 1;

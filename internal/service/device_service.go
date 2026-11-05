@@ -22,7 +22,42 @@ type DeviceService interface {
 	GetDeviceByUID(ctx context.Context, uid string) (*db.Device, error)
 	LinkDeviceToControllerDeviceByQrToken(ctx context.Context, qrToken string, controllerDeviceUUID uuid.UUID, userID int64) (*db.Device, error)
 	UnlinkDeviceFromControllerDevice(ctx context.Context, deviceUUID uuid.UUID, userID int64) (*db.Device, error)
-	UpdateNameDevice(ctx context.Context, deviceUUID uuid.UUID, name string) (*db.Device, error)
+	UpdateNameDevice(ctx context.Context, userID int64, deviceUUID uuid.UUID, name string) (*db.Device, error)
+	AssignDeviceToGroup(ctx context.Context, userID int64, deviceUUID uuid.UUID, groupUUID *uuid.UUID) (*db.Device, error)
+	UpdateDeviceLocation(ctx context.Context, userID int64, deviceUUID uuid.UUID, latitude, longitude *float64) (*db.Device, error)
+}
+
+var ErrDeviceNotOwned = errors.New("device doesn't belong to authenticated user")
+
+func (s *deviceService) ensureDeviceOwner(ctx context.Context, userID int64, deviceUUID uuid.UUID) error {
+	deviceUserID, err := s.store.GetDeviceUserID(ctx, deviceUUID)
+	if err != nil {
+		return err
+	}
+	if !deviceUserID.Valid || deviceUserID.Int64 != userID {
+		return ErrDeviceNotOwned
+	}
+	return nil
+}
+
+// UpdateDeviceLocation sets the sensor's position on the map; nil
+// coordinates remove it from the map.
+func (s *deviceService) UpdateDeviceLocation(ctx context.Context, userID int64, deviceUUID uuid.UUID, latitude, longitude *float64) (*db.Device, error) {
+	if err := s.ensureDeviceOwner(ctx, userID, deviceUUID); err != nil {
+		return nil, err
+	}
+
+	arg := db.UpdateDeviceLocationParams{Uuid: deviceUUID}
+	if latitude != nil && longitude != nil {
+		arg.Latitude = sql.NullFloat64{Float64: *latitude, Valid: true}
+		arg.Longitude = sql.NullFloat64{Float64: *longitude, Valid: true}
+	}
+
+	device, err := s.store.UpdateDeviceLocation(ctx, arg)
+	if err != nil {
+		return nil, err
+	}
+	return &device, nil
 }
 
 type deviceService struct {
@@ -161,7 +196,39 @@ func (s *deviceService) UnlinkDeviceFromControllerDevice(ctx context.Context, de
 	return &device, nil
 }
 
-func (s *deviceService) UpdateNameDevice(ctx context.Context, deviceUUID uuid.UUID, name string) (*db.Device, error) {
+func (s *deviceService) AssignDeviceToGroup(ctx context.Context, userID int64, deviceUUID uuid.UUID, groupUUID *uuid.UUID) (*db.Device, error) {
+	deviceUserID, err := s.store.GetDeviceUserID(ctx, deviceUUID)
+	if err != nil {
+		return nil, err
+	}
+	if !deviceUserID.Valid || deviceUserID.Int64 != userID {
+		return nil, errors.New("device doesn't belong to authenticated user")
+	}
+
+	groupID := sql.NullInt64{}
+	if groupUUID != nil {
+		group, err := s.store.GetDeviceGroup(ctx, db.GetDeviceGroupParams{Uuid: *groupUUID, UserID: userID})
+		if err != nil {
+			return nil, err
+		}
+		groupID = sql.NullInt64{Int64: group.ID, Valid: true}
+	}
+
+	device, err := s.store.AssignDeviceToGroup(ctx, db.AssignDeviceToGroupParams{
+		Uuid:    deviceUUID,
+		GroupID: groupID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &device, nil
+}
+
+func (s *deviceService) UpdateNameDevice(ctx context.Context, userID int64, deviceUUID uuid.UUID, name string) (*db.Device, error) {
+	if err := s.ensureDeviceOwner(ctx, userID, deviceUUID); err != nil {
+		return nil, err
+	}
+
 	arg := db.UpdateNameDeviceParams{
 		Uuid: deviceUUID,
 		Name: name,

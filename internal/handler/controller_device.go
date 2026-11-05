@@ -26,7 +26,7 @@ func (server *Server) CreateControllerDevice(ctx *gin.Context) {
 			ctx.JSON(http.StatusConflict, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusCreated, dto.NewControllerDeviceResponse(*controllerDevice))
@@ -58,7 +58,7 @@ func (server *Server) RegisterControllerDevice(ctx *gin.Context) {
 			ctx.JSON(http.StatusConflict, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, dto.NewControllerDeviceResponse(*controllerDevice))
@@ -99,7 +99,21 @@ func (server *Server) GetControllerDeviceByUID(ctx *gin.Context) {
 		controllerDeviceError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, dto.NewControllerDeviceResponse(*controllerDevice))
+
+	// Another user's controller looks like it doesn't exist. An unowned one
+	// stays visible (the app checks it before claiming) minus network data.
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+	owned := controllerDevice.UserID.Valid && controllerDevice.UserID.Int64 == authPayload.UserID
+	if controllerDevice.UserID.Valid && !owned {
+		controllerDeviceError(ctx, sql.ErrNoRows)
+		return
+	}
+	rsp := dto.NewControllerDeviceResponse(*controllerDevice)
+	if !owned {
+		rsp.IpAddress = nil
+		rsp.WifiSsid = nil
+	}
+	ctx.JSON(http.StatusOK, rsp)
 }
 
 // ClaimControllerDeviceByUID associates an unowned provisioned controller with the user.
@@ -125,6 +139,26 @@ func (server *Server) ClaimControllerDeviceByUID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+// TriggerControllerDevicePairing re-enables BLE pairing on an already provisioned controller.
+// @Summary Reiniciar pareamento Bluetooth
+// @Tags controller-devices
+// @Security BearerAuth
+// @Param uid path string true "UID da controladora"
+// @Success 200 {object} dto.ControllerDeviceResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 409 {object} map[string]interface{}
+// @Router /controller-devices/pairing/{uid} [put]
+func (server *Server) TriggerControllerDevicePairing(ctx *gin.Context) {
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+	controllerDevice, err := server.ControllerDeviceService.TriggerControllerDevicePairing(ctx, ctx.Param("uid"), authPayload.UserID)
+	if err != nil {
+		controllerDeviceError(ctx, err)
+		return
+	}
+	ctx.JSON(http.StatusOK, dto.NewControllerDeviceResponse(*controllerDevice))
+}
+
 // ListControllerDevices lists every controller owned by the authenticated user.
 // @Summary Listar controladoras
 // @Tags controller-devices
@@ -142,7 +176,7 @@ func (server *Server) ListControllerDevices(ctx *gin.Context) {
 	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 	devices, err := server.ControllerDeviceService.ListControllerDevices(ctx, authPayload.UserID, req.PageSize, (req.PageID-1)*req.PageSize)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 	response := make([]dto.ControllerDeviceResponse, 0, len(devices))
@@ -193,7 +227,8 @@ func (server *Server) UpdateNameControllerDevice(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	controllerDevice, err := server.ControllerDeviceService.UpdateNameControllerDevice(ctx, deviceUUID, req.Name)
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+	controllerDevice, err := server.ControllerDeviceService.UpdateNameControllerDevice(ctx, deviceUUID, req.Name, authPayload.UserID)
 	if err != nil {
 		controllerDeviceError(ctx, err)
 		return
@@ -218,5 +253,5 @@ func controllerDeviceError(ctx *gin.Context, err error) {
 		ctx.JSON(http.StatusForbidden, errorResponse(err))
 		return
 	}
-	ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+	serverError(ctx, err)
 }

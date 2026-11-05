@@ -58,7 +58,7 @@ func (server *Server) GetStatistics(ctx *gin.Context) {
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -72,7 +72,7 @@ func (server *Server) GetStatistics(ctx *gin.Context) {
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -82,7 +82,7 @@ func (server *Server) GetStatistics(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 

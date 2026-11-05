@@ -46,10 +46,10 @@ func (server *Server) CreateIrrigationSchedule(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 		case err.Error() == "device doesn't belong to authenticated user":
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
-		case strings.HasPrefix(err.Error(), "start_time"), strings.HasPrefix(err.Error(), "days_of_week"):
+		case strings.HasPrefix(err.Error(), "start_time"), strings.HasPrefix(err.Error(), "days_of_week"), strings.HasPrefix(err.Error(), "moisture_threshold"):
 			ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		default:
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			serverError(ctx, err)
 		}
 		return
 	}
@@ -71,7 +71,7 @@ func (server *Server) ListIrrigationSchedules(ctx *gin.Context) {
 	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
 	schedules, err := server.IrrigationService.ListIrrigationSchedules(ctx, authPayload.UserID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (server *Server) GetIrrigationSchedule(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, dto.NewIrrigationScheduleResponse(*schedule))
@@ -148,10 +148,10 @@ func (server *Server) UpdateIrrigationSchedule(ctx *gin.Context) {
 		switch {
 		case err == sql.ErrNoRows:
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
-		case strings.HasPrefix(err.Error(), "start_time"), strings.HasPrefix(err.Error(), "days_of_week"):
+		case strings.HasPrefix(err.Error(), "start_time"), strings.HasPrefix(err.Error(), "days_of_week"), strings.HasPrefix(err.Error(), "moisture_threshold"):
 			ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		default:
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			serverError(ctx, err)
 		}
 		return
 	}
@@ -182,7 +182,7 @@ func (server *Server) DeleteIrrigationSchedule(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 	ctx.Status(http.StatusNoContent)

@@ -2,11 +2,13 @@ package handler
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
 	"github.com/Teixeiraass/ground_guard_be/internal/middleware"
+	"github.com/Teixeiraass/ground_guard_be/internal/service"
 	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -39,7 +41,7 @@ func (server *Server) CreateDevice(ctx *gin.Context) {
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -73,10 +75,10 @@ func (server *Server) RegisterDevice(ctx *gin.Context) {
 			return
 		}
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			serverError(ctx, err)
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -123,7 +125,7 @@ func (server *Server) GetDevice(ctx *gin.Context) {
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -166,7 +168,7 @@ func (server *Server) ListDevice(ctx *gin.Context) {
 		devices, err = server.DeviceService.ListDevicesByController(ctx, controllerUUID, authPayload.UserID, req.PageSize, (req.PageID-1)*req.PageSize)
 	}
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -200,13 +202,21 @@ func (server *Server) GetDeviceByUID(ctx *gin.Context) {
 	}
 
 	device, err := server.DeviceService.GetDeviceByUID(ctx, req.UID)
+	if err == nil {
+		// The response includes the sensor's map position: owner only.
+		authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+		owner, ownerErr := server.store.GetDeviceUserIDByUID(ctx, device.DeviceUid)
+		if ownerErr != nil || !owner.Valid || owner.Int64 != authPayload.UserID {
+			err = sql.ErrNoRows
+		}
+	}
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -243,7 +253,7 @@ func (server *Server) LinkDeviceToUserByQrToken(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -281,7 +291,7 @@ func (server *Server) UnlinkDeviceFromUser(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -318,9 +328,143 @@ func (server *Server) UpdateNameDevice(ctx *gin.Context) {
 		return
 	}
 
-	device, err := server.DeviceService.UpdateNameDevice(ctx, deviceUUID, req.Name)
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+	device, err := server.DeviceService.UpdateNameDevice(ctx, authPayload.UserID, deviceUUID, req.Name)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		deviceOwnershipError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(*device))
+}
+
+func deviceOwnershipError(ctx *gin.Context, err error) {
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		ctx.JSON(http.StatusNotFound, errorResponse(errors.New("device not found")))
+	case errors.Is(err, service.ErrDeviceNotOwned):
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
+	default:
+		serverError(ctx, err)
+	}
+}
+
+// UpdateDeviceLocation
+// @Summary      Posicionar sensor no mapa
+// @Description  Grava a latitude/longitude do sensor para exibi-lo na aba Mapa. Só o dono do sensor pode alterar.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        uuid     path  string                           true "UUID do Dispositivo"
+// @Param        request  body  dto.UpdateDeviceLocationRequest  true "Coordenadas"
+// @Success      200 {object} dto.DeviceResponse
+// @Failure      400 {object} map[string]interface{} "Bad Request"
+// @Failure      403 {object} map[string]interface{} "Forbidden"
+// @Failure      404 {object} map[string]interface{} "Not Found"
+// @Failure      500 {object} map[string]interface{} "Internal Server Error"
+// @Router       /devices/{uuid}/location [put]
+func (server *Server) UpdateDeviceLocation(ctx *gin.Context) {
+	deviceUUID, err := uuid.Parse(ctx.Param("uuid"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req dto.UpdateDeviceLocationRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+	device, err := server.DeviceService.UpdateDeviceLocation(ctx, authPayload.UserID, deviceUUID, req.Latitude, req.Longitude)
+	if err != nil {
+		deviceOwnershipError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(*device))
+}
+
+// ClearDeviceLocation
+// @Summary      Remover sensor do mapa
+// @Tags         devices
+// @Produce      json
+// @Security     BearerAuth
+// @Param        uuid path string true "UUID do Dispositivo"
+// @Success      200 {object} dto.DeviceResponse
+// @Failure      400 {object} map[string]interface{} "Bad Request"
+// @Failure      403 {object} map[string]interface{} "Forbidden"
+// @Failure      404 {object} map[string]interface{} "Not Found"
+// @Failure      500 {object} map[string]interface{} "Internal Server Error"
+// @Router       /devices/{uuid}/location [delete]
+func (server *Server) ClearDeviceLocation(ctx *gin.Context) {
+	deviceUUID, err := uuid.Parse(ctx.Param("uuid"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+	device, err := server.DeviceService.UpdateDeviceLocation(ctx, authPayload.UserID, deviceUUID, nil, nil)
+	if err != nil {
+		deviceOwnershipError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.NewDeviceResponse(*device))
+}
+
+// AssignDeviceToGroup
+// @Summary      Atribuir dispositivo a um grupo
+// @Description  Move o dispositivo para o grupo informado, ou remove de qualquer grupo se group_uuid for omitido/nulo.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        uuid   path      string  true  "UUID do Dispositivo"
+// @Param        request  body      dto.AssignDeviceToGroupRequest  true  "Grupo de destino"
+// @Success      200      {object}  dto.DeviceResponse
+// @Failure      400      {object}  map[string]interface{} "Bad Request"
+// @Failure      403      {object}  map[string]interface{} "Forbidden"
+// @Failure      404      {object}  map[string]interface{} "Not Found"
+// @Failure      500      {object}  map[string]interface{} "Internal Server Error"
+// @Router       /devices/{uuid}/group [put]
+func (server *Server) AssignDeviceToGroup(ctx *gin.Context) {
+	deviceUUID, err := uuid.Parse(ctx.Param("uuid"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req dto.AssignDeviceToGroupRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var groupUUID *uuid.UUID
+	if req.GroupUuid != nil {
+		parsed, err := uuid.Parse(*req.GroupUuid)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, errorResponse(err))
+			return
+		}
+		groupUUID = &parsed
+	}
+
+	authPayload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+	device, err := server.DeviceService.AssignDeviceToGroup(ctx, authPayload.UserID, deviceUUID, groupUUID)
+	if err != nil {
+		switch {
+		case err == sql.ErrNoRows:
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+		case err.Error() == "device doesn't belong to authenticated user":
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
+		default:
+			serverError(ctx, err)
+		}
 		return
 	}
 

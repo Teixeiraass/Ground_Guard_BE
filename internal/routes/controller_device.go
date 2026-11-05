@@ -8,21 +8,28 @@ type ControllerDeviceHandler interface {
 	GetControllerDevice(c *gin.Context)
 	GetControllerDeviceByUID(c *gin.Context)
 	ClaimControllerDeviceByUID(c *gin.Context)
+	TriggerControllerDevicePairing(c *gin.Context)
 	ListControllerDevices(c *gin.Context)
 	UnlinkControllerDeviceFromUser(c *gin.Context)
 	UpdateNameControllerDevice(c *gin.Context)
 }
 
 func registerControllerDeviceRoutes(router gin.IRoutes, h ControllerDeviceHandler) {
-	router.POST("/controller-devices/register", h.RegisterControllerDevice)
+	router.POST("/controller-devices/register", rl.deviceRegister, h.RegisterControllerDevice)
 }
 
 func registerAuthControllerDeviceRoutes(authRoutes gin.IRoutes, h ControllerDeviceHandler) {
-	authRoutes.POST("/controller-devices", h.CreateControllerDevice)
 	authRoutes.GET("/controller-devices", h.ListControllerDevices)
 	authRoutes.GET("/controller-devices/:uuid", h.GetControllerDevice)
 	authRoutes.GET("/controller-devices/uid/:uid", h.GetControllerDeviceByUID)
 	authRoutes.PUT("/controller-devices/claim/:uid", h.ClaimControllerDeviceByUID)
+	authRoutes.PUT("/controller-devices/pairing/:uid", h.TriggerControllerDevicePairing)
 	authRoutes.PUT("/controller-devices/unlink/:uuid", h.UnlinkControllerDeviceFromUser)
 	authRoutes.PUT("/controller-devices/name/:uuid", h.UpdateNameControllerDevice)
+}
+
+// Creating a controller with an arbitrary UID pre-assigns ownership, which
+// would let anyone hijack a device; normal users go through register+claim.
+func registerAdminControllerDeviceRoutes(adminRoutes gin.IRoutes, h ControllerDeviceHandler) {
+	adminRoutes.POST("/controller-devices", h.CreateControllerDevice)
 }

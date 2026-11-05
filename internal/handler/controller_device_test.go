@@ -19,11 +19,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCreateControllerDeviceAPIRequiresAdmin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	store := mockdb.NewMockStore(ctrl)
+	store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
+	store.EXPECT().CreateControllerDevice(gomock.Any(), gomock.Any()).Times(0)
+	user, _ := randomUser(t)
+
+	server := newTestServer(t, store)
+	body, err := json.Marshal(dto.CreateControllerDeviceRequest{DeviceUid: "AABBCCDDEEFF", Name: "x", FirmwareVersion: "1.0.0"})
+	require.NoError(t, err)
+	request, err := http.NewRequest(http.MethodPost, "/api/v1/controller-devices", bytes.NewReader(body))
+	require.NoError(t, err)
+	middleware.AddAuthorization(t, request, server.tokenMaker, middleware.AuthorizationTypeBearer, user.Username, user.ID, user.Uuid, time.Minute)
+	recorder := httptest.NewRecorder()
+	server.router.ServeHTTP(recorder, request)
+
+	// Anyone creating a controller with an arbitrary UID would own it.
+	require.Equal(t, http.StatusForbidden, recorder.Code)
+}
+
 func TestCreateControllerDeviceAPI(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	store := mockdb.NewMockStore(ctrl)
+	store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE", IsAdmin: true}, nil)
 	user, _ := randomUser(t)
 	requestBody := dto.CreateControllerDeviceRequest{
 		DeviceUid:       "CONTROLLER-001",
@@ -60,8 +83,6 @@ func TestCreateControllerDeviceAPI(t *testing.T) {
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
 	require.Equal(t, created.Uuid, response.Uuid)
 	require.Equal(t, created.ControllerDeviceUid, response.ControllerDeviceUid)
-	require.NotNil(t, response.User)
-	require.Equal(t, user.ID, *response.User)
 }
 
 func TestRegisterControllerDeviceAPI(t *testing.T) {
@@ -69,6 +90,7 @@ func TestRegisterControllerDeviceAPI(t *testing.T) {
 	defer ctrl.Finish()
 
 	store := mockdb.NewMockStore(ctrl)
+	store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
 	created := db.ControllerDevice{
 		Uuid:                util.RandomUuid(),
 		ControllerDeviceUid: "AABBCCDDEEFF",
@@ -103,18 +125,21 @@ func TestRegisterControllerDeviceAPI(t *testing.T) {
 	require.NotContains(t, recorder.Body.String(), "wifi_password")
 }
 
-func TestRegisterControllerDeviceReturnsExistingDevice(t *testing.T) {
+func TestRegisterControllerDeviceKeepsUnchangedExistingDevice(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	store := mockdb.NewMockStore(ctrl)
+	store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
 	existing := db.ControllerDevice{
 		Uuid:                util.RandomUuid(),
 		ControllerDeviceUid: "AABBCCDDEEFF",
 		Name:                "existing",
-		FirmwareVersion:     "0.9.0",
+		FirmwareVersion:     "1.0.0",
+		FirmwareBuild:       sql.NullString{String: "2", Valid: true},
 	}
 	store.EXPECT().GetControllerDeviceByUID(gomock.Any(), existing.ControllerDeviceUid).Return(existing, nil)
+	store.EXPECT().UpdateControllerDeviceFirmware(gomock.Any(), gomock.Any()).Times(0)
 
 	server := newTestServer(t, store)
 	body, err := json.Marshal(dto.RegisterControllerDeviceRequest{
@@ -129,7 +154,50 @@ func TestRegisterControllerDeviceReturnsExistingDevice(t *testing.T) {
 	require.Equal(t, http.StatusOK, recorder.Code)
 	var response dto.ControllerDeviceResponse
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
-	require.Equal(t, existing.FirmwareVersion, response.FirmwareVersion)
+	require.Equal(t, existing.Name, response.Name)
+}
+
+func TestRegisterControllerDeviceUpdatesFirmwareVersion(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	store := mockdb.NewMockStore(ctrl)
+	store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
+	existing := db.ControllerDevice{
+		ID:                  7,
+		Uuid:                util.RandomUuid(),
+		ControllerDeviceUid: "AABBCCDDEEFF",
+		Name:                "existing",
+		FirmwareVersion:     "0.9.0",
+	}
+	store.EXPECT().GetControllerDeviceByUID(gomock.Any(), existing.ControllerDeviceUid).Return(existing, nil)
+	store.EXPECT().
+		UpdateControllerDeviceFirmware(gomock.Any(), db.UpdateControllerDeviceFirmwareParams{
+			ID:              7,
+			FirmwareVersion: "1.0.0",
+			FirmwareBuild:   sql.NullString{String: "2", Valid: true},
+		}).
+		DoAndReturn(func(_ context.Context, arg db.UpdateControllerDeviceFirmwareParams) (db.ControllerDevice, error) {
+			updated := existing
+			updated.FirmwareVersion = arg.FirmwareVersion
+			updated.FirmwareBuild = arg.FirmwareBuild
+			return updated, nil
+		})
+
+	server := newTestServer(t, store)
+	body, err := json.Marshal(dto.RegisterControllerDeviceRequest{
+		DeviceUid:       existing.ControllerDeviceUid,
+		FirmwareVersion: "1.0.0",
+		FirmwareBuild:   "2",
+	})
+	require.NoError(t, err)
+	recorder := httptest.NewRecorder()
+	server.router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, "/api/v1/controller-devices/register", bytes.NewReader(body)))
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	var response dto.ControllerDeviceResponse
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+	require.Equal(t, "1.0.0", response.FirmwareVersion)
 	require.Equal(t, existing.Name, response.Name)
 }
 
@@ -182,6 +250,7 @@ func TestClaimControllerDeviceByUIDAPI(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			store := mockdb.NewMockStore(ctrl)
+	store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
 			if test.queryError == nil {
 				store.EXPECT().ClaimControllerDeviceByUID(gomock.Any(), gomock.Any()).Return(test.claimed, nil)
 				store.EXPECT().GetLatestControllerDeviceConfigurationCommand(gomock.Any(), int64(1)).Return(db.ControllerDeviceConfigurationCommand{}, sql.ErrNoRows)
@@ -213,7 +282,9 @@ func TestControllerDeviceEndpointsValidateUIDAndAuthentication(t *testing.T) {
 	t.Run("invalid uid", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		server := newTestServer(t, mockdb.NewMockStore(ctrl))
+		store := mockdb.NewMockStore(ctrl)
+		store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
+		server := newTestServer(t, store)
 		request := httptest.NewRequest(http.MethodPut, "/api/v1/controller-devices/claim/not-a-uid", nil)
 		middleware.AddAuthorization(t, request, server.tokenMaker, middleware.AuthorizationTypeBearer, "user", 1, util.RandomUuid(), time.Minute)
 		recorder := httptest.NewRecorder()
@@ -224,7 +295,9 @@ func TestControllerDeviceEndpointsValidateUIDAndAuthentication(t *testing.T) {
 	t.Run("missing authentication", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		server := newTestServer(t, mockdb.NewMockStore(ctrl))
+		store := mockdb.NewMockStore(ctrl)
+		store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
+		server := newTestServer(t, store)
 		request := httptest.NewRequest(http.MethodPut, "/api/v1/controller-devices/claim/AABBCCDDEEFF", nil)
 		recorder := httptest.NewRecorder()
 		server.router.ServeHTTP(recorder, request)

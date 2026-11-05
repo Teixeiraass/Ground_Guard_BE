@@ -54,7 +54,7 @@ func (server *Server) CreateIrrigationCommand(ctx *gin.Context) {
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (server *Server) ListIrrigationHistory(ctx *gin.Context) {
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -148,14 +148,14 @@ func (server *Server) GetIrrigationCommands(ctx *gin.Context) {
 		return
 	}
 
-	irrigationCommand, err := server.IrrigationService.GetIrrigationCommand(ctx, irrigationCommandUUID)
+	irrigationCommand, err := server.IrrigationService.GetIrrigationCommand(ctx, irrigationCommandUUID, ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -188,14 +188,14 @@ func (server *Server) GetIrrigationHistory(ctx *gin.Context) {
 		return
 	}
 
-	action, err := server.IrrigationService.GetIrrigationHistory(ctx, actionUUID)
+	action, err := server.IrrigationService.GetIrrigationHistory(ctx, actionUUID, ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload).UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -240,7 +240,7 @@ func (server *Server) GetWaterConsumption(ctx *gin.Context) {
 			ctx.JSON(http.StatusForbidden, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 

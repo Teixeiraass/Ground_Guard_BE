@@ -21,10 +21,15 @@ func TestHandleTelemetry(t *testing.T) {
 	deviceUID := "ESP32-TEST-001"
 	topic := mqtt.DeviceTelemetryTopic("ground-guard", deviceUID)
 
+	moisture, raw, rssi, sensorOK := int32(55), int32(2100), int32(-61), true
 	payload, err := json.Marshal(mqtt.TelemetryPayload{
-		Status:    "ATIVO",
-		IPAddress: "192.168.0.50",
-		WifiSSID:  "GroundGuard-WiFi",
+		Status:       "ATIVO",
+		IPAddress:    "192.168.0.50",
+		WifiSSID:     "GroundGuard-WiFi",
+		SoilMoisture: &moisture,
+		SoilRaw:      &raw,
+		SensorOK:     &sensorOK,
+		RSSI:         &rssi,
 	})
 	require.NoError(t, err)
 
@@ -48,11 +53,55 @@ func TestHandleTelemetry(t *testing.T) {
 						require.Equal(t, deviceUID, arg.DeviceUid)
 						require.Equal(t, "ATIVO", arg.Status)
 						require.True(t, arg.LastSeen.Valid)
+						require.Equal(t, sql.NullInt32{Int32: 55, Valid: true}, arg.SoilMoisture)
+						require.Equal(t, sql.NullBool{Bool: true, Valid: true}, arg.SoilSensorOk)
+						require.Equal(t, sql.NullInt32{Int32: 2100, Valid: true}, arg.SoilRaw)
+						require.Equal(t, sql.NullInt32{Int32: -61, Valid: true}, arg.WifiRssi)
 						return db.Device{ID: 1}, nil
 					})
 				store.EXPECT().GetDeviceUserIDByUID(gomock.Any(), deviceUID).Return(sql.NullInt64{}, nil)
 				store.EXPECT().GetLatestDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, sql.ErrNoRows)
-				store.EXPECT().CreateDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, nil)
+				store.EXPECT().
+					CreateDeviceSensorHistory(gomock.Any(), db.CreateDeviceSensorHistoryParams{DeviceID: 1, SoilMoisture: 55}).
+					Times(1).
+					Return(db.DeviceSensorHistory{}, nil)
+			},
+		},
+		{
+			name:    "FaultySensorKeepsLastMoisture",
+			topic:   topic,
+			payload: []byte(`{"status":"ATIVO","soil_moisture":0,"soil_raw":4095,"sensor_ok":false}`),
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetControllerDeviceByUID(gomock.Any(), deviceUID).Return(db.ControllerDevice{}, sql.ErrNoRows)
+				store.EXPECT().
+					UpdateDeviceTelemetryByUID(gomock.Any(), gomock.Any()).
+					Times(1).
+					DoAndReturn(func(_ context.Context, arg db.UpdateDeviceTelemetryByUIDParams) (db.Device, error) {
+						require.False(t, arg.SoilMoisture.Valid)
+						require.Equal(t, sql.NullBool{Bool: false, Valid: true}, arg.SoilSensorOk)
+						require.Equal(t, sql.NullInt32{Int32: 4095, Valid: true}, arg.SoilRaw)
+						return db.Device{ID: 1}, nil
+					})
+				store.EXPECT().GetDeviceUserIDByUID(gomock.Any(), deviceUID).Return(sql.NullInt64{}, nil)
+				store.EXPECT().GetLatestDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(0)
+				store.EXPECT().CreateDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(0)
+			},
+		},
+		{
+			name:    "OutOfRangeMoistureIgnored",
+			topic:   topic,
+			payload: []byte(`{"status":"ATIVO","soil_moisture":140}`),
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().GetControllerDeviceByUID(gomock.Any(), deviceUID).Return(db.ControllerDevice{}, sql.ErrNoRows)
+				store.EXPECT().
+					UpdateDeviceTelemetryByUID(gomock.Any(), gomock.Any()).
+					Times(1).
+					DoAndReturn(func(_ context.Context, arg db.UpdateDeviceTelemetryByUIDParams) (db.Device, error) {
+						require.False(t, arg.SoilMoisture.Valid)
+						return db.Device{ID: 1}, nil
+					})
+				store.EXPECT().GetDeviceUserIDByUID(gomock.Any(), deviceUID).Return(sql.NullInt64{}, nil)
+				store.EXPECT().CreateDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(0)
 			},
 		},
 		{
@@ -83,12 +132,13 @@ func TestHandleTelemetry(t *testing.T) {
 					Times(1).
 					DoAndReturn(func(_ context.Context, arg db.UpdateDeviceTelemetryByUIDParams) (db.Device, error) {
 						require.Equal(t, "ATIVO", arg.Status)
+						// No soil_moisture in the payload: keep the last reading, don't log 0%.
+						require.False(t, arg.SoilMoisture.Valid)
 						return db.Device{ID: 1}, nil
 					})
 				store.EXPECT().GetControllerDeviceByUID(gomock.Any(), deviceUID).Return(db.ControllerDevice{}, sql.ErrNoRows)
 				store.EXPECT().GetDeviceUserIDByUID(gomock.Any(), deviceUID).Return(sql.NullInt64{}, nil)
-				store.EXPECT().GetLatestDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, sql.ErrNoRows)
-				store.EXPECT().CreateDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(1).Return(db.DeviceSensorHistory{}, nil)
+				store.EXPECT().CreateDeviceSensorHistory(gomock.Any(), gomock.Any()).Times(0)
 			},
 		},
 		{
@@ -208,4 +258,40 @@ func TestHandleControllerTelemetryWithoutUserDoesNotRequireDeviceLookup(t *testi
 		[]byte(`{"status":"ONLINE","ip_address":"192.168.15.5","wifi_ssid":"GroundGuard-WiFi"}`),
 	)
 	require.NoError(t, err)
+}
+
+type recordingOtaHandler struct {
+	deviceUID string
+	event     mqtt.OtaEventPayload
+	calls     int
+}
+
+func (r *recordingOtaHandler) HandleOtaEvent(_ context.Context, deviceUID string, event mqtt.OtaEventPayload) error {
+	r.calls++
+	r.deviceUID = deviceUID
+	r.event = event
+	return nil
+}
+
+func TestHandleEventRoutesOtaEventsToHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	store := mockdb.NewMockStore(ctrl)
+	// OTA events must never be looked up as irrigation/configuration commands.
+	store.EXPECT().GetControllerDeviceConfigurationCommand(gomock.Any(), gomock.Any()).Times(0)
+	store.EXPECT().GetIrrigationCommand(gomock.Any(), gomock.Any()).Times(0)
+
+	handler := &recordingOtaHandler{}
+	sub := subscriber.NewTelemetrySubscriber(client.NewNoopClient(), store, nil)
+	sub.SetOtaEventHandler(handler)
+
+	topic := mqtt.DeviceEventTopic("ground-guard", "AABBCCDDEEFF")
+	err := sub.HandleEvent(context.Background(), topic,
+		[]byte(`{"ota_status":"DOWNLOADING","version":"1.1.0"}`))
+	require.NoError(t, err)
+	require.Equal(t, 1, handler.calls)
+	require.Equal(t, "AABBCCDDEEFF", handler.deviceUID)
+	require.Equal(t, "DOWNLOADING", handler.event.OtaStatus)
+	require.Equal(t, "1.1.0", handler.event.Version)
 }

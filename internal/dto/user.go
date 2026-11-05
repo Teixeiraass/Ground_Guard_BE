@@ -18,6 +18,7 @@ type UserResponse struct {
 	Username          string    `json:"username"`
 	FullName          string    `json:"full_name"`
 	Email             string    `json:"email"`
+	EmailVerified     bool      `json:"email_verified"`
 	UserImage         *string   `json:"user_image"`
 	PasswordChangedAt time.Time `json:"password_changed_at"`
 	CreatedAt         time.Time `json:"created_at"`
@@ -34,6 +35,7 @@ func NewUserResponse(user db.User) UserResponse {
 		Username:          user.Username,
 		FullName:          user.FullName,
 		Email:             user.Email,
+		EmailVerified:     user.EmailVerified,
 		UserImage:         imagePath,
 		PasswordChangedAt: user.PasswordChangedAt,
 		CreatedAt:         user.CreatedAt,
@@ -43,6 +45,12 @@ func NewUserResponse(user db.User) UserResponse {
 type LoginUserRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
+	// Campos opcionais de telemetria do dispositivo, enviados pelo app. Apps antigos
+	// que ainda não mandam esses campos continuam logando normalmente (ficam vazios).
+	DeviceModel string `json:"device_model"`
+	Platform    string `json:"platform" binding:"omitempty,oneof=android ios"`
+	OsVersion   string `json:"os_version"`
+	AppVersion  string `json:"app_version"`
 }
 
 type LoginUserResponse struct {
@@ -69,4 +77,17 @@ type LogoutUserRequest struct {
 
 type UpdateUserNameRequest struct {
 	FullName string `json:"full_name" binding:"required"`
+}
+
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" binding:"required"`
+	NewPassword     string `json:"new_password" binding:"required,min=6"`
+}
+
+type DeleteAccountRequest struct {
+	Password string `json:"password" binding:"required"`
+}
+
+type VerifyEmailRequest struct {
+	Token string `json:"token" binding:"required"`
 }

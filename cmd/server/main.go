@@ -7,6 +7,7 @@ import (
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/internal/handler"
 	"github.com/Teixeiraass/ground_guard_be/mqtt/client"
+	"github.com/Teixeiraass/ground_guard_be/push"
 	"github.com/Teixeiraass/ground_guard_be/util"
 
 	"time"
@@ -58,7 +59,12 @@ func main() {
 	}
 	defer mqttClient.Close()
 
-	server, err := handler.NewServer(config, store, mqttClient)
+	pushSender, err := push.NewFirebaseSender(config)
+	if err != nil {
+		log.Fatal("cannot create push sender:", err)
+	}
+
+	server, err := handler.NewServer(config, store, mqttClient, pushSender)
 	if err != nil {
 		log.Fatal("cannot create server: ", err)
 	}

@@ -54,8 +54,9 @@ func (h *Hub) Broadcast(v any) {
 		return
 	}
 
-	h.mu.RLock()
-	defer h.mu.RUnlock()
+	// Write lock: slow clients are removed from the map below.
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
 	for client := range h.clients {
 
@@ -72,6 +73,10 @@ func (h *Hub) Broadcast(v any) {
 
 func (h *Hub) BroadcastToUser(userID int64, payload any) {
 	data, _ := json.Marshal(payload)
+
+	// Write lock: slow clients are removed from the map below.
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
 	for client := range h.clients {
 		if client.userID == userID {
