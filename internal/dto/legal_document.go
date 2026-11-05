@@ -33,3 +33,12 @@ func NewLegalDocumentResponse(legalDocument db.LegalDocument) LegalDocumentRespo
 		Active:  legalDocument.Active,
 	}
 }
+
+type AcceptLegalDocumentRequest struct {
+	UUID string `uri:"uuid" binding:"required"`
+}
+
+type TermsAcceptanceStatusResponse struct {
+	NeedsAcceptance bool                   `json:"needs_acceptance"`
+	Document        *LegalDocumentResponse `json:"document"`
+}

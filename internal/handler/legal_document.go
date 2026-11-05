@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/Teixeiraass/ground_guard_be/internal/dto"
+	"github.com/Teixeiraass/ground_guard_be/internal/middleware"
+	"github.com/Teixeiraass/ground_guard_be/token"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -41,7 +43,7 @@ func (server *Server) GetLegalDocument(ctx *gin.Context) {
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -69,7 +71,7 @@ func (server *Server) ListLegalDocument(ctx *gin.Context) {
 
 	legalDocuments, err := server.ContentService.ListLegalDocument(ctx, req.PageSize, (req.PageID-1)*req.PageSize)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -80,4 +82,73 @@ func (server *Server) ListLegalDocument(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, rsp)
+}
+
+// GetTermsAcceptanceStatus godoc
+// @Summary      Checar aceite dos termos de uso
+// @Description  Retorna se o usuário autenticado precisa aceitar a versão atual dos termos de uso
+// @Tags         legal-documents
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} dto.TermsAcceptanceStatusResponse "Sucesso"
+// @Failure      500 {object} map[string]any "Erro interno do servidor"
+// @Router       /legal-documents/terms/status [get]
+func (server *Server) GetTermsAcceptanceStatus(ctx *gin.Context) {
+	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+
+	needsAcceptance, document, err := server.ContentService.GetTermsAcceptanceStatus(ctx, payload.UserID)
+	if err != nil {
+		serverError(ctx, err)
+		return
+	}
+
+	rsp := dto.TermsAcceptanceStatusResponse{NeedsAcceptance: needsAcceptance}
+	if document != nil {
+		docRsp := dto.NewLegalDocumentResponse(*document)
+		rsp.Document = &docRsp
+	}
+
+	ctx.JSON(http.StatusOK, rsp)
+}
+
+// AcceptLegalDocument godoc
+// @Summary      Aceitar um documento legal
+// @Description  Registra o aceite do usuário autenticado para o documento legal informado
+// @Tags         legal-documents
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        uuid path string true "UUID do documento legal" Format(uuid)
+// @Success      204 "Sucesso"
+// @Failure      400 {object} map[string]any "Requisição inválida (UUID mal formatado)"
+// @Failure      404 {object} map[string]any "Documento legal não encontrado"
+// @Failure      500 {object} map[string]any "Erro interno do servidor"
+// @Router       /legal-documents/{uuid}/accept [post]
+func (server *Server) AcceptLegalDocument(ctx *gin.Context) {
+	var req dto.AcceptLegalDocumentRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	documentUUID, err := uuid.Parse(req.UUID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	payload := ctx.MustGet(middleware.AuthorizationPayloadKey).(*token.Payload)
+
+	err = server.ContentService.AcceptLegalDocument(ctx, payload.UserID, documentUUID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		serverError(ctx, err)
+		return
+	}
+
+	ctx.Status(http.StatusNoContent)
 }

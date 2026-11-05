@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml.dbdiagram.io)
 -- Database: PostgreSQL
--- Generated at: 2026-07-09T02:10:55.279Z
+-- Generated at: 2026-09-30T01:24:51.864Z
 
 CREATE TABLE "users" (
   "id" bigserial PRIMARY KEY,
@@ -16,7 +16,7 @@ CREATE TABLE "users" (
 
 CREATE TABLE "sessions" (
   "id" UUID PRIMARY KEY,
-  "user_id" bigint,
+  "user_id" bigint NOT NULL,
   "refresh_token" varchar NOT NULL,
   "user_agent" varchar NOT NULL,
   "client_ip" varchar NOT NULL,
@@ -25,10 +25,10 @@ CREATE TABLE "sessions" (
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
-CREATE TABLE "devices" (
+CREATE TABLE "controllerDevices" (
   "id" bigserial PRIMARY KEY,
   "uuid" UUID UNIQUE DEFAULT (gen_random_uuid()),
-  "device_uid" varchar(100) UNIQUE,
+  "controller_device_uid" varchar(100) UNIQUE,
   "name" varchar(100),
   "firmware_version" varchar(50),
   "firmware_build" varchar(50),
@@ -38,16 +38,31 @@ CREATE TABLE "devices" (
   "qr_code_file" varchar(255),
   "wifi_ssid" varchar(100),
   "is_online" boolean NOT NULL DEFAULT false,
+  "last_seen" timestamptz,
+  "user_id" bigint,
+  "created_at" timestamptz NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "devices" (
+  "id" bigserial PRIMARY KEY,
+  "uuid" UUID UNIQUE DEFAULT (gen_random_uuid()),
+  "name" varchar(100),
+  "last_update" timestamptz,
+  "qr_token" varchar(64) UNIQUE NOT NULL,
+  "qr_code_file" varchar(255),
+  "is_online" boolean NOT NULL DEFAULT false,
   "is_irrigating" boolean NOT NULL DEFAULT false,
   "last_seen" timestamptz,
+  "soil_moisture" int,
   "status" varchar(20),
-  "user_id" bigint,
+  "controller_device_id" bigint,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "irrigation_actions" (
   "id" bigserial PRIMARY KEY,
   "uuid" UUID UNIQUE NOT NULL DEFAULT (gen_random_uuid()),
+  "controller_device_id" bigint NOT NULL,
   "device_id" bigint NOT NULL,
   "user_id" bigint NOT NULL,
   "started_at" timestamptz NOT NULL DEFAULT (now()),
@@ -64,6 +79,7 @@ CREATE TABLE "irrigation_actions" (
 CREATE TABLE "irrigation_commands" (
   "id" bigserial PRIMARY KEY,
   "uuid" UUID UNIQUE NOT NULL DEFAULT (gen_random_uuid()),
+  "controller_device_id" bigint NOT NULL,
   "device_id" bigint NOT NULL,
   "user_id" bigint NOT NULL,
   "action" varchar(20) NOT NULL,
@@ -78,6 +94,7 @@ CREATE TABLE "irrigation_commands" (
 CREATE TABLE "irrigation_schedules" (
   "id" bigserial PRIMARY KEY,
   "uuid" UUID UNIQUE NOT NULL DEFAULT (gen_random_uuid()),
+  "controller_device_id" bigint NOT NULL,
   "device_id" bigint NOT NULL,
   "user_id" bigint NOT NULL,
   "name" varchar(100),
@@ -102,6 +119,7 @@ CREATE TABLE "irrigation_schedule_history" (
 CREATE TABLE "irrigation_preferences" (
   "id" bigserial PRIMARY KEY,
   "uuid" UUID UNIQUE NOT NULL DEFAULT (gen_random_uuid()),
+  "controller_device_id" bigint NOT NULL,
   "device_id" bigint UNIQUE NOT NULL,
   "enabled" boolean NOT NULL DEFAULT true,
   "irrigation_mode" varchar(20) NOT NULL DEFAULT 'INTELIGENTE',
@@ -184,9 +202,15 @@ CREATE TABLE "user_accepted_terms" (
   "accepted_at" timestamptz NOT NULL DEFAULT (now())
 );
 
-CREATE INDEX ON "devices" ("user_id");
+CREATE INDEX ON "controllerDevices" ("user_id");
 
-CREATE UNIQUE INDEX ON "devices" ("device_uid");
+CREATE UNIQUE INDEX ON "controllerDevices" ("controller_device_uid");
+
+CREATE UNIQUE INDEX ON "controllerDevices" ("uuid");
+
+CREATE INDEX ON "devices" ("controller_device_id");
+
+CREATE INDEX ON "devices" ("name");
 
 CREATE UNIQUE INDEX ON "devices" ("uuid");
 
@@ -244,7 +268,11 @@ CREATE INDEX ON "user_accepted_terms" ("legal_document_id");
 
 ALTER TABLE "sessions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "devices" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "controllerDevices" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "devices" ADD FOREIGN KEY ("controller_device_id") REFERENCES "controllerDevices" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "irrigation_actions" ADD FOREIGN KEY ("controller_device_id") REFERENCES "controllerDevices" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "irrigation_actions" ADD FOREIGN KEY ("device_id") REFERENCES "devices" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
@@ -252,15 +280,21 @@ ALTER TABLE "irrigation_actions" ADD FOREIGN KEY ("user_id") REFERENCES "users" 
 
 ALTER TABLE "irrigation_actions" ADD FOREIGN KEY ("command_id") REFERENCES "irrigation_commands" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
+ALTER TABLE "irrigation_commands" ADD FOREIGN KEY ("controller_device_id") REFERENCES "controllerDevices" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
 ALTER TABLE "irrigation_commands" ADD FOREIGN KEY ("device_id") REFERENCES "devices" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "irrigation_commands" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "irrigation_schedules" ADD FOREIGN KEY ("controller_device_id") REFERENCES "controllerDevices" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "irrigation_schedules" ADD FOREIGN KEY ("device_id") REFERENCES "devices" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "irrigation_schedules" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "irrigation_schedule_history" ADD FOREIGN KEY ("schedule_id") REFERENCES "irrigation_schedules" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "irrigation_preferences" ADD FOREIGN KEY ("controller_device_id") REFERENCES "controllerDevices" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "irrigation_preferences" ADD FOREIGN KEY ("device_id") REFERENCES "devices" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 

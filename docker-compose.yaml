@@ -12,6 +12,8 @@ services:
             - "1883:1883"
         volumes:
             - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+            - ./mqtt/acl.conf:/mosquitto/config/acl.conf:ro
+            - ./mqtt/passwd:/mosquitto/config/passwd:ro
     api:
         build:
             context: .
@@ -23,6 +25,8 @@ services:
             - MQTT_ENABLED=true
             - MQTT_BROKER_URL=tcp://mosquitto:1883
             - MQTT_CLIENT_ID=ground-guard-api
+            - MQTT_USERNAME=ground-guard-api
+            - MQTT_PASSWORD=${MQTT_PASSWORD:?defina MQTT_PASSWORD (mesma senha do mqtt/passwd)}
             - MQTT_TOPIC_PREFIX=ground-guard
         depends_on:
             - postgres

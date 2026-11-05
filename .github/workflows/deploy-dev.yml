@@ -1,0 +1,31 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/ground_guard_project/Ground_Guard_BE
+
+            docker --version
+            docker compose version
+
+            git fetch origin
+            git checkout develop
+            git pull origin develop
+
+            docker compose -f docker-compose.dev.yaml up --build -d
+
+            docker image prune -f

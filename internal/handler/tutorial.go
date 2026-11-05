@@ -41,7 +41,7 @@ func (server *Server) GetTutorial(ctx *gin.Context) {
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (server *Server) ListTutorials(ctx *gin.Context) {
 
 	tutorials, err := server.ContentService.ListTutorial(ctx, req.PageSize, (req.PageID-1)*req.PageSize)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 

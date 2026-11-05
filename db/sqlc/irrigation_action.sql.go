@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -19,11 +20,12 @@ INSERT INTO irrigation_actions (
     duration_seconds,
     status,
     trigger_type,
-    error_message
+    error_message,
+    schedule_id
 ) VALUES (
-    $1,$2,$3,$4,$5,$6
+    $1,$2,$3,$4,$5,$6,$7
 )
-RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at
+RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, controller_device_id, schedule_id
 `
 
 type CreateIrrigationActionParams struct {
@@ -33,6 +35,7 @@ type CreateIrrigationActionParams struct {
 	Status          string         `json:"status"`
 	TriggerType     string         `json:"trigger_type"`
 	ErrorMessage    sql.NullString `json:"error_message"`
+	ScheduleID      sql.NullInt64  `json:"schedule_id"`
 }
 
 func (q *Queries) CreateIrrigationAction(ctx context.Context, arg CreateIrrigationActionParams) (IrrigationAction, error) {
@@ -43,6 +46,7 @@ func (q *Queries) CreateIrrigationAction(ctx context.Context, arg CreateIrrigati
 		arg.Status,
 		arg.TriggerType,
 		arg.ErrorMessage,
+		arg.ScheduleID,
 	)
 	var i IrrigationAction
 	err := row.Scan(
@@ -58,6 +62,8 @@ func (q *Queries) CreateIrrigationAction(ctx context.Context, arg CreateIrrigati
 		&i.WaterVolumeMl,
 		&i.ErrorMessage,
 		&i.CreatedAt,
+		&i.ControllerDeviceID,
+		&i.ScheduleID,
 	)
 	return i, err
 }
@@ -88,7 +94,7 @@ func (q *Queries) ExistsActiveIrrigationAction(ctx context.Context, deviceID int
 }
 
 const getActiveIrrigationActionByDevice = `-- name: GetActiveIrrigationActionByDevice :one
-SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at
+SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, controller_device_id, schedule_id
 FROM irrigation_actions
 WHERE device_id = $1
 AND status = 'ATIVO'
@@ -111,12 +117,14 @@ func (q *Queries) GetActiveIrrigationActionByDevice(ctx context.Context, deviceI
 		&i.WaterVolumeMl,
 		&i.ErrorMessage,
 		&i.CreatedAt,
+		&i.ControllerDeviceID,
+		&i.ScheduleID,
 	)
 	return i, err
 }
 
 const getIrrigationAction = `-- name: GetIrrigationAction :one
-SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at FROM irrigation_actions
+SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, controller_device_id, schedule_id FROM irrigation_actions
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -136,12 +144,82 @@ func (q *Queries) GetIrrigationAction(ctx context.Context, argUuid uuid.UUID) (I
 		&i.WaterVolumeMl,
 		&i.ErrorMessage,
 		&i.CreatedAt,
+		&i.ControllerDeviceID,
+		&i.ScheduleID,
 	)
 	return i, err
 }
 
+const listActiveScheduledIrrigationActions = `-- name: ListActiveScheduledIrrigationActions :many
+SELECT
+    ia.id                   AS id,
+    ia.uuid                 AS uuid,
+    ia.device_id            AS device_id,
+    ia.user_id              AS user_id,
+    ia.started_at           AS started_at,
+    isch.id                 AS schedule_id,
+    isch.irrigation_mode    AS irrigation_mode,
+    isch.moisture_threshold AS moisture_threshold,
+    isch.duration_seconds   AS schedule_duration_seconds,
+    d.uuid                  AS device_uuid,
+    d.soil_moisture         AS soil_moisture
+FROM irrigation_actions ia
+JOIN irrigation_schedules isch ON isch.id = ia.schedule_id
+JOIN devices d ON d.id = ia.device_id
+WHERE ia.status = 'ATIVO' AND ia.schedule_id IS NOT NULL
+`
+
+type ListActiveScheduledIrrigationActionsRow struct {
+	ID                      int64         `json:"id"`
+	Uuid                    uuid.UUID     `json:"uuid"`
+	DeviceID                int64         `json:"device_id"`
+	UserID                  int64         `json:"user_id"`
+	StartedAt               time.Time     `json:"started_at"`
+	ScheduleID              int64         `json:"schedule_id"`
+	IrrigationMode          string        `json:"irrigation_mode"`
+	MoistureThreshold       sql.NullInt32 `json:"moisture_threshold"`
+	ScheduleDurationSeconds int32         `json:"schedule_duration_seconds"`
+	DeviceUuid              uuid.UUID     `json:"device_uuid"`
+	SoilMoisture            sql.NullInt32 `json:"soil_moisture"`
+}
+
+func (q *Queries) ListActiveScheduledIrrigationActions(ctx context.Context) ([]ListActiveScheduledIrrigationActionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveScheduledIrrigationActions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListActiveScheduledIrrigationActionsRow{}
+	for rows.Next() {
+		var i ListActiveScheduledIrrigationActionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uuid,
+			&i.DeviceID,
+			&i.UserID,
+			&i.StartedAt,
+			&i.ScheduleID,
+			&i.IrrigationMode,
+			&i.MoistureThreshold,
+			&i.ScheduleDurationSeconds,
+			&i.DeviceUuid,
+			&i.SoilMoisture,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listIrrigationAction = `-- name: ListIrrigationAction :many
-SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at FROM irrigation_actions
+SELECT id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, controller_device_id, schedule_id FROM irrigation_actions
 WHERE user_id = $1
 ORDER BY id
 LIMIT $2
@@ -176,6 +254,8 @@ func (q *Queries) ListIrrigationAction(ctx context.Context, arg ListIrrigationAc
 			&i.WaterVolumeMl,
 			&i.ErrorMessage,
 			&i.CreatedAt,
+			&i.ControllerDeviceID,
+			&i.ScheduleID,
 		); err != nil {
 			return nil, err
 		}
@@ -199,7 +279,7 @@ SET
     water_volume_ml = $5,
     error_message = $6
 WHERE uuid = $1
-RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at
+RETURNING id, uuid, device_id, user_id, started_at, finished_at, duration_seconds, status, trigger_type, water_volume_ml, error_message, created_at, controller_device_id, schedule_id
 `
 
 type UpdateIrrigationActionParams struct {
@@ -234,6 +314,8 @@ func (q *Queries) UpdateIrrigationAction(ctx context.Context, arg UpdateIrrigati
 		&i.WaterVolumeMl,
 		&i.ErrorMessage,
 		&i.CreatedAt,
+		&i.ControllerDeviceID,
+		&i.ScheduleID,
 	)
 	return i, err
 }

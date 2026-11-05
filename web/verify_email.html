@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirmar email — Ground Guard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #173518;
+    --background: #FAFAF4;
+    --outline: #737970;
+    --error: #BA1A1A;
+    --success: #4CAF50;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background);
+    font-family: 'Inter', -apple-system, Helvetica, Arial, sans-serif;
+    color: #1A1C19;
+    padding: 16px;
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+    background: #FFFFFF;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(23, 53, 24, 0.12);
+    overflow: hidden;
+    text-align: center;
+  }
+  .card-header { background: var(--primary); padding: 28px 32px; }
+  .card-header h1 { color: #FFFFFF; font-size: 20px; margin: 0; }
+  .card-body { padding: 32px; }
+  .card-body p { color: var(--outline); font-size: 14px; }
+  button {
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .message { margin-top: 16px; font-size: 14px; padding: 12px 14px; border-radius: 10px; display: none; }
+  .message.error { display: block; background: #FBE9E7; color: var(--error); }
+  .success-view { display: none; }
+  .success-view .icon { font-size: 40px; }
+  .success-view h2 { color: var(--primary); margin: 12px 0 8px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header"><h1>Ground Guard</h1></div>
+    <div class="card-body">
+      <div id="form-view">
+        <p>Toque no botão abaixo para confirmar seu email.</p>
+        <button id="confirm-btn">Confirmar meu email</button>
+        <div class="message error" id="error-message"></div>
+      </div>
+      <div class="success-view" id="success-view">
+        <div class="icon">✅</div>
+        <h2>Email confirmado</h2>
+        <p>Pode voltar para o app, tudo certo.</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  var token = new URLSearchParams(window.location.search).get('token');
+  var btn = document.getElementById('confirm-btn');
+  var errorMessage = document.getElementById('error-message');
+
+  if (!token) {
+    errorMessage.textContent = 'Link inválido ou incompleto.';
+    errorMessage.classList.add('error');
+    btn.disabled = true;
+    return;
+  }
+
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    btn.textContent = 'Confirmando...';
+    errorMessage.classList.remove('error');
+    errorMessage.textContent = '';
+
+    fetch('/api/v1/users/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token })
+    }).then(function (response) {
+      if (response.status === 204 || response.ok) {
+        document.getElementById('form-view').style.display = 'none';
+        document.getElementById('success-view').style.display = 'block';
+        return;
+      }
+      return response.json().catch(function () { return {}; }).then(function (body) {
+        throw new Error(body.error || 'Não foi possível confirmar o email. O link pode ter expirado.');
+      });
+    }).catch(function (err) {
+      errorMessage.textContent = err.message;
+      errorMessage.classList.add('error');
+      btn.disabled = false;
+      btn.textContent = 'Confirmar meu email';
+    });
+  });
+})();
+</script>
+</body>
+</html>

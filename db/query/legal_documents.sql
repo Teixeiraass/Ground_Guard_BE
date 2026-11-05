@@ -12,3 +12,11 @@ WHERE active = true
 ORDER BY published_at DESC
 LIMIT $1
 OFFSET $2;
+
+-- name: GetLatestActiveLegalDocumentByType :one
+SELECT *
+FROM legal_documents
+WHERE type = $1
+AND active = true
+ORDER BY published_at DESC
+LIMIT 1;

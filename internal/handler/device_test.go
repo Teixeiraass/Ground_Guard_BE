@@ -41,6 +41,7 @@ func TestGetDeviceAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetDevice(gomock.Any(), gomock.Eq(device.Uuid)).Times(1).Return(device, nil)
+				store.EXPECT().GetDeviceUserID(gomock.Any(), gomock.Eq(device.Uuid)).Return(sql.NullInt64{Int64: user.ID, Valid: true}, nil)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -96,6 +97,7 @@ func TestGetDeviceAPI(t *testing.T) {
 			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
+			store.EXPECT().GetUser(gomock.Any(), gomock.Any()).AnyTimes().Return(db.User{Status: "ACTIVE"}, nil)
 			tc.buildStubs(store)
 
 			server := newTestServer(t, store)
@@ -114,13 +116,12 @@ func TestGetDeviceAPI(t *testing.T) {
 
 func randomDevice(userID int64) db.Device {
 	return db.Device{
-		ID:              util.RandomInt(1, 1000),
-		Uuid:            util.RandomUuid(),
-		DeviceUid:       util.RandomString(10),
-		Name:            util.RandomString(6),
-		FirmwareVersion: util.RandomString(8),
-		Status:          util.RandomStatus(),
-		UserID: sql.NullInt64{
+		ID:        util.RandomInt(1, 1000),
+		Uuid:      util.RandomUuid(),
+		DeviceUid: util.RandomString(10),
+		Name:      util.RandomString(6),
+		Status:    util.RandomStatus(),
+		ControllerDeviceID: sql.NullInt64{
 			Int64: userID,
 			Valid: true,
 		},
@@ -142,11 +143,10 @@ func requireBodyMatchDevice(
 	require.Equal(t, device.Uuid, got.Uuid)
 	require.Equal(t, device.DeviceUid, got.DeviceUid)
 	require.Equal(t, device.Name, got.Name)
-	require.Equal(t, device.FirmwareVersion, got.FirmwareVersion)
 	require.Equal(t, device.Status, got.Status)
 
-	if device.UserID.Valid {
-		require.NotNil(t, got.User)
-		require.Equal(t, device.UserID.Int64, *got.User)
+	if device.ControllerDeviceID.Valid {
+		require.NotNil(t, got.ControllerDeviceId)
+		require.Equal(t, device.ControllerDeviceID.Int64, *got.ControllerDeviceId)
 	}
 }

@@ -6,11 +6,11 @@ import (
 )
 
 type CreateIrrigationPreferenceRequest struct {
-	DeviceUUID           string  `json:"device_uuid" binding:"required"`
+	DeviceUUID           string  `json:"device_uuid" binding:"required,uuid"`
 	IrrigationMode       string  `json:"irrigation_mode" binding:"required,oneof=INTELIGENTE MANUAL"`
-	MoistureThreshold    int32   `json:"moisture_threshold" binding:"required,max=100"`
-	DryTimeMinutes       int32   `json:"dry_time_minutes" binding:"required"`
-	MaxIrrigationsPerDay int32   `json:"max_irrigation_per_day" binding:"required,min=1"`
+	MoistureThreshold    int32   `json:"moisture_threshold" binding:"required,min=1,max=100"`
+	DryTimeMinutes       int32   `json:"dry_time_minutes" binding:"required,min=1,max=10080"`
+	MaxIrrigationsPerDay int32   `json:"max_irrigation_per_day" binding:"required,min=1,max=48"`
 	StartHour            *string `json:"start_hour" binding:"omitempty"`
 	EndHour              *string `json:"end_hour" binding:"omitempty"`
 }

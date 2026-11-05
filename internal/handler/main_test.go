@@ -7,6 +7,7 @@ import (
 
 	db "github.com/Teixeiraass/ground_guard_be/db/sqlc"
 	"github.com/Teixeiraass/ground_guard_be/mqtt/client"
+	"github.com/Teixeiraass/ground_guard_be/push"
 	"github.com/Teixeiraass/ground_guard_be/util"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,7 @@ func newTestServer(t *testing.T, store db.Store) *Server {
 		AccessTokenDuration: time.Minute,
 	}
 
-	server, err := NewServer(config, store, client.NewNoopClient())
+	server, err := NewServer(config, store, client.NewNoopClient(), push.NewNoopSender())
 	require.NoError(t, err)
 
 	return server

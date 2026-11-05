@@ -78,7 +78,6 @@ func DeviceUIDFromEventTopic(prefix, topic string) (string, bool) {
 	return deviceUID, true
 }
 
-
 func DeviceUIDFromStateTopic(prefix, topic string) (string, bool) {
 	expectedPrefix := NormalizeTopicPrefix(prefix) + "/devices/"
 	suffix := "/state"
@@ -94,5 +93,18 @@ func DeviceUIDFromStateTopic(prefix, topic string) (string, bool) {
 		return "", false
 	}
 
+	return deviceUID, true
+}
+
+func DeviceUIDFromCommandTopic(prefix, topic string) (string, bool) {
+	expectedPrefix := NormalizeTopicPrefix(prefix) + "/devices/"
+	suffix := "/commands"
+	if !strings.HasPrefix(topic, expectedPrefix) || !strings.HasSuffix(topic, suffix) {
+		return "", false
+	}
+	deviceUID := strings.TrimSuffix(strings.TrimPrefix(topic, expectedPrefix), suffix)
+	if deviceUID == "" || strings.Contains(deviceUID, "/") {
+		return "", false
+	}
 	return deviceUID, true
 }

@@ -10,3 +10,7 @@ type Client interface {
 	Close()
 	TopicPrefix() string
 }
+
+type ReconnectAwareClient interface {
+	SetOnConnect(handler func())
+}

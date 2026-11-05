@@ -12,6 +12,17 @@ import (
 	"github.com/google/uuid"
 )
 
+const blockAllSessionsForUser = `-- name: BlockAllSessionsForUser :exec
+UPDATE sessions
+SET is_blocked = true
+WHERE user_id = $1 AND is_blocked = false
+`
+
+func (q *Queries) BlockAllSessionsForUser(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, blockAllSessionsForUser, userID)
+	return err
+}
+
 const blockSession = `-- name: BlockSession :exec
 UPDATE sessions
 SET is_blocked = true

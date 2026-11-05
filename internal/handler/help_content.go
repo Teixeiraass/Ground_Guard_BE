@@ -41,7 +41,7 @@ func (server *Server) GetHelpContent(ctx *gin.Context) {
 			return
 		}
 
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 
@@ -50,16 +50,17 @@ func (server *Server) GetHelpContent(ctx *gin.Context) {
 
 // ListHelpContent godoc
 // @Summary      Listar conteúdos de ajuda
-// @Description  Retorna uma lista paginada de conteúdos de ajuda
+// @Description  Retorna uma lista paginada de conteúdos de ajuda, opcionalmente filtrada por categoria (FIRST_STEPS, IOT, IRRIGATION, ACCOUNT)
 // @Tags         help-contents
 // @Accept       json
 // @Produce      json
 // @Param        page_id query int true "Número da página" minimum(1)
-// @Param        page_size query int true "Tamanho da página" minimum(1) maximum(100)
+// @Param        page_size query int true "Tamanho da página" minimum(5) maximum(10)
+// @Param        category query string false "Categoria"
 // @Success      200 {array} dto.HelpContentResponse "Sucesso"
 // @Failure      400 {object} map[string]any "Requisição inválida (Erro de paginação)"
 // @Failure      500 {object} map[string]any "Erro interno do servidor"
-// @Router       /help-contents [get]
+// @Router       /help_contents [get]
 func (server *Server) ListHelpContent(ctx *gin.Context) {
 	var req dto.ListHelpContentRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -67,9 +68,9 @@ func (server *Server) ListHelpContent(ctx *gin.Context) {
 		return
 	}
 
-	helpContents, err := server.ContentService.ListHelpContent(ctx, req.PageSize, (req.PageID-1)*req.PageSize)
+	helpContents, err := server.ContentService.ListHelpContent(ctx, req.Category, req.PageSize, (req.PageID-1)*req.PageSize)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		serverError(ctx, err)
 		return
 	}
 

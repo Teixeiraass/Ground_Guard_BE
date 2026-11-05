@@ -11,10 +11,13 @@ type DeviceHandler interface {
 	LinkDeviceToUserByQrToken(c *gin.Context)
 	UnlinkDeviceFromUser(c *gin.Context)
 	UpdateNameDevice(c *gin.Context)
+	AssignDeviceToGroup(c *gin.Context)
+	UpdateDeviceLocation(c *gin.Context)
+	ClearDeviceLocation(c *gin.Context)
 }
 
 func registerDeviceRoutes(router gin.IRoutes, h DeviceHandler) {
-	router.POST("/devices/register", h.RegisterDevice)
+	router.POST("/devices/register", rl.deviceRegister, h.RegisterDevice)
 }
 
 func registerAuthDeviceRoutes(authRoutes gin.IRoutes, h DeviceHandler) {
@@ -25,4 +28,7 @@ func registerAuthDeviceRoutes(authRoutes gin.IRoutes, h DeviceHandler) {
 	authRoutes.PUT("/devices/link/:qr_token", h.LinkDeviceToUserByQrToken)
 	authRoutes.PUT("/devices/unlink/:uuid", h.UnlinkDeviceFromUser)
 	authRoutes.PUT("/devices/name/:uuid", h.UpdateNameDevice)
+	authRoutes.PUT("/devices/:uuid/group", h.AssignDeviceToGroup)
+	authRoutes.PUT("/devices/:uuid/location", h.UpdateDeviceLocation)
+	authRoutes.DELETE("/devices/:uuid/location", h.ClearDeviceLocation)
 }

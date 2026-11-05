@@ -26,3 +26,5 @@ func (c *NoopClient) Close() {}
 func (c *NoopClient) TopicPrefix() string {
 	return mqtt.DefaultTopicPrefix
 }
+
+func (c *NoopClient) SetOnConnect(_ func()) {}
